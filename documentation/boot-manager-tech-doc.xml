@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+"http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<article>
+  <articleinfo>
+    <title>Boot Manager Technical Documentation</title>
+
+    <author>
+      <firstname>Aaron</firstname>
+
+      <surname>Klingaman</surname>
+
+      <email>alk@cs.princeton.edu</email>
+    </author>
+
+    <affiliation>
+      <orgname>Princeton University</orgname>
+    </affiliation>
+
+    <revhistory>
+      <revision>
+        <revnumber>1.0</revnumber>
+
+        <date>March 10, 2005</date>
+
+        <authorinitials>AK</authorinitials>
+
+        <revdescription>
+          <para>Initial draft.</para>
+        </revdescription>
+      </revision>
+    </revhistory>
+  </articleinfo>
+
+  <section>
+    <title>Components</title>
+
+    <para>The entire Boot Manager system consists of several components that
+    are designed to work together to provide the functionality outline in the
+    Boot Manager PlanetLab Design Note. These consist of:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>A set of API calls available at PlanetLab Central</para>
+        </listitem>
+
+        <listitem>
+          <para>A package to be run in the boot cd environment on nodes</para>
+        </listitem>
+
+        <listitem>
+          <para>A set of API calls and an appropriate user interface allowing
+          administrators to create node configuration files</para>
+        </listitem>
+      </itemizedlist></para>
+  </section>
+
+  <section>
+    <title>API Calls</title>
+
+    <section>
+      <title>Authentication</title>
+
+      <para>The Boot PLC API calls handle authentication in a different manner
+      that other API calls, which typically require a username and password,
+      and are called by users of the system, not nodes.</para>
+
+      <para>The authentication structure consists of two named fields:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>method</para>
+
+            <para>The authentication method, only hmac is currently
+            supported</para>
+          </listitem>
+
+          <listitem>
+            <para>node_id</para>
+
+            <para>The node id, contained on the configuration file.</para>
+          </listitem>
+
+          <listitem>
+            <para>value</para>
+
+            <para>An hmac hash for the call, made from the parameters of the
+            call the key contained on the configuration file.</para>
+          </listitem>
+        </itemizedlist></para>
+    </section>
+
+    <section>
+      <title>PLC API Calls</title>
+
+      <para>For full documentation of these functions can be found in the
+      PlanetLab API documentation.</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>BootUpdateNode( authentication, update_values )</para>
+
+            <para>Update a node record, currenly only allowing the boot state
+            to change.</para>
+          </listitem>
+
+          <listitem>
+            <para>BootCheckAuthentication( authentication )</para>
+
+            <para>Simply check to see if the node is recognized by the system
+            and is authorized</para>
+          </listitem>
+
+          <listitem>
+            <para>BootGetNodeDetails( authentication )</para>
+
+            <para>Return details about a node, including its state, what
+            networks the PLC database has configured for the node.</para>
+          </listitem>
+
+          <listitem>
+            <para>BootNotifyOwners( authentication, message, include_pi,
+            include_tech, include_support )</para>
+
+            <para>Notify someone about an event that happened on the machine,
+            and optionally include the site PIs, technical contacts, and
+            PlanetLab Support</para>
+          </listitem>
+        </itemizedlist></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Core Package</title>
+
+    <para>The Boot Manager core package, which is run on the nodes and
+    contacts the Boot API as necessary, is responsible for the follow major
+    functional units:<itemizedlist>
+        <listitem>
+          <para>Installing nodes with alpina, the PlanetLab installer</para>
+        </listitem>
+
+        <listitem>
+          <para>Putting a node into a debug state</para>
+        </listitem>
+
+        <listitem>
+          <para>Reconfiguring an already installed node to reflect new
+          hardware, or changed network settings</para>
+        </listitem>
+
+        <listitem>
+          <para>Booting an already installed node</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>Below is a high level flow chart of the boot manager, from the time
+    it is executed to when it exits.</para>
+
+    <para><figure>
+        <title>Boot Manager Flow Chart</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata align="center" fileref="boot-manager-flow.png"
+                       scalefit="1" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+  </section>
+
+  <section>
+    <title>User Interface Items</title>
+
+    <para>Nodes are now added to the system by administrators of the site, and
+    technical contacts.</para>
+  </section>
+
+  <section>
+    <title>Node Management</title>
+
+    <section>
+      <title>Adding Nodes</title>
+
+      <para>New nodes are added to the system explicitly by either a PI or a
+      tech contact, either directly through the API calls, or by using the
+      appropriate interfaces on the website. As nodes are added, only their
+      hostname and ip address are required to be entered. When the node is
+      brought online, the records at PLC will be updated with the remaining
+      information.</para>
+
+      <para>After a node is added, the user has the option of creating a
+      configuration file for that node. This is done automatically, and the
+      user is prompted to download and save the file. This file contains only
+      the primary network interface information (necessary to contact PLC),
+      and the per-node key.</para>
+
+      <para>The default boot state of a new node is 'new', which requires the
+      user to confirm the installation at the node, by typing yes on the
+      console. If this is not desired, as is the case with nodes in a
+      colocation site, or for a large number of nodes being setup at the same
+      time, the administrator can change the node state, after the entry is in
+      the PLC records, from 'new' to 'reinstall'. This will bypass the
+      confirmation screen, and proceed directly to reinstall the machine (even
+      if it already had a node installation on it).</para>
+    </section>
+
+    <section>
+      <title>Updating Node Network Settings</title>
+
+      <para>If the primary node network address must be updated, if the node
+      is moved to a new network for example, then two steps must be performed
+      to successfully complete the move:</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>The node network will need to be updated at PLC, either
+            through the API directly or via the website.</para>
+          </listitem>
+
+          <listitem>
+            <para>Either the floppy file regenerated and put into the machine,
+            or, update the existing floppy to match the new settings.</para>
+          </listitem>
+        </orderedlist>If the node ip address on the floppy does not mach the
+      record at PLC, then the node will not boot until they do match. The
+      intention here is to prevent a malicious user from taking the floppy
+      disk, altering the network settings, and trying to bring up a new
+      machine with the new settings.</para>
+
+      <para>On the other hand, if a non-primary network address needs to be
+      updated, then simply updating the records at PLC will suffice. The boot
+      manager, at next restart, will reconfigure the machine to match the PLC
+      records.</para>
+    </section>
+
+    <section>
+      <title>Removing Nodes</title>
+
+      <para>Nodes are removed from the system by:</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Deleting the record of the node at PLC</para>
+          </listitem>
+
+          <listitem>
+            <para>Shutting down the machine.</para>
+          </listitem>
+        </orderedlist>Once this is done, even if the machine attempts to come
+      back online, it cannot be authorized with PLC and will not boot.</para>
+    </section>
+  </section>
+
+  <section>
+    <title></title>
+
+    <para></para>
+  </section>
+</article>
