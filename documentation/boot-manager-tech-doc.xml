@@ -21,7 +21,7 @@
       <revision>
         <revnumber>1.0</revnumber>
 
-        <date>March 10, 2005</date>
+        <date>March 14, 2005</date>
 
         <authorinitials>AK</authorinitials>
 
@@ -37,96 +37,135 @@
 
     <para>The entire Boot Manager system consists of several components that
     are designed to work together to provide the functionality outline in the
-    Boot Manager PlanetLab Design Note. These consist of:</para>
+    Boot Manager PDN <citation>1</citation>. These consist of:</para>
 
-    <para><itemizedlist>
-        <listitem>
-          <para>A set of API calls available at PlanetLab Central</para>
-        </listitem>
+    <itemizedlist>
+      <listitem>
+        <para>A set of API calls available at PlanetLab Central</para>
+      </listitem>
 
-        <listitem>
-          <para>A package to be run in the boot cd environment on nodes</para>
-        </listitem>
+      <listitem>
+        <para>A package to be run in the boot cd environment on nodes</para>
+      </listitem>
 
-        <listitem>
-          <para>A set of API calls and an appropriate user interface allowing
-          administrators to create node configuration files</para>
-        </listitem>
-      </itemizedlist></para>
+      <listitem>
+        <para>An appropriate user interface allowing administrators to create
+        node configuration files</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>The previous implementation of the software responsible for
+    installing and booting nodes consisted of a set of boot scripts that the
+    boot cd would run, depending on the node's current boot state. The logic
+    behind which script the node was sent to the node existed on the boot
+    server in the form of PHP scripts. However, the intention with the new
+    Boot Manager system is to send the same boot manager back for all nodes,
+    in all boot states, each time the node starts. Then, the boot manager will
+    run and detiremine which operations to perform on the node, based on the
+    current boot state. There is no longer any boot state specific logic at
+    PLC.</para>
   </section>
 
   <section>
     <title>API Calls</title>
 
+    <para>Most of the API calls available as part of the PlanetLab Central API
+    are intended to be run by users, and thus authentication for these calls
+    is done with the user's email address and password. However, the API calls
+    described below will be run by the nodes themselves, so a new
+    authentication mechanism is required.</para>
+
     <section>
       <title>Authentication</title>
 
-      <para>The Boot PLC API calls handle authentication in a different manner
-      that other API calls, which typically require a username and password,
-      and are called by users of the system, not nodes.</para>
+      <para>As is done with other PLC API calls, the first parameter to all
+      Boot Manager related calls will be an authentication structure,
+      consisting of these named fields:</para>
 
-      <para>The authentication structure consists of two named fields:</para>
+      <itemizedlist>
+        <listitem>
+          <para>method</para>
 
-      <para><itemizedlist>
-          <listitem>
-            <para>method</para>
+          <para>The authentication method, only 'hmac' is currently
+          supported</para>
+        </listitem>
 
-            <para>The authentication method, only hmac is currently
-            supported</para>
-          </listitem>
+        <listitem>
+          <para>node_id</para>
 
-          <listitem>
-            <para>node_id</para>
+          <para>The node id, contained on the configuration file.</para>
+        </listitem>
 
-            <para>The node id, contained on the configuration file.</para>
-          </listitem>
+        <listitem>
+          <para>node_ip</para>
 
-          <listitem>
-            <para>value</para>
+          <para>The node's primary IP address. This will be checked with the
+          node_id against PLC records.</para>
+        </listitem>
 
-            <para>An hmac hash for the call, made from the parameters of the
-            call the key contained on the configuration file.</para>
-          </listitem>
-        </itemizedlist></para>
+        <listitem>
+          <para>value</para>
+
+          <para>The authentication string, depending on method. For the 'hmac'
+          method, a hash for the call, made from the parameters of the call
+          the key contained on the configuration file.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Authentication is succesful if PLC is able to create the same hash
+      from the values usings its own copy of the node key. If the hash values
+      to not match, then either the keys do not match or the values of the
+      call were modified in transmision and the node cannot be
+      authenticated.</para>
+
+      <para>TODO: add specifics on how the hash value is produced from the
+      parameters in the API call.</para>
     </section>
 
     <section>
       <title>PLC API Calls</title>
 
-      <para>For full documentation of these functions can be found in the
-      PlanetLab API documentation.</para>
+      <para>Full technical documentation of these functions can be found in
+      the PlanetLab API documentation.</para>
 
-      <para><itemizedlist>
-          <listitem>
-            <para>BootUpdateNode( authentication, update_values )</para>
+      <itemizedlist>
+        <listitem>
+          <para>BootUpdateNode( authentication, update_values )</para>
 
-            <para>Update a node record, currenly only allowing the boot state
-            to change.</para>
-          </listitem>
+          <para>Update a node record, currenly only allowing the boot state to
+          change.</para>
+        </listitem>
 
-          <listitem>
-            <para>BootCheckAuthentication( authentication )</para>
+        <listitem>
+          <para>BootCheckAuthentication( authentication )</para>
 
-            <para>Simply check to see if the node is recognized by the system
-            and is authorized</para>
-          </listitem>
+          <para>Simply check to see if the node is recognized by the system
+          and is authorized</para>
+        </listitem>
 
-          <listitem>
-            <para>BootGetNodeDetails( authentication )</para>
+        <listitem>
+          <para>BootGetNodeDetails( authentication )</para>
 
-            <para>Return details about a node, including its state, what
-            networks the PLC database has configured for the node.</para>
-          </listitem>
+          <para>Return details about a node, including its state, what
+          networks the PLC database has configured for the node.</para>
+        </listitem>
 
-          <listitem>
-            <para>BootNotifyOwners( authentication, message, include_pi,
-            include_tech, include_support )</para>
+        <listitem>
+          <para>BootNotifyOwners( authentication, message, include_pi,
+          include_tech, include_support )</para>
 
-            <para>Notify someone about an event that happened on the machine,
-            and optionally include the site PIs, technical contacts, and
-            PlanetLab Support</para>
-          </listitem>
-        </itemizedlist></para>
+          <para>Notify someone about an event that happened on the machine,
+          and optionally include the site PIs, technical contacts, and
+          PlanetLab Support</para>
+        </listitem>
+
+        <listitem>
+          <para>BootUpdateNodeHardware( authentication, pci_entries )</para>
+
+          <para>Send the set of hardware this node has and update the record
+          at PLC.</para>
+        </listitem>
+      </itemizedlist>
     </section>
   </section>
 
@@ -134,50 +173,105 @@
     <title>Core Package</title>
 
     <para>The Boot Manager core package, which is run on the nodes and
-    contacts the Boot API as necessary, is responsible for the follow major
-    functional units:<itemizedlist>
+    contacts the Boot API as necessary, is responsible for the following major
+    functional units:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Installing nodes with alpina, the PlanetLab installer</para>
+      </listitem>
+
+      <listitem>
+        <para>Putting a node into a debug state so administrators can track
+        down problems</para>
+      </listitem>
+
+      <listitem>
+        <para>Reconfiguring an already installed node to reflect new hardware,
+        or changed network settings</para>
+      </listitem>
+
+      <listitem>
+        <para>Booting an already installed node</para>
+      </listitem>
+    </itemizedlist>
+
+    <section>
+      <title>Boot States</title>
+
+      <para>Each node always has one of four possible boot states.</para>
+
+      <orderedlist>
         <listitem>
-          <para>Installing nodes with alpina, the PlanetLab installer</para>
+          <para>'new'</para>
+
+          <para>The boot state cooresponds to a new node that has not yet been
+          installed, but record of it does exist. When the boot manager
+          starts, and the node is in this state, the user is prompted to
+          continue with the installation. The intention here is to prevent a
+          non-PlanetLab machine (like a user's desktop machine) from becoming
+          inadvertantly wiped and installed with the PlanetLab node
+          software.</para>
         </listitem>
 
         <listitem>
-          <para>Putting a node into a debug state</para>
+          <para>'reinstall'</para>
+
+          <para>In this state, a node will reinstall the node software,
+          erasing anything that might have been on the disk before.</para>
         </listitem>
 
         <listitem>
-          <para>Reconfiguring an already installed node to reflect new
-          hardware, or changed network settings</para>
+          <para>'boot'</para>
+
+          <para>This state cooresponds with nodes that have sucessfully
+          installed, and can be chain booted to the runtime node
+          kernel.</para>
         </listitem>
 
         <listitem>
-          <para>Booting an already installed node</para>
+          <para>'debug'</para>
+
+          <para>Regardless of whether or not a machine has been installed,
+          this state sets up a node to be debugged by administrators.</para>
         </listitem>
-      </itemizedlist></para>
+      </orderedlist>
+    </section>
 
-    <para>Below is a high level flow chart of the boot manager, from the time
-    it is executed to when it exits.</para>
+    <section>
+      <title>Flow Chart</title>
 
-    <para><figure>
-        <title>Boot Manager Flow Chart</title>
+      <para>Below is a high level flow chart of the boot manager, from the
+      time it is executed to when it exits.</para>
 
-        <mediaobject>
-          <imageobject>
-            <imagedata align="center" fileref="boot-manager-flow.png"
-                       scalefit="1" />
-          </imageobject>
-        </mediaobject>
-      </figure></para>
+      <para><figure>
+          <title>Boot Manager Flow Chart</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata align="left" fileref="boot-manager-flowchart.png"
+                         scalefit="1" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </section>
+
+    <section>
+      <title>Boot CD Environment</title>
+
+      <para>The boot manager needs to be able to operate under all currently
+      supported boot cds. The new 3.0 cd contains software the current 2.x cds
+      do not contain, including the Logical Volume Mangaer (LVM) client tools,
+      RPM, and YUM, among other packages. Given this requirement, the boot cd
+      will need to download as necessary the extra support files it needs to
+      run. Depending on the size of these files, they may only be downloaded
+      by specific steps in the flow chart in figure 1, and thus are not
+      mentioned.</para>
+    </section>
   </section>
 
   <section>
-    <title>User Interface Items</title>
-
-    <para>Nodes are now added to the system by administrators of the site, and
-    technical contacts.</para>
-  </section>
-
-  <section>
-    <title>Node Management</title>
+    <title>User Interface for Node Management</title>
 
     <section>
       <title>Adding Nodes</title>
@@ -212,21 +306,23 @@
       is moved to a new network for example, then two steps must be performed
       to successfully complete the move:</para>
 
-      <para><orderedlist>
-          <listitem>
-            <para>The node network will need to be updated at PLC, either
-            through the API directly or via the website.</para>
-          </listitem>
+      <orderedlist>
+        <listitem>
+          <para>The node network will need to be updated at PLC, either
+          through the API directly or via the website.</para>
+        </listitem>
 
-          <listitem>
-            <para>Either the floppy file regenerated and put into the machine,
-            or, update the existing floppy to match the new settings.</para>
-          </listitem>
-        </orderedlist>If the node ip address on the floppy does not mach the
-      record at PLC, then the node will not boot until they do match. The
-      intention here is to prevent a malicious user from taking the floppy
-      disk, altering the network settings, and trying to bring up a new
-      machine with the new settings.</para>
+        <listitem>
+          <para>Either the floppy file regenerated and put into the machine,
+          or, update the existing floppy to match the new settings.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>If the node ip address on the floppy does not mach the record at
+      PLC, then the node will not boot until they do match. The intention here
+      is to prevent a malicious user from taking the floppy disk, altering the
+      network settings, and trying to bring up a new machine with the new
+      settings.</para>
 
       <para>On the other hand, if a non-primary network address needs to be
       updated, then simply updating the records at PLC will suffice. The boot
@@ -239,22 +335,65 @@
 
       <para>Nodes are removed from the system by:</para>
 
-      <para><orderedlist>
-          <listitem>
-            <para>Deleting the record of the node at PLC</para>
-          </listitem>
+      <orderedlist>
+        <listitem>
+          <para>Deleting the record of the node at PLC</para>
+        </listitem>
 
-          <listitem>
-            <para>Shutting down the machine.</para>
-          </listitem>
-        </orderedlist>Once this is done, even if the machine attempts to come
-      back online, it cannot be authorized with PLC and will not boot.</para>
+        <listitem>
+          <para>Shutting down the machine.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Once this is done, even if the machine attempts to come back
+      online, it cannot be authorized with PLC and will not boot.</para>
     </section>
   </section>
 
   <section>
-    <title></title>
+    <title>Common Scenarios</title>
 
-    <para></para>
+    <para>Below are common scenarios that the boot manager might encounter
+    that would exist outside of the documented procedures for handling nodes.
+    A full description of how they will be handled follows each.</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>A configuration file from previously installed and functioning
+        node is copied or moved to another machine, and the networks settings
+        are updated on it (but the key is left the same).</para>
+
+        <para>Since the authentication for a node consists of matching not
+        only the node id, but the primary node ip, this step will fail, and
+        the node will not allow the boot manager to be run. Instead, the new
+        node must be created at PLC first, and a network configuration file
+        for it must be generated, with its own node key.</para>
+      </listitem>
+
+      <listitem>
+        <para>After a node is installed and running, the administrators
+        mistakenly remove the cd and disk.</para>
+
+        <para>The node installer clears all boot records from the disk, so the
+        node will not boot. Typically, the bios will report no operating
+        system.</para>
+      </listitem>
+    </itemizedlist>
   </section>
+
+  <bibliography>
+    <biblioentry>
+      <abbrev>1</abbrev>
+
+      <title>The PlanetLab Boot Manager</title>
+
+      <date>January 14, 2005</date>
+
+      <author>
+        <firstname>Aaron</firstname>
+
+        <surname>Klingaman</surname>
+      </author>
+    </biblioentry>
+  </bibliography>
 </article>
