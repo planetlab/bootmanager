@@ -21,7 +21,7 @@
       <revision>
         <revnumber>1.0</revnumber>
 
-        <date>March 14, 2005</date>
+        <date>March 15, 2005</date>
 
         <authorinitials>AK</authorinitials>
 
@@ -261,12 +261,78 @@
 
       <para>The boot manager needs to be able to operate under all currently
       supported boot cds. The new 3.0 cd contains software the current 2.x cds
-      do not contain, including the Logical Volume Mangaer (LVM) client tools,
+      do not contain, including the Logical Volume Manager (LVM) client tools,
       RPM, and YUM, among other packages. Given this requirement, the boot cd
       will need to download as necessary the extra support files it needs to
       run. Depending on the size of these files, they may only be downloaded
       by specific steps in the flow chart in figure 1, and thus are not
       mentioned.</para>
+    </section>
+
+    <section>
+      <title>Node Configuration Files</title>
+
+      <para>To remain compatible with 2.x boot cds, the format and existing
+      contents of the configuration files for the nodes will not change. There
+      will be, however, the addition of three fields:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>NET_DEVICE</para>
+
+          <para>If present, use the device with the specified mac address to
+          contact PLC. The network on this device will be setup. If not
+          present, the device represented by 'eth0' will be used.</para>
+        </listitem>
+
+        <listitem>
+          <para>NODE_KEY</para>
+
+          <para>The unique, per-node key to be used during authentication and
+          identity verification. This is a fixed length, random value that is
+          only known to the node and PLC.</para>
+        </listitem>
+
+        <listitem>
+          <para>NODE_ID</para>
+
+          <para>The PLC assigned node identifier.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Existing 2.x boot cds will look for the configuration files only
+      on a floppy disk, and the file must be named 'planet.cnf'. The new 3.x
+      boot cds, however, will initially look for a file named 'plnode.txt' on
+      either a floppy disk, or burned onto the cd itself. Alternatively, it
+      will fall back to looking for the original file name,
+      'planet.cnf'.</para>
+
+      <para>An example of a configuration file for a dhcp networked
+      machine:</para>
+
+      <programlisting>IP_METHOD="dhcp"
+HOST_NAME="planetlab-1"
+DOMAIN_NAME="cs.princeton.edu"
+NET_DEVICE="00:06:5B:EC:33:BB"
+NODE_KEY="79efbe871722771675de604a227db8386bc6ef482a4b74"
+NODE_ID="121"</programlisting>
+
+      <para>An example of a configuration file for the same machine, only with
+      a statically assigned network address:</para>
+
+      <programlisting>IP_METHOD="static"
+IP_ADDRESS="128.112.139.71"
+IP_GATEWAY="128.112.139.65"
+IP_NETMASK="255.255.255.192"
+IP_NETADDR="128.112.139.127"
+IP_BROADCASTADDR="128.112.139.127"
+IP_DNS1="128.112.136.10"
+IP_DNS2="128.112.136.12"
+HOST_NAME="planetlab-1"
+DOMAIN_NAME="cs.princeton.edu"
+NET_DEVICE="00:06:5B:EC:33:BB"
+NODE_KEY="79efbe871722771675de604a227db8386bc6ef482a4b74"
+NODE_ID="121"</programlisting>
     </section>
   </section>
 
@@ -292,7 +358,7 @@
       <para>The default boot state of a new node is 'new', which requires the
       user to confirm the installation at the node, by typing yes on the
       console. If this is not desired, as is the case with nodes in a
-      colocation site, or for a large number of nodes being setup at the same
+      co-location site, or for a large number of nodes being setup at the same
       time, the administrator can change the node state, after the entry is in
       the PLC records, from 'new' to 'reinstall'. This will bypass the
       confirmation screen, and proceed directly to reinstall the machine (even
@@ -318,7 +384,7 @@
         </listitem>
       </orderedlist>
 
-      <para>If the node ip address on the floppy does not mach the record at
+      <para>If the node ip address on the floppy does not Match the record at
       PLC, then the node will not boot until they do match. The intention here
       is to prevent a malicious user from taking the floppy disk, altering the
       network settings, and trying to bring up a new machine with the new
