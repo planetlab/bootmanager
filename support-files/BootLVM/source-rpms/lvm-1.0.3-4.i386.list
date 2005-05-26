@@ -1,0 +1,6 @@
+/lib/liblvm-10.so
+/lib/liblvm-10.so.1
+/lib/liblvm-10.so.1.0
+/sbin/vgchange
+/sbin/vgscan
+/sbin/vgmknodes
