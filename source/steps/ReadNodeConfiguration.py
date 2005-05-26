@@ -446,7 +446,21 @@ def __parse_configuration_file( vars, log, file_contents ):
             return 0
 
         if node_id == -1:
-            log.write( "Got node_id, but it returned -1\n" )
+            log.write( "Got node_id, but it returned -1\n\n" )
+
+            log.write( "------------------------------------------------------\n" )
+            log.write( "This indicates that this node could not be identified\n" )
+            log.write( "by PLC. You will need to add the node to your site,\n" )
+            log.write( "and regenerate the network configuration file.\n" )
+            log.write( "See the Technical Contact guide for node setup\n" )
+            log.write( "procedures.\n\n" )
+            log.write( "Boot process canceled until this is completed.\n" )
+            log.write( "------------------------------------------------------\n" )
+            
+            cancel_boot_flag= "/tmp/CANCEL_BOOT"
+            # this will make the initial script stop requesting scripts from PLC
+            utils.sysexec( "touch %s" % cancel_boot_flag, log )
+
             return 0
 
         log.write( "Got node_id from PLC: %s\n" % str(node_id) )
