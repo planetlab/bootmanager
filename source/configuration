@@ -1,0 +1,77 @@
+# this file contains a list of variables
+# to import to the INSTALL_STORE before
+# any of the steps run.
+
+
+# the current version of the bootmanager
+VERSION=3.1
+
+
+# full url to which api server to contact
+BOOT_API_SERVER=https://www.planet-lab.org:443/PLCAPI/
+
+
+# path to store temporary files during the install,
+# do not include trailing slashes
+TEMP_PATH=/mnt/tmp
+
+
+# path to the system mount point
+SYSIMG_PATH=/mnt/tmp/sysimg
+
+
+# where the cacerts for the boot cd can be found
+# currently, this must start with /mnt/cdrom
+# which is hardcoded in the installer
+CACERT_PATH=/mnt/cdrom/bootme/cacert
+
+
+# the nonce the boot cd created, need to authenticate
+# requests that are made to the boot server
+NONCE_FILE=/tmp/nonce
+
+
+# directory containing planetlab specific configuration
+# files, like the http_proxy file
+PLCONF_DIR=/etc/planetlab
+
+
+# directory on the boot server containing
+# alpina support files and scripts
+ALPINA_SERVER_DIR=/alpina-v3
+
+
+# this sets the size of the root logical volume,
+# after the root and swap has been created, remaining
+# goes to the vserver partition
+ROOT_SIZE=3G
+
+
+# override the swap size
+SWAP_SIZE=1G
+
+
+# whether or not to skip hardware requirement check
+SKIP_HARDWARE_REQUIREMENT_CHECK=0
+
+
+# minimum amount of memory needed for installer, in kb
+MINIMUM_MEMORY=511000
+
+
+# minimum block disk size in GB to be added to lvm.
+# if any block devices are smaller than this, they are ignored.
+MINIMUM_DISK_SIZE=5
+
+
+# total minimum disk size in GB if all usable disks are below this
+# size, the node cannot be installed
+TOTAL_MINIMUM_DISK_SIZE=50
+
+
+# set of langugase for install (used in /etc/rpm/macros)
+INSTALL_LANGS=en_US
+
+
+# number of auth failures before starting debug mode
+NUM_AUTH_FAILURES_BEFORE_DEBUG=2
