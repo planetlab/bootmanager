@@ -84,7 +84,7 @@
 
       <itemizedlist>
         <listitem>
-          <para>method</para>
+          <para>AuthMethod</para>
 
           <para>The authentication method, only 'hmac' is currently
           supported</para>
@@ -300,13 +300,6 @@
         </listitem>
       </orderedlist>
 
-      <para>Existing 2.x boot cds will look for the configuration files only
-      on a floppy disk, and the file must be named 'planet.cnf'. The new 3.x
-      boot cds, however, will initially look for a file named 'plnode.txt' on
-      either a floppy disk, or burned onto the cd itself. Alternatively, it
-      will fall back to looking for the original file name,
-      'planet.cnf'.</para>
-
       <para>An example of a configuration file for a dhcp networked
       machine:</para>
 
@@ -333,6 +326,50 @@ DOMAIN_NAME="cs.princeton.edu"
 NET_DEVICE="00:06:5B:EC:33:BB"
 NODE_KEY="79efbe871722771675de604a227db8386bc6ef482a4b74"
 NODE_ID="121"</programlisting>
+
+      <para>Existing 2.x boot cds will look for the configuration files only
+      on a floppy disk, and the file must be named 'planet.cnf'. The new 3.x
+      boot cds, however, will initially look for a file named 'plnode.txt' on
+      either a floppy disk, or burned onto the cd itself. Alternatively, it
+      will fall back to looking for the original file name, 'planet.cnf'. This
+      initial file reading is performed by the boot cd itself to bring the
+      nodes network online, so it can download and execute the Boot
+      Manager.</para>
+
+      <para>However, the Boot Manager will also need to identify the location
+      of and read in the file, so it can get the extra fields not initially
+      used to bring the network online (node_key and node_id). Below is the
+      search order that the boot manager will use to locate a file. If a file
+      is found in the order below, but does not match the network that has
+      already been setup, then there may be two configuration files located on
+      the same machine. In this situation, the file is skipped and searching
+      resumes.</para>
+
+      <para>Configuration file location search order (both file names,
+      plnode.txt and planet.cnf are search in each of these locations;
+      plnode.txt first):</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Standard floppy disk (/dev/fd0 and /dev/fd1)</para>
+        </listitem>
+
+        <listitem>
+          <para>USB floppy disk</para>
+        </listitem>
+
+        <listitem>
+          <para>USB flash based disk</para>
+        </listitem>
+
+        <listitem>
+          <para>USB cdrom</para>
+        </listitem>
+
+        <listitem>
+          <para>standard cdrom</para>
+        </listitem>
+      </orderedlist>
     </section>
   </section>
 
