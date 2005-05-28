@@ -96,7 +96,7 @@ class systeminfo:
     PCI_CLASS_NETWORK= "0200"
     PCI_CLASS_RAID= "0104"
     PCI_CLASS_RAID2= "0100"
-
+    PCI_CLASS_IDE= "0101"
 
     def get_total_phsyical_mem(self):
         """
@@ -306,6 +306,12 @@ class systeminfo:
          - scsi       MODULE_CLASS_SCSI
          - network    MODULE_CLASS_NETWORK
         The value being the kernel module name to load.
+
+        Some sata devices show up under an IDE device class,
+        hence the reason for checking for ide devices as well.
+        If there actually is a match in the pci -> module lookup
+        table, and its an ide device, its most likely sata,
+        as ide modules are built in to the kernel.
         """
 
         # get the kernel version we are assuming
@@ -383,7 +389,8 @@ class systeminfo:
 
             if classid not in (self.PCI_CLASS_NETWORK,
                                self.PCI_CLASS_RAID,
-                               self.PCI_CLASS_RAID2):                    
+                               self.PCI_CLASS_RAID2,
+                               self.PCI_CLASS_IDE):
                 continue
             
             full_deviceid= "%s:%s" % (vendorid,deviceid)
@@ -393,7 +400,8 @@ class systeminfo:
                     if classid == self.PCI_CLASS_NETWORK:
                         network_mods.append(module)
                     elif classid in (self.PCI_CLASS_RAID,
-                                     self.PCI_CLASS_RAID2):
+                                     self.PCI_CLASS_RAID2,
+                                     self.PCI_CLASS_IDE):
                         scsi_mods.append(module)
                         
         system_mods[self.MODULE_CLASS_SCSI]= scsi_mods
