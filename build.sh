@@ -14,7 +14,7 @@ UUDECODE=/usr/bin/uudecode
 # once we get the beta cds out of use, this can be removed
 if [ ! -x $UUDECODE ]; then
   UUDECODE=/tmp/uudecode
-  curl -s http://boot.planet-lab.org/alpina-v3/uudecode.gz | gzip -d -c > $UUDECODE
+  curl -s http://boot.planet-lab.org/boot/uudecode.gz | gzip -d -c > $UUDECODE
   chmod +x $UUDECODE
 fi
 
