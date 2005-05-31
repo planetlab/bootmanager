@@ -20,6 +20,12 @@ TEMP_PATH=/mnt/tmp
 SYSIMG_PATH=/mnt/tmp/sysimg
 
 
+# where the cacerts for the boot cd can be found
+# currently, this must start with /mnt/cdrom
+# which is hardcoded in the installer
+CACERT_PATH=/mnt/cdrom/bootme/cacert
+
+
 # the nonce the boot cd created, need to authenticate
 # requests that are made to the boot server
 NONCE_FILE=/tmp/nonce

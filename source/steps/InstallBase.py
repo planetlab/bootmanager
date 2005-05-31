@@ -55,6 +55,7 @@ def Run( vars, log ):
     SYSIMG_PATH           the path where the system image will be mounted
                           (always starts with TEMP_PATH)
     INSTALL_LANGS         languages for install (used by rpm)
+    CACERT_PATH           where the boot server certificates are
                          
     Sets the following variables:
     None
@@ -76,6 +77,10 @@ def Run( vars, log ):
         INSTALL_LANGS= vars["INSTALL_LANGS"]
         if INSTALL_LANGS == "":
             raise ValueError, "INSTALL_LANGS"
+
+        CACERT_PATH= vars["CACERT_PATH"]
+        if CACERT_PATH == "":
+            raise ValueError, "CACERT_PATH"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
