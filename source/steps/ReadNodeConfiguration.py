@@ -80,7 +80,7 @@ def Run( vars, log ):
 
     Expect the following variables from the store:
     BOOT_CD_VERSION          A tuple of the current bootcd version
-    ALPINA_SERVER_DIR        directory on the boot servers containing alpina
+    SUPPORT_FILE_DIR         directory on the boot servers containing
                              scripts and support files
     
     Sets the following variables from the configuration file:
@@ -112,9 +112,9 @@ def Run( vars, log ):
         if BOOT_CD_VERSION == "":
             raise ValueError, "BOOT_CD_VERSION"
 
-        ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
-        if ALPINA_SERVER_DIR == None:
-            raise ValueError, "ALPINA_SERVER_DIR"
+        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
+        if SUPPORT_FILE_DIR == None:
+            raise ValueError, "SUPPORT_FILE_DIR"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -305,7 +305,7 @@ def __parse_configuration_file( vars, log, file_contents ):
     """
 
     BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-    ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
+    SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
     NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
     
     if file_contents is None:
@@ -424,7 +424,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         
         postVars= {"ifconfig" : ifconfig}
         result= bs_request.DownloadFile( "%s/getnodeid.php" %
-                                         ALPINA_SERVER_DIR,
+                                         SUPPORT_FILE_DIR,
                                          None, postVars, 1, 1,
                                          "/tmp/node_id")
         if result == 0:

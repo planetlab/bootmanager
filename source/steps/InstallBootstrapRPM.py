@@ -58,9 +58,8 @@ def Run( vars, log ):
     SYSIMG_PATH          the path where the system image will be mounted
     PARTITIONS           dictionary of generic part. types (root/swap)
                          and their associated devices.
-    ALPINA_SERVER_DIR    directory on the boot servers containing alpina
+    SUPPORT_FILE_DIR     directory on the boot servers containing
                          scripts and support files
-    INSTALL_LANGS        languages for install (used by rpm)
     NODE_ID              the id of this machine
     
     Sets the following variables:
@@ -80,13 +79,9 @@ def Run( vars, log ):
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
 
-        ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
-        if ALPINA_SERVER_DIR == None:
-            raise ValueError, "ALPINA_SERVER_DIR"
-
-        INSTALL_LANGS= vars["INSTALL_LANGS"]
-        if INSTALL_LANGS == "":
-            raise ValueError, "INSTALL_LANGS"
+        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
+        if SUPPORT_FILE_DIR == None:
+            raise ValueError, "SUPPORT_FILE_DIR"
 
         NODE_ID= vars["NODE_ID"]
         if NODE_ID == "":
@@ -127,7 +122,7 @@ def Run( vars, log ):
     # this step, which has everything
     # we need to successfully run
     step_support_file= "alpina-BootstrapRPM.tar.bz2"
-    source_file= "%s/%s" % (ALPINA_SERVER_DIR,step_support_file)
+    source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
     dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
 
     # 30 is the connect timeout, 7200 is the max transfer time

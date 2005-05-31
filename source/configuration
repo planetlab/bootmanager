@@ -20,12 +20,6 @@ TEMP_PATH=/mnt/tmp
 SYSIMG_PATH=/mnt/tmp/sysimg
 
 
-# where the cacerts for the boot cd can be found
-# currently, this must start with /mnt/cdrom
-# which is hardcoded in the installer
-CACERT_PATH=/mnt/cdrom/bootme/cacert
-
-
 # the nonce the boot cd created, need to authenticate
 # requests that are made to the boot server
 NONCE_FILE=/tmp/nonce
@@ -37,8 +31,8 @@ PLCONF_DIR=/etc/planetlab
 
 
 # directory on the boot server containing
-# alpina support files and scripts
-ALPINA_SERVER_DIR=/alpina-v3
+# support files and scripts
+SUPPORT_FILE_DIR=/boot
 
 
 # this sets the size of the root logical volume,

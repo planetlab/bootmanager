@@ -61,8 +61,6 @@ def Run( vars, log ):
     TEMP_PATH                somewhere to store what we need to run
     ROOT_SIZE                the size of the root logical volume
     SWAP_SIZE                the size of the swap partition
-    ALPINA_SERVER_DIR        directory on the boot servers containing alpina
-                             scripts and support files
     BOOT_CD_VERSION          A tuple of the current bootcd version
     
     Sets the following variables:
@@ -93,10 +91,6 @@ def Run( vars, log ):
         SWAP_SIZE= vars["SWAP_SIZE"]
         if SWAP_SIZE == "" or SWAP_SIZE == 0:
             raise ValueError, "SWAP_SIZE invalid"
-
-        ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
-        if ALPINA_SERVER_DIR == None:
-            raise ValueError, "ALPINA_SERVER_DIR"
 
         BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
         if BOOT_CD_VERSION == "":

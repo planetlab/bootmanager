@@ -52,7 +52,6 @@ def Run( vars, log ):
 
     Except the following variables from the store:
     TEMP_PATH             the path to download and store temp files to
-    CACERT_PATH           path where the cacerts on the bootcd live
     SYSIMG_PATH           the path where the system image will be mounted
                           (always starts with TEMP_PATH)
     INSTALL_LANGS         languages for install (used by rpm)
@@ -69,10 +68,6 @@ def Run( vars, log ):
         TEMP_PATH= vars["TEMP_PATH"]
         if TEMP_PATH == "":
             raise ValueError, "TEMP_PATH"
-
-        CACERT_PATH= vars["CACERT_PATH"]
-        if CACERT_PATH == "":
-            raise ValueError, "CACERT_PATH"
 
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":

@@ -18,7 +18,7 @@ def setup_lvm_2x_cd( vars, log ):
     Expect the following variables to be set:
     TEMP_PATH                somewhere to store what we need to run
     BOOT_CD_VERSION          A tuple of the current bootcd version
-    ALPINA_SERVER_DIR        directory on the boot servers containing alpina
+    SUPPORT_FILE_DIR         directory on the boot servers containing
                              scripts and support files
     LVM_SETUP_2X_CD          indicates if lvm is downloaded and setup for 2.x cds
     
@@ -36,9 +36,9 @@ def setup_lvm_2x_cd( vars, log ):
         if BOOT_CD_VERSION == "":
             raise ValueError, "BOOT_CD_VERSION"
 
-        ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
-        if ALPINA_SERVER_DIR == None:
-            raise ValueError, "ALPINA_SERVER_DIR"
+        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
+        if SUPPORT_FILE_DIR == None:
+            raise ValueError, "SUPPORT_FILE_DIR"
         
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -67,7 +67,7 @@ def setup_lvm_2x_cd( vars, log ):
     # download and extract support tarball for this step,
     # which has everything we need to successfully run
     step_support_file= "alpina-BootLVM.tar.gz"
-    source_file= "%s/%s" % (ALPINA_SERVER_DIR,step_support_file)
+    source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
     dest_file= "%s/%s" % (TEMP_PATH, step_support_file)
 
     log.write( "Downloading support file for this step\n" )
@@ -104,7 +104,7 @@ def setup_partdisks_2x_cd( vars, log ):
     Expect the following variables to be set:
     TEMP_PATH                somewhere to store what we need to run
     BOOT_CD_VERSION          A tuple of the current bootcd version
-    ALPINA_SERVER_DIR        directory on the boot servers containing alpina
+    SUPPORT_FILE_DIR         directory on the boot servers containing
                              scripts and support files
     PARTDISKS_SETUP_2X_CD    indicates if lvm is downloaded and setup for 2.x cds
     
@@ -122,9 +122,9 @@ def setup_partdisks_2x_cd( vars, log ):
         if BOOT_CD_VERSION == "":
             raise ValueError, "BOOT_CD_VERSION"
 
-        ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
-        if ALPINA_SERVER_DIR == None:
-            raise ValueError, "ALPINA_SERVER_DIR"
+        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
+        if SUPPORT_FILE_DIR == None:
+            raise ValueError, "SUPPORT_FILE_DIR"
         
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -151,7 +151,7 @@ def setup_partdisks_2x_cd( vars, log ):
     # download and extract support tarball for this step,
     # which has everything we need to successfully run
     step_support_file= "alpina-PartDisks.tar.gz"
-    source_file= "%s/%s" % (ALPINA_SERVER_DIR,step_support_file)
+    source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
     dest_file= "%s/%s" % (TEMP_PATH, step_support_file)
 
     log.write( "Downloading support file for this step\n" )

@@ -59,7 +59,6 @@ def Run( vars, log ):
     SYSIMG_DIR        the directory name of the system image
                       contained in TEMP_PATH
     PLCONF_DIR        The directory to store the configuration file in
-    ALPINA_SERVER_DIR The dir on the server where the support files are
     
     Sets the following variables:
     SYSIMG_PATH    the directory where the system image will be mounted,
@@ -81,10 +80,6 @@ def Run( vars, log ):
         PLCONF_DIR= vars["PLCONF_DIR"]
         if PLCONF_DIR == "":
             raise ValueError, "PLCONF_DIR"
-
-        ALPINA_SERVER_DIR= vars["ALPINA_SERVER_DIR"]
-        if ALPINA_SERVER_DIR == "":
-            raise ValueError, "ALPINA_SERVER_DIR"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
