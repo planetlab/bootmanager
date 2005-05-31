@@ -29,6 +29,18 @@
           <para>Initial draft.</para>
         </revdescription>
       </revision>
+
+      <revision>
+        <revnumber>1.1</revnumber>
+
+        <date>May 31, 2005</date>
+
+        <authorinitials>AK</authorinitials>
+
+        <revdescription>
+          <para>Updated post implementation and deployment.</para>
+        </revdescription>
+      </revision>
     </revhistory>
   </articleinfo>
 
@@ -49,21 +61,23 @@
       </listitem>
 
       <listitem>
-        <para>An appropriate user interface allowing administrators to create
-        node configuration files</para>
+        <para>An appropriate user interface allowing administrators to add
+        nodes and create node configuration files</para>
       </listitem>
     </itemizedlist>
 
     <para>The previous implementation of the software responsible for
     installing and booting nodes consisted of a set of boot scripts that the
-    boot cd would run, depending on the node's current boot state. The logic
-    behind which script the node was sent to the node existed on the boot
-    server in the form of PHP scripts. However, the intention with the new
-    Boot Manager system is to send the same boot manager back for all nodes,
-    in all boot states, each time the node starts. Then, the boot manager will
-    run and detiremine which operations to perform on the node, based on the
-    current boot state. There is no longer any boot state specific logic at
-    PLC.</para>
+    boot cd would download and run, depending on the node's current boot
+    state. Only the necessary script for the current state would be
+    downloaded, and the logic behind which script the node was sent to the
+    node existed on the boot server in the form of PHP scripts. However, the
+    intention with the new Boot Manager system is to send the same boot
+    manager back for all nodes, in all boot states, each time the node starts.
+    Then, the boot manager will run and detiremine which operations to perform
+    on the node, based on the current boot state. All state based logic for
+    the node boot, install, debug, and reconfigure operations are contained in
+    one place; there is no longer any boot state specific logic at PLC.</para>
   </section>
 
   <section>
@@ -107,8 +121,9 @@
           <para>value</para>
 
           <para>The authentication string, depending on method. For the 'hmac'
-          method, a hash for the call, made from the parameters of the call
-          the key contained on the configuration file.</para>
+          method, a hash for the call using the HMAC algorithm, made from the
+          parameters of the call the key contained on the configuration
+          file.</para>
         </listitem>
       </itemizedlist>
 
@@ -118,36 +133,85 @@
       call were modified in transmision and the node cannot be
       authenticated.</para>
 
-      <para>TODO: add specifics on how the hash value is produced from the
-      parameters in the API call.</para>
+      <para>Both the BootManager and the authentication software at PLC must
+      agree on a method for creating the hash values for each call. This hash
+      is essentially a finger print of the method call, and is created by this
+      algorithm:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Take the value of every part of each parameter, except the
+          authentication structure, and convert them to strings. For arrays,
+          each element is used. For dictionaries, not only is the value of all
+          the items used, but the keys themselves. Embedded types (arrays or
+          dictionaries inside arrays or dictionaries, etc), also have all
+          values extracted.</para>
+        </listitem>
+
+        <listitem>
+          <para>Alphabetically sort all the parameters.</para>
+        </listitem>
+
+        <listitem>
+          <para>Concatenate them into a single string.</para>
+        </listitem>
+
+        <listitem>
+          <para>Prepend the string with the method name.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>The resultant string is fed into the HMAC algorithm with the node
+      key, and the resultant hash value is used in the authentication
+      structure.</para>
+
+      <para>This authentication method makes a number of assumptions, detailed
+      below.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>All calls made to PLC are done over SSL, so the details of the
+          authentication structure cannot be viewed by 3rd parties. If, in the
+          future, non-SSL based calls are desired, a sequence number or some
+          other value making each call unique will would be required to
+          prevent replay attacks. In fact, the current use of SSL negates the
+          need to create and send hashes across - technically, the key itself
+          could be sent directly to PLC, assuming the connection is made to an
+          HTTPS server with a third party signed SSL certificate.</para>
+        </listitem>
+      </orderedlist>
+
+      <para></para>
     </section>
 
     <section>
       <title>PLC API Calls</title>
 
-      <para>Full technical documentation of these functions can be found in
-      the PlanetLab API documentation.</para>
+      <para>Full, up to date technical documentation of these functions can be
+      found in the PlanetLab API documentation. They are listed here for
+      completeness.</para>
 
       <itemizedlist>
         <listitem>
           <para>BootUpdateNode( authentication, update_values )</para>
 
-          <para>Update a node record, currenly only allowing the boot state to
-          change.</para>
+          <para>Update a node record, including its boot state, primary
+          network, or ssh host key.</para>
         </listitem>
 
         <listitem>
           <para>BootCheckAuthentication( authentication )</para>
 
           <para>Simply check to see if the node is recognized by the system
-          and is authorized</para>
+          and is authorized.</para>
         </listitem>
 
         <listitem>
           <para>BootGetNodeDetails( authentication )</para>
 
           <para>Return details about a node, including its state, what
-          networks the PLC database has configured for the node.</para>
+          networks the PLC database has configured for the node, and what the
+          model of the node is.</para>
         </listitem>
 
         <listitem>
@@ -156,7 +220,7 @@
 
           <para>Notify someone about an event that happened on the machine,
           and optionally include the site PIs, technical contacts, and
-          PlanetLab Support</para>
+          PlanetLab Support.</para>
         </listitem>
 
         <listitem>
@@ -178,7 +242,7 @@
 
     <itemizedlist>
       <listitem>
-        <para>Installing nodes with alpina, the PlanetLab installer</para>
+        <para>Installing the node operating system</para>
       </listitem>
 
       <listitem>
@@ -203,37 +267,39 @@
 
       <orderedlist>
         <listitem>
-          <para>'new'</para>
+          <para>'inst'</para>
 
-          <para>The boot state cooresponds to a new node that has not yet been
-          installed, but record of it does exist. When the boot manager
-          starts, and the node is in this state, the user is prompted to
-          continue with the installation. The intention here is to prevent a
-          non-PlanetLab machine (like a user's desktop machine) from becoming
-          inadvertantly wiped and installed with the PlanetLab node
+          <para>Install. The boot state cooresponds to a new node that has not
+          yet been installed, but record of it does exist. When the boot
+          manager starts, and the node is in this state, the user is prompted
+          to continue with the installation. The intention here is to prevent
+          a non-PlanetLab machine (like a user's desktop machine) from
+          becoming inadvertantly wiped and installed with the PlanetLab node
           software.</para>
         </listitem>
 
         <listitem>
-          <para>'reinstall'</para>
+          <para>'rins'</para>
 
-          <para>In this state, a node will reinstall the node software,
-          erasing anything that might have been on the disk before.</para>
+          <para>Reinstall. In this state, a node will reinstall the node
+          software, erasing anything that might have been on the disk
+          before.</para>
         </listitem>
 
         <listitem>
           <para>'boot'</para>
 
-          <para>This state cooresponds with nodes that have sucessfully
+          <para>Boot. This state cooresponds with nodes that have sucessfully
           installed, and can be chain booted to the runtime node
           kernel.</para>
         </listitem>
 
         <listitem>
-          <para>'debug'</para>
+          <para>'dbg'</para>
 
-          <para>Regardless of whether or not a machine has been installed,
-          this state sets up a node to be debugged by administrators.</para>
+          <para>Debug. Regardless of whether or not a machine has been
+          installed, this state sets up a node to be debugged by
+          administrators.</para>
         </listitem>
       </orderedlist>
     </section>
@@ -339,37 +405,51 @@ NODE_ID="121"</programlisting>
       <para>However, the Boot Manager will also need to identify the location
       of and read in the file, so it can get the extra fields not initially
       used to bring the network online (node_key and node_id). Below is the
-      search order that the boot manager will use to locate a file. If a file
-      is found in the order below, but does not match the network that has
-      already been setup, then there may be two configuration files located on
-      the same machine. In this situation, the file is skipped and searching
-      resumes.</para>
+      search order that the boot manager will use to locate a file.</para>
 
-      <para>Configuration file location search order (both file names,
-      plnode.txt and planet.cnf are search in each of these locations;
-      plnode.txt first):</para>
+      <para>Configuration file location search order:<informaltable>
+          <tgroup cols="5">
+            <tbody>
+              <row>
+                <entry>File name</entry>
 
-      <orderedlist>
-        <listitem>
-          <para>Standard floppy disk (/dev/fd0 and /dev/fd1)</para>
-        </listitem>
+                <entry>Floppy drive</entry>
 
-        <listitem>
-          <para>USB floppy disk</para>
-        </listitem>
+                <entry>Flash devices</entry>
 
-        <listitem>
-          <para>USB flash based disk</para>
-        </listitem>
+                <entry>CDRom, in /usr/boot</entry>
 
-        <listitem>
-          <para>USB cdrom</para>
-        </listitem>
+                <entry>CDRom, in /usr</entry>
+              </row>
 
-        <listitem>
-          <para>standard cdrom</para>
-        </listitem>
-      </orderedlist>
+              <row>
+                <entry>plode.txt</entry>
+
+                <entry>1</entry>
+
+                <entry>2</entry>
+
+                <entry>4</entry>
+
+                <entry>5</entry>
+              </row>
+
+              <row>
+                <entry>planet.cnf</entry>
+
+                <entry>3</entry>
+
+                <entry></entry>
+
+                <entry></entry>
+
+                <entry></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
     </section>
   </section>
 
@@ -381,23 +461,25 @@ NODE_ID="121"</programlisting>
 
       <para>New nodes are added to the system explicitly by either a PI or a
       tech contact, either directly through the API calls, or by using the
-      appropriate interfaces on the website. As nodes are added, only their
-      hostname and ip address are required to be entered. When the node is
-      brought online, the records at PLC will be updated with the remaining
-      information.</para>
+      appropriate interfaces on the website. As nodes are added, their
+      hostname, network configuration method (dhcp or static), and any static
+      settings are required to be entered. Regardless of network configuration
+      method, IP address is required. When the node is brought online, the
+      records at PLC will be updated with any remaining information.</para>
 
       <para>After a node is added, the user has the option of creating a
-      configuration file for that node. This is done automatically, and the
-      user is prompted to download and save the file. This file contains only
-      the primary network interface information (necessary to contact PLC),
-      and the per-node key.</para>
+      configuration file for that node. Once the node is added, the contents
+      of the file are created automatically, and the user is prompted to
+      download and save the file. This file contains only the primary network
+      interface information (necessary to contact PLC), the node id, and the
+      per-node key.</para>
 
-      <para>The default boot state of a new node is 'new', which requires the
+      <para>The default boot state of a new node is 'inst', which requires the
       user to confirm the installation at the node, by typing yes on the
       console. If this is not desired, as is the case with nodes in a
       co-location site, or for a large number of nodes being setup at the same
       time, the administrator can change the node state, after the entry is in
-      the PLC records, from 'new' to 'reinstall'. This will bypass the
+      the PLC records, from 'inst' to 'reinstall'. This will bypass the
       confirmation screen, and proceed directly to reinstall the machine (even
       if it already had a node installation on it).</para>
     </section>
@@ -421,16 +503,17 @@ NODE_ID="121"</programlisting>
         </listitem>
       </orderedlist>
 
-      <para>If the node ip address on the floppy does not Match the record at
-      PLC, then the node will not boot until they do match. The intention here
-      is to prevent a malicious user from taking the floppy disk, altering the
-      network settings, and trying to bring up a new machine with the new
-      settings.</para>
+      <para>If the node ip address on the floppy does not match the record at
+      PLC, then the node will not boot until they do match, as authentication
+      will fail. The intention here is to prevent a malicious user from taking
+      the floppy disk, altering the network settings, and trying to bring up a
+      new machine with the new settings.</para>
 
       <para>On the other hand, if a non-primary network address needs to be
-      updated, then simply updating the records at PLC will suffice. The boot
-      manager, at next restart, will reconfigure the machine to match the PLC
-      records.</para>
+      updated, then simply updating the record in the configuration file will
+      suffice. The boot manager, at next restart, will reconfigure the
+      machine, and update the PLC records to match the configuration
+      file.</para>
     </section>
 
     <section>
@@ -454,6 +537,267 @@ NODE_ID="121"</programlisting>
   </section>
 
   <section>
+    <title>BootManager Configuration</title>
+
+    <para>All run time configuration options for the BootManager exist in a
+    single file named 'configuration'. These values are described
+    below.</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><literal>VERSION</literal></para>
+
+        <para>The current BootManager version. During install, written out to
+        /etc/planetlab/install_version</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>BOOT_API_SERVER</literal></para>
+
+        <para>The full url of the Boot API server to contact and make API
+        calls against.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>TEMP_PATH</literal></para>
+
+        <para>A writable path on the boot cd we can use for temporary storage
+        of files.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>SYSIMG_PATH</literal></para>
+
+        <para>The path were we will mount the node logical volumes during any
+        step that requires access to the disks.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>NONCE_FILE</literal></para>
+
+        <para>The location of the nonce value that is sent to PLC when the
+        initial script to run is requested. Used only as a replace for
+        node_key when one does not exist (see Backward Compatibiltiy for more
+        information).</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>PLCONF_DIR</literal></para>
+
+        <para>The path that PlanetLab node configuration files will be created
+        in during install</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>SUPPORT_FILE_DIR</literal></para>
+
+        <para>A path on the boot server where per-step additional files may be
+        located. For example, the packages that include the tools to allow
+        older 2.x version boot cds to partition disks with LVM.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>ROOT_SIZE</literal></para>
+
+        <para>During install, this sets the size of the node root partition.
+        It must be large enough to house all the node operational software. It
+        does not store any user/slice files. Include 'G' suffix in this value,
+        indicating gigabytes.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>SWAP_SIZE</literal></para>
+
+        <para>How much swap to configure the node with during install. Include
+        'G' suffix in this value, indicating gigabytes.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>SKIP_HARDWARE_REQUIREMENT_CHECK</literal></para>
+
+        <para>Whether or not to skip any of the hardware requirement checks,
+        including total disk and memory size constraints.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>MINIMUM_MEMORY</literal></para>
+
+        <para>How much memory is required by a running PlanetLab node. If a
+        machine contains less physical memory than this value, the install
+        will not proceed.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>MINIMUM_DISK_SIZE</literal></para>
+
+        <para>The size of the small disk we are willing to attempt to use
+        during the install, in gigabytes. Do not include any suffixes.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>TOTAL_MINIMUM_DISK_SIZE</literal></para>
+
+        <para>The size of all usable disks must be at least this sizse, in
+        gigabytes. Do not include any suffixes.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>INSTALL_LANGS</literal></para>
+
+        <para>Which language support to install. This value is used by RPM,
+        and is used in writting /etc/rpm/macros before any RPMs are
+        installed.</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>NUM_AUTH_FAILURES_BEFORE_DEBUG</literal></para>
+
+        <para>How many authentication failures the BootManager is willing to
+        except for any set of calls, before stopping and putting the node into
+        a debug mode.</para>
+      </listitem>
+    </itemizedlist>
+  </section>
+
+  <section>
+    <title>Installer Hardware Detection</title>
+
+    <para>When a node is being installed, the Boot Manager must identify which
+    hardware the machine has that is applicable to a running node, and
+    configure the node properly so it can boot properly post-install. The
+    general procedure for doing so is outline in this section. It is
+    implemented in the <filename>systeminfo.py</filename> file.</para>
+
+    <para>The process for identifying which kernel module needs to be load
+    is:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Create a lookup table of all modules, and which PCI ids
+        coorespond to this module.</para>
+      </listitem>
+
+      <listitem>
+        <para>For each PCI device on the system, lookup its module in the
+        first table.</para>
+      </listitem>
+
+      <listitem>
+        <para>If a module is found, put in into one of two categories of
+        modules, either network module or scsi module, based on the PCI device
+        class.</para>
+      </listitem>
+
+      <listitem>
+        <para>For each network module, write out an 'eth&lt;index&gt;' entry
+        in the modprobe.conf configuration file.</para>
+      </listitem>
+
+      <listitem>
+        <para>For each scsi module, write out a
+        'scsi_hostadapter&lt;index&gt;' entry in the modprobe.conf
+        configuration file.</para>
+      </listitem>
+    </orderedlist>
+
+    <para>This process is fairly straight forward, and is simplified by the
+    fact that we currently do not need support for USB, sound, or video
+    devices when the node is fully running. The boot cd itself uses a similar
+    process, but includes USB devices. Consult the boot cd technical
+    documentation for more information.</para>
+
+    <para>The creation of the PCI id to kernel module table lookup uses three
+    different sources of information, and merges them together into a single
+    table for easier lookups. With these three sources of information, a
+    fairly comprehensive lookup table can be generated for the devices that
+    PlanetLab nodes need to have configured. They include:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>The installed <filename>/usr/share/hwdata/pcitable
+        </filename>file</para>
+
+        <para>Created at the time the hwdata rpm was built, this file contains
+        mappings of PCI ids to devices for a large number of devices. It is
+        not necessarily complete, and doesn't take into account the modules
+        that are actually available by the built PlanetLab kernel, which is a
+        subset of the full set available (again, PlanetLab nodes do not have a
+        use for network or video drivers, and thus are not typically
+        built).</para>
+      </listitem>
+
+      <listitem>
+        <para>From the built kernel, the <filename>modules.pcimap</filename>
+        from the <filename>/lib/modules/&lt;kernelversion&gt;/</filename>
+        directory.</para>
+
+        <para>This file is generated at the time the kernel is installed, and
+        pulls the PCI ids out of each module, for the modules list they
+        devices they support. Not all modules list all devices they sort, and
+        some contain wild cards (that match any device of a single
+        manufacturer).</para>
+      </listitem>
+
+      <listitem>
+        <para>From the built kernel, the <filename>modules.dep</filename> from
+        the <filename>/lib/modules/&lt;kernelversion&gt;/</filename>
+        directory.</para>
+
+        <para>This file is also generated at the time the kernel is installed,
+        but lists the dependencies between various modules. It is used to
+        generate a list of modules that are actually available.</para>
+      </listitem>
+    </orderedlist>
+
+    <para>It should be noted here that SATA (Serial ATA) devices have been
+    known to exist with both a PCI SCSI device class, and with a PCI IDE
+    device class. Under linux 2.6 kernels, all SATA modules need to be listed
+    in modprobe.conf under 'scsi_hostadapter' lines. This case is handled in
+    the hardware loading scripts by making the assumption that if an IDE
+    device matches a loadable module, it should be put in the modprobe.conf
+    file, as 'real' IDE drivers are all currently built into the kernel, and
+    do not need to be loaded. SATA devices that have a PCI SCSI device class
+    are easily identified.</para>
+
+    <para>It is enssential that the modprobe.conf configuration file contain
+    the correct drivers for the disks on the system, if they are present, as
+    during kernel installation the creation of the initrd (initial ramdisk)
+    which is responsible for booting the system uses this file to identify
+    which drivers to include in it. A failure to do this typically results in
+    an kernel panic at boot with a 'no init found' message.</para>
+  </section>
+
+  <section>
+    <title>Backward Compatibility</title>
+
+    <para>Given the large number of nodes in PlanetLab, and the lack of direct
+    physical access to them, the process of updating all configuration files
+    to include the new node id and node key will take a fairly significant
+    amount of time. Rather than delay deployment of the Boot Manager until all
+    machines are updated, alternative methods for aquiring these values is
+    used for existing nodes.</para>
+
+    <para>First, the node id. For any machine already part of PlanetLab, there
+    exists a record of its IP address and MAC address in PlanetLab central. To
+    get the node_id value, if it is not located in the configuration file, the
+    BootManager uses a standard HTTP POST request to a known php page on the
+    boot server, sending the IP and MAC address of the node. This php page
+    queries the PLC database, and returns a node_Id if the node is part of
+    PlanetLab, -1 otherwise.</para>
+
+    <para>Second, the node key. All Boot CDs currently in use, at the time
+    they request a script from PLC to run, send in the request a randomly
+    generated value called a boot_nonce, usually 32 bytes or larger. During
+    normal BootManager operation, this value is ignored. However, in the
+    absense of a node key, we can use this value. Although it is not as secure
+    as a typical node key (because it is not distributed through external
+    mechanisms, but is generated by the node itself), it can be used if we
+    validate that the IP address of the node making the request matches the
+    PLC record. This means that nodes behind firewalls can no longer be
+    allowed in this situation.</para>
+  </section>
+
+  <section>
     <title>Common Scenarios</title>
 
     <para>Below are common scenarios that the boot manager might encounter
@@ -464,7 +808,7 @@ NODE_ID="121"</programlisting>
       <listitem>
         <para>A configuration file from previously installed and functioning
         node is copied or moved to another machine, and the networks settings
-        are updated on it (but the key is left the same).</para>
+        are updated on it (but the key and node_id is left the same).</para>
 
         <para>Since the authentication for a node consists of matching not
         only the node id, but the primary node ip, this step will fail, and
@@ -475,11 +819,29 @@ NODE_ID="121"</programlisting>
 
       <listitem>
         <para>After a node is installed and running, the administrators
-        mistakenly remove the cd and disk.</para>
+        mistakenly remove the cd and media containing the configuration
+        file.</para>
 
         <para>The node installer clears all boot records from the disk, so the
         node will not boot. Typically, the bios will report no operating
         system.</para>
+      </listitem>
+
+      <listitem>
+        <para>A new network configuration file is generated on the website,
+        but is not put on the node.</para>
+
+        <para>Creating a new network configuration file through the PLC
+        interfaces will generate a new node key, effectively invalidating the
+        old configuration file (still in use by the machine). The next time
+        the node reboots and attempts to authentication with PLC, it will
+        fail. After two consecutive authentication failures, the node will
+        automatically put itself into debug mode. In this case, regardless of
+        the API function being called that was unable to authentication, the
+        software at PLC will automatically notify the PlanetLab
+        administrators, and the contacts at the site of the node was able to
+        be identified (usually through its IP address or node_id by searching
+        PLC records.).</para>
       </listitem>
     </itemizedlist>
   </section>
