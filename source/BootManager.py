@@ -120,16 +120,17 @@ class log:
         """
         upload the contents of the log to the server
         """
-    
-        self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_URL )
-        
-        self.OutputFile.close()
-        self.OutputFile= None
-                
-        curl_cmd= "%s -s --connect-timeout 60 --max-time 600 " \
-                  "--form log=@%s --form ifconfig=\</tmp/ifconfig %s" % \
-                  (CURL_PATH, self.OutputFilePath, UPLOAD_LOG_URL)
-        os.system( curl_cmd )
+
+        if self.OutputFile is not None:
+            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_URL )
+            
+            self.OutputFile.close()
+            self.OutputFile= None
+            
+            curl_cmd= "%s -s --connect-timeout 60 --max-time 600 " \
+                      "--form log=@%s --form ifconfig=\</tmp/ifconfig %s" % \
+                      (CURL_PATH, self.OutputFilePath, UPLOAD_LOG_URL)
+            os.system( curl_cmd )
         
     
 

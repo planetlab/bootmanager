@@ -109,6 +109,11 @@ def Run( vars, log ):
     # further use of log after Upload will only output to screen
     log.Upload()
 
+    # regardless of whether kexec works or not, we need to stop trying to
+    # run anything
+    cancel_boot_flag= "/tmp/CANCEL_BOOT"
+    utils.sysexec( "touch %s" % cancel_boot_flag, log )
+
     # on 2.x cds (2.4 kernel) for sure, we need to shutdown everything to
     # get kexec to work correctly
     
@@ -131,8 +136,21 @@ def Run( vars, log ):
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
     except IOError:
         log.write( "Couldn't load /tmp/loadedmodules to unload, continuing.\n" )
-    
-    utils.sysexec( "kexec --force --initrd=/tmp/initrd " \
-                   "--append=ramdisk_size=8192 /tmp/kernel" )
+
+    try:
+        utils.sysexec( "kexec --force --initrd=/tmp/initrd " \
+                       "--append=ramdisk_size=8192 /tmp/kernel" )
+    except BootManagerException, e:
+        # if kexec fails, we've shut the machine down to a point where nothing
+        # can run usefully anymore (network down, all modules unloaded, file
+        # systems unmounted. write out the error, and cancel the boot process
+
+        log.write( "\n\n" )
+        log.write( "-------------------------------------------------------\n" )
+        log.write( "kexec failed with the following error. Please report\n" )
+        log.write( "this problem to support@planet-lab.org.\n\n" )
+        log.write( str(e) + "\n\n" )
+        log.write( "The boot process has been canceled.\n" )
+        log.write( "-------------------------------------------------------\n\n" )
 
     return
