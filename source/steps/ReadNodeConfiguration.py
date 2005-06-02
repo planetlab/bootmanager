@@ -47,6 +47,10 @@ import socket
 import utils
 from Exceptions import *
 import BootServerRequest
+import BootAPI
+import StartDebug
+import notify_messages
+import UpdateBootStateWithPLC
 
 
 # two possible names of the configuration files
@@ -516,29 +520,50 @@ def __parse_configuration_file( vars, log, file_contents ):
     # is needed for future api calls.
 
     # at the same time, we can check to make sure that the hostname
-    # in the configuration file matches the ip address.
+    # in the configuration file matches the ip address. if it fails
+    # notify the owners
 
     hostname= NETWORK_SETTINGS['hostname'] + "." + \
               NETWORK_SETTINGS['domainname']
 
+    # set to 0 if any part of the hostname resolution check fails
+    hostname_resolve_ok= 1
+
+    # set to 0 if the above fails, and, we are using dhcp in which
+    # case we don't know the ip of this machine (without having to
+    # parse ifconfig or something). In that case, we won't be able
+    # to make api calls, so printing a message to the screen will
+    # have to suffice.
+    can_make_api_call= 1
+
     log.write( "Checking that hostname %s resolves\n" % hostname )
+
+    # try a regular dns lookup first
     try:
         resolved_node_ip= socket.gethostbyname(hostname)
     except socket.gaierror, e:
-        raise BootManagerException, \
-              "Configured node hostname does not resolve."
+        hostname_resolve_ok= 0
+        
 
     if NETWORK_SETTINGS['method'] == "dhcp":
-        NETWORK_SETTINGS['ip']= resolved_node_ip
-        node_ip= resolved_node_ip
+        if hostname_resolve_ok:
+            NETWORK_SETTINGS['ip']= resolved_node_ip
+            node_ip= resolved_node_ip
+        else:
+            can_make_api_call= 0
     else:
         node_ip= NETWORK_SETTINGS['ip']
 
-    if node_ip != resolved_node_ip:
-        log.write( "Hostname %s does not resolve to %s, but %s:\n" % \
-                   (hostname,node_ip,resolved_node_ip) )
-    else:
-        log.write( "Hostname %s resolves to %s:\n" % (hostname,node_ip) )
+    # make sure the dns lookup matches what the configuration file says
+    if hostname_resolve_ok:
+        if node_ip != resolved_node_ip:
+            log.write( "Hostname %s does not resolve to %s, but %s:\n" % \
+                       (hostname,node_ip,resolved_node_ip) )
+            hostname_resolve_ok= 0
+        else:
+            log.write( "Hostname %s correctly resolves to %s:\n" %
+                       (hostname,node_ip) )
+
 
     # 3.x cds, with a node_key on the floppy, can update their mac address
     # at plc, so get it here
@@ -556,5 +581,32 @@ def __parse_configuration_file( vars, log, file_contents ):
 
         
     vars["NETWORK_SETTINGS"]= NETWORK_SETTINGS
+
+    if not hostname_resolve_ok:
+        log.write( "Hostname does not resolve correctly, will not continue.\n" )
+
+        StartDebug.Run( vars, log )
+
+        if can_make_api_call:
+            log.write( "Notifying contacts of problem.\n" )
+
+            vars['BOOT_STATE']= 'dbg'
+            vars['STATE_CHANGE_NOTIFY']= 1
+            vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
+                                     notify_messages.MSG_HOSTNAME_NOT_RESOLVE
+            
+            UpdateBootStateWithPLC.Run( vars, log )
+                    
+        log.write( "\n\n" )
+        log.write( "The hostname and/or ip in the network configuration\n" )
+        log.write( "file do not resolve and match.\n" )
+        log.write( "Please make sure the hostname set in the network\n" )
+        log.write( "configuration file resolves to the ip also specified\n" )
+        log.write( "there.\n\n" )
+        log.write( "Debug mode is being started on this cd. When the above\n" )
+        log.write( "is corrected, reboot the machine to try again.\n" )
+        
+        raise BootManagerException, \
+              "Configured node hostname does not resolve."
     
     return 1
