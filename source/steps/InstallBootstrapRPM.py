@@ -65,6 +65,8 @@ def Run( vars, log ):
     Sets the following variables:
     TEMP_BOOTCD_PATH     where the boot cd is remounted in the temp
                          path
+    ROOT_MOUNTED         set to 1 when the the base logical volumes
+                         are mounted.
     """
 
     log.write( "\n\nStep: Install: Bootstrapping RPM.\n" )
@@ -117,6 +119,9 @@ def Run( vars, log ):
     utils.makedirs( SYSIMG_PATH + "/vservers" )
     utils.sysexec( "mount -t ext3 %s %s/vservers" % (PARTITIONS["vservers"],
                                                      SYSIMG_PATH), log )
+
+    vars['ROOT_MOUNTED']= 1
+    
 
     # download and extract support tarball for
     # this step, which has everything

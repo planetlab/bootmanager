@@ -50,7 +50,9 @@ import utils
 def Run( vars, log ):
     """
     Unitializes hardware:
-    - unmount all previously mounted partitions
+    - unmount everything mounted during install, except the
+    /dev/planetlab/root and /dev/planetlab/vservers. This includes
+    calling swapoff for /dev/planetlab/swap.
 
     Except the following variables from the store:
     TEMP_PATH         the path to download and store temp files to
@@ -58,9 +60,6 @@ def Run( vars, log ):
                       (always starts with TEMP_PATH)
     PARTITIONS        dictionary of generic part. types (root/swap)
                       and their associated devices.
-    NODE_ID           the node_id from the database for this node
-
-                      this is needed to make any requests back to the server
 
     Sets the following variables:
     None
@@ -83,10 +82,6 @@ def Run( vars, log ):
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
 
-        NODE_ID= vars["NODE_ID"]
-        if NODE_ID == "":
-            raise ValueError("NODE_ID")
-
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -107,31 +102,10 @@ def Run( vars, log ):
     log.write( "Unmounting proc.\n" )
     utils.sysexec( "umount %s/proc" % SYSIMG_PATH, log )
 
-    log.write( "Unmounting vserver partition.\n" )
-    utils.sysexec( "umount %s" % PARTITIONS["vservers"], log )
-
     log.write( "Unmounting rcfs file system in image.\n" )
     utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
-
-    log.write( "Unmounting system image.\n" )
-    utils.sysexec( "umount %s" % PARTITIONS["root"], log )
 
     log.write( "Shutting down swap\n" )
     utils.sysexec( "swapoff %s" % PARTITIONS["swap"], log )
 
-    # as one of the last steps, upload /var/log/messages if it exists
-
-    # send a notification that the install is complete
-    #action= "email"
-    #message= "installfinished"
-    #nodestate= ""
-    
-    #try:
-    #    result= utils.notifybootserver( BS_REQUEST, NODE_ID,
-    #                                         NODE_NONCE,
-    #                                         action, message, nodestate )
-    #except AlpinaError, desc:
-    #    log.write( "Unable to notify boot server of " \
-    #                   "install complete (not critical): %s" % desc )
-        
     return 1

@@ -44,19 +44,19 @@ def Run( vars, log ):
     if 'ROOT_MOUNTED' in vars.keys():
         ROOT_MOUNTED= vars['ROOT_MOUNTED']
 
-    # old cds need extra utilities to run lvm
-    if BOOT_CD_VERSION[0] == 2:
-        compatibility.setup_lvm_2x_cd( vars, log )
-        
-    # simply creating an instance of this class and listing the system
-    # block devices will make them show up so vgscan can find the planetlab
-    # volume group
-    systeminfo().get_block_device_list()
-
     # mount the root system image if we haven't already.
     # capture BootManagerExceptions during the vgscan/change and mount
     # calls, so we can return 0 instead
     if ROOT_MOUNTED == 0:
+        # old cds need extra utilities to run lvm
+        if BOOT_CD_VERSION[0] == 2:
+            compatibility.setup_lvm_2x_cd( vars, log )
+            
+        # simply creating an instance of this class and listing the system
+        # block devices will make them show up so vgscan can find the planetlab
+        # volume group
+        systeminfo().get_block_device_list()
+
         try:
             utils.sysexec( "vgscan", log )
             utils.sysexec( "vgchange -ay planetlab", log )
@@ -89,5 +89,7 @@ def Run( vars, log ):
         log.write( "Node does not appear to be installed correctly:\n" )
         log.write( "missing file /boot/ initrd-boot or kernel-boot\n" )
         return 0
+
+    log.write( "Everything appears to be ok\n" )
     
     return 1
