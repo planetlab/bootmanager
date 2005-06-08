@@ -163,7 +163,7 @@ def Run( vars, log ):
         vg_device_list = vg_device_list + " " + part_path
 
     # create an lvm volume group
-    utils.sysexec( "vgcreate -s16M planetlab %s" % vg_device_list, log)
+    utils.sysexec( "vgcreate -s32M planetlab %s" % vg_device_list, log)
 
     # create swap logical volume
     utils.sysexec( "lvcreate -L%s -nswap planetlab" % SWAP_SIZE, log )
