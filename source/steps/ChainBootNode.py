@@ -1,4 +1,5 @@
 import string
+import re
 
 from Exceptions import *
 import utils
@@ -101,10 +102,7 @@ def Run( vars, log ):
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
 
-    if BOOT_CD_VERSION[0] == 2:
-        log.write( "Unloading modules and chaining booting to new kernel.\n" )
-    else:
-        log.write( "Chaining booting to new kernel.\n" )
+    log.write( "Unloading modules and chaining booting to new kernel.\n" )
 
     # further use of log after Upload will only output to screen
     log.Upload()
@@ -114,8 +112,10 @@ def Run( vars, log ):
     cancel_boot_flag= "/tmp/CANCEL_BOOT"
     utils.sysexec( "touch %s" % cancel_boot_flag, log )
 
-    # on 2.x cds (2.4 kernel) for sure, we need to shutdown everything to
-    # get kexec to work correctly
+    # on 2.x cds (2.4 kernel) for sure, we need to shutdown everything
+    # to get kexec to work correctly. Even on 3.x cds (2.6 kernel),
+    # there are a few buggy drivers that don't disable their hardware
+    # correctly unless they are first unloaded.
     
     utils.sysexec_noerr( "ifconfig eth0 down", log )
 
@@ -133,7 +133,29 @@ def Run( vars, log ):
         for line in modules:
             module= string.strip(line)
             if module != "":
+                log.write( "Unloading %s\n" % module )
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
+
+        modules.close()
+
+        modules= file("/proc/modules", "r")
+
+        for line in modules:
+            try:
+                # Module Size UsageCount UsedBy State LoadAddress
+                parts= string.split(line)
+
+                # You can't trust usage count, especially for things
+                # like network drivers or RAID array drivers. Just try
+                # and unload a few specific modules that we know cause
+                # problems during chain boot, such as USB host
+                # controller drivers (HCDs) (PL6577).
+                # if int(parts[2]) == 0:
+                if re.search('_hcd$', parts[0]):
+                    log.write( "Unloading %s\n" % parts[0] )
+                    utils.sysexec_noerr( "modprobe -r %s" % parts[0], log )
+            except IndexError, e:
+                log.write( "Couldn't parse /proc/modules, continuing.\n" )
     except IOError:
         log.write( "Couldn't load /tmp/loadedmodules to unload, continuing.\n" )
 
