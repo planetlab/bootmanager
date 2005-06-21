@@ -43,6 +43,7 @@
 import sys, os, traceback
 import string
 import socket
+import re
 
 import utils
 from Exceptions import *
@@ -170,7 +171,7 @@ def Run( vars, log ):
         except IOError, e:
             pass
 
-        utils.sysexec_noerr( "umount /dev/fd0", log )
+        utils.sysexec_noerr( "umount %s" % mount_point, log )
         if __parse_configuration_file( vars, log, conf_file_contents):
             return 1
         else:
@@ -190,7 +191,7 @@ def Run( vars, log ):
         except IOError, e:
             pass
         
-    utils.sysexec_noerr( "umount /dev/fd0", log )
+    utils.sysexec_noerr( "umount %s" % mount_point, log )
 
 
 
@@ -219,32 +220,43 @@ def Run( vars, log ):
                 continue
 
             log.write( "Checking removable device %s\n" % device )
-        
-            # ok, try to mount it and see if we have a conf file.
-            full_device= "/dev/%s1" % device
 
-            try:
-                utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
-                               % (full_device,mount_point), log )
-            except BootManagerException, e:
-                continue
-            
-            conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
-            if os.access( conf_file_path, os.R_OK ):
+            partitions= file("/proc/partitions", "r")
+            for line in partitions:
+                if not re.search("%s[0-9]*$" % device, line):
+                    continue
+
                 try:
-                    conf_file= file(conf_file_path,"r")
-                    conf_file_contents= conf_file.read()
-                    conf_file.close()
-                except IOError, e:
-                    pass
+                    # major minor  #blocks  name
+                    parts= string.split(line)
 
-            utils.sysexec_noerr( "umount %s" % full_device, log )
-            if __parse_configuration_file( vars, log, conf_file_contents):
-                return 1
-            else:
-                raise BootManagerException("Found configuration file plnode.txt " \
-                                           "on floppy, but was unable to parse it.")
-            
+                    # ok, try to mount it and see if we have a conf file.
+                    full_device= "/dev/%s" % parts[3]
+                except IndexError, e:
+                    continue
+
+                try:
+                    utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
+                                   % (full_device,mount_point), log )
+                except BootManagerException, e:
+                    continue
+
+                conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
+                if os.access( conf_file_path, os.R_OK ):
+                    try:
+                        conf_file= file(conf_file_path,"r")
+                        conf_file_contents= conf_file.read()
+                        conf_file.close()
+                    except IOError, e:
+                        pass
+
+                utils.sysexec_noerr( "umount %s" % mount_point, log )
+                if __parse_configuration_file( vars, log, conf_file_contents):
+                    return 1
+                else:
+                    raise BootManagerException("Found configuration file plnode.txt " \
+                                               "on floppy, but was unable to parse it.")
+
 
             
     # 3. check standard floppy disk for old file name planet.cnf
