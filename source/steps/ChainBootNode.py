@@ -102,7 +102,7 @@ def Run( vars, log ):
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
 
-    log.write( "Unloading modules and chaining booting to new kernel.\n" )
+    log.write( "Unloading modules and chain booting to new kernel.\n" )
 
     # further use of log after Upload will only output to screen
     log.Upload()
@@ -137,27 +137,48 @@ def Run( vars, log ):
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
 
         modules.close()
+    except IOError:
+        log.write( "Couldn't read /tmp/loadedmodules, continuing.\n" )
 
+    try:
         modules= file("/proc/modules", "r")
+
+        # Get usage count for USB
+        usb_usage = 0
+        for line in modules:
+            try:
+                # Module Size UsageCount UsedBy State LoadAddress
+                parts= string.split(line)
+
+                if parts[0] == "usb_storage":
+                    usb_usage += int(parts[2])
+            except IndexError, e:
+                log.write( "Couldn't parse /proc/modules, continuing.\n" )
+
+        modules.seek(0)
 
         for line in modules:
             try:
                 # Module Size UsageCount UsedBy State LoadAddress
                 parts= string.split(line)
 
-                # You can't trust usage count, especially for things
+                # While we would like to remove all "unused" modules,
+                # you can't trust usage count, especially for things
                 # like network drivers or RAID array drivers. Just try
                 # and unload a few specific modules that we know cause
                 # problems during chain boot, such as USB host
                 # controller drivers (HCDs) (PL6577).
                 # if int(parts[2]) == 0:
                 if re.search('_hcd$', parts[0]):
-                    log.write( "Unloading %s\n" % parts[0] )
-                    utils.sysexec_noerr( "modprobe -r %s" % parts[0], log )
+                    if usb_usage > 0:
+                        log.write( "NOT unloading %s since USB may be in use\n" % parts[0] )
+                    else:
+                        log.write( "Unloading %s\n" % parts[0] )
+                        utils.sysexec_noerr( "modprobe -r %s" % parts[0], log )
             except IndexError, e:
                 log.write( "Couldn't parse /proc/modules, continuing.\n" )
     except IOError:
-        log.write( "Couldn't load /tmp/loadedmodules to unload, continuing.\n" )
+        log.write( "Couldn't read /proc/modules, continuing.\n" )
 
     try:
         utils.sysexec( "kexec --force --initrd=/tmp/initrd " \
