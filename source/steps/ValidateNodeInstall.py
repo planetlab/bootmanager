@@ -17,6 +17,8 @@ def Run( vars, log ):
                              (always starts with TEMP_PATH)
     BOOT_CD_VERSION          A tuple of the current bootcd version
     ROOT_MOUNTED             the node root file system is mounted
+    NODE_ID                  The db node_id for this machine
+    PLCONF_DIR               The directory to store the configuration file in
     
     Set the following variables upon successfully running:
     ROOT_MOUNTED             the node root file system is mounted
@@ -34,6 +36,14 @@ def Run( vars, log ):
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
 
+        NODE_ID= vars["NODE_ID"]
+        if NODE_ID == "":
+            raise ValueError, "NODE_ID"
+
+        PLCONF_DIR= vars["PLCONF_DIR"]
+        if PLCONF_DIR == "":
+            raise ValueError, "PLCONF_DIR"
+        
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -88,6 +98,19 @@ def Run( vars, log ):
     if not valid:
         log.write( "Node does not appear to be installed correctly:\n" )
         log.write( "missing file /boot/ initrd-boot or kernel-boot\n" )
+        return 0
+
+    # write out the node id to /etc/planetlab/node_id. if this fails, return
+    # 0, indicating the node isn't a valid install.
+    try:
+        node_id_file_path= "%s/%s/node_id" % (SYSIMG_PATH,PLCONF_DIR)
+        node_id_file= file( node_id_file_path, "w" )
+        node_id_file.write( str(NODE_ID) )
+        node_id_file.close()
+        node_id_file= None
+        log.write( "Updated /etc/planetlab/node_id" )
+    except IOError, e:
+        log.write( "Unable to write out /etc/planetlab/node_id" )
         return 0
 
     log.write( "Everything appears to be ok\n" )
