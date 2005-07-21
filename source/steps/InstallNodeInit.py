@@ -52,7 +52,8 @@ def Run( vars, log ):
     Except the following variables from the store:
     SYSIMG_PATH             the path where the system image will be mounted
     (always starts with TEMP_PATH)
-
+    NODE_ID                  The db node_id for this machine
+    
     Sets the following variables:
     None
     
@@ -65,7 +66,11 @@ def Run( vars, log ):
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
-
+        
+        NODE_ID= vars["NODE_ID"]
+        if NODE_ID == "":
+            raise ValueError, "NODE_ID"
+        
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -73,6 +78,19 @@ def Run( vars, log ):
 
 
     log.write( "Running PlanetLabConf to update any configuration files\n" )
+
+    # PlanetLabConf requires /etc/planetlab/node_id, which is normally
+    # maintained in ValidateNodeInstal. so, write out the node_id here
+    # so PlanetLabConf can run.
+    try:
+        node_id_file_path= "%s/%s/node_id" % (SYSIMG_PATH,PLCONF_DIR)
+        node_id_file= file( node_id_file_path, "w" )
+        node_id_file.write( str(NODE_ID) )
+        node_id_file.close()
+        node_id_file= None
+    except IOError, e:
+        raise BootManagerException, \
+                  "Unable to write out /etc/planetlab/node_id for PlanetLabConf"
 
     if not utils.sysexec( "chroot %s PlanetLabConf.py noscripts" %
                           SYSIMG_PATH, log ):
