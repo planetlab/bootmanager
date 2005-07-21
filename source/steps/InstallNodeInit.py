@@ -53,6 +53,7 @@ def Run( vars, log ):
     SYSIMG_PATH             the path where the system image will be mounted
     (always starts with TEMP_PATH)
     NODE_ID                  The db node_id for this machine
+    PLCONF_DIR               The directory to store the configuration file in
     
     Sets the following variables:
     None
@@ -70,6 +71,10 @@ def Run( vars, log ):
         NODE_ID= vars["NODE_ID"]
         if NODE_ID == "":
             raise ValueError, "NODE_ID"
+
+        PLCONF_DIR= vars["PLCONF_DIR"]
+        if PLCONF_DIR == "":
+            raise ValueError, "PLCONF_DIR"
         
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
