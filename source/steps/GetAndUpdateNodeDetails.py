@@ -103,7 +103,7 @@ def Run( vars, log ):
 
     # only nodes that have the node_id specified directly in the configuration
     # file can change their mac address
-    if BOOT_CD_VERSION[0] == 3 and WAS_NODE_ID_IN_CONF == 1:
+    if WAS_NODE_ID_IN_CONF == 1:
         network['mac']= NETWORK_SETTINGS['mac']
         
     network['gateway']= NETWORK_SETTINGS['gateway']
