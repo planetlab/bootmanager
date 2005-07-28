@@ -106,6 +106,9 @@ def Run( vars, log ):
                                    dns2      
                                    hostname  
                                    domainname
+
+    the mac address is read from the machine unless it exists in the
+    configuration file.
     """
 
     log.write( "\n\nStep: Reading node configuration file.\n" )
@@ -317,7 +320,9 @@ def Run( vars, log ):
 def __parse_configuration_file( vars, log, file_contents ):
     """
     parse a configuration file, set keys in var NETWORK_SETTINGS
-    in vars (see comment for function ReadNodeConfiguration)
+    in vars (see comment for function ReadNodeConfiguration). this
+    also reads the mac address from the machine if successful parsing
+    of the configuration file is completed.
     """
 
     BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
@@ -405,6 +410,10 @@ def __parse_configuration_file( vars, log, file_contents ):
             if name == "DOMAIN_NAME":
                 NETWORK_SETTINGS['domainname']= string.lower(value)
 
+            if name == "NET_DEVICE":
+                NETWORK_SETTINGS['mac']= string.upper(value)
+                
+
     except IndexError, e:
         log.write( "Unable to parse configuration file\n" )
         return 0
@@ -420,25 +429,32 @@ def __parse_configuration_file( vars, log, file_contents ):
         NETWORK_SETTINGS["dns1"]= ""
         NETWORK_SETTINGS["dns2"]= ""
 
-
     log.write("Successfully read and parsed node configuration file.\n" )
 
-    
+    # if the mac wasn't specified, read it in from the system.
+    if NETWORK_SETTINGS["mac"] == "":
+        device= "eth0"
+        mac_addr= utils.get_mac_from_interface(device)
+
+        if mac_addr is None:
+            log.write( "Could not get mac address for device eth0.\n" )
+            return 0
+
+        NETWORK_SETTINGS["mac"]= string.upper(mac_addr)
+
+        log.write( "Got mac address %s for device %s\n" %
+                   (NETWORK_SETTINGS["mac"],device) )
+        
+
+    # now, if the conf file didn't contain a node id, post the mac address
+    # to plc to get the node_id value
     if vars['NODE_ID'] is None or vars['NODE_ID'] == 0:
         log.write( "Configuration file does not contain the node_id value.\n" )
         log.write( "Querying PLC for node_id.\n" )
 
         bs_request= BootServerRequest.BootServerRequest()
-
-        try:
-            ifconfig_file= file("/tmp/ifconfig","r")
-            ifconfig= ifconfig_file.read()
-            ifconfig_file.close()
-        except IOError:
-            log.write( "Unable to read ifconfig output from /tmp/ifconfig\n" )
-            return 0
         
-        postVars= {"ifconfig" : ifconfig}
+        postVars= {"mac_addr" : NETWORK_SETTINGS["mac"]}
         result= bs_request.DownloadFile( "%s/getnodeid.php" %
                                          SUPPORT_FILE_DIR,
                                          None, postVars, 1, 1,
@@ -575,21 +591,6 @@ def __parse_configuration_file( vars, log, file_contents ):
         else:
             log.write( "Hostname %s correctly resolves to %s:\n" %
                        (hostname,node_ip) )
-
-
-    # 3.x cds, with a node_key on the floppy, can update their mac address
-    # at plc, so get it here
-    if BOOT_CD_VERSION[0] == 3 and vars['WAS_NODE_ID_IN_CONF'] == 1:
-        eth_device= "eth0"
-        try:
-            hw_addr_file= file("/sys/class/net/%s/address" % eth_device, "r")
-            hw_addr= hw_addr_file.read().strip().upper()
-            hw_addr_file.close()
-        except IOError, e:
-            raise BootmanagerException, \
-                  "could not get hw address for device %s" % eth_device
-
-        NETWORK_SETTINGS['mac']= hw_addr
 
         
     vars["NETWORK_SETTINGS"]= NETWORK_SETTINGS
