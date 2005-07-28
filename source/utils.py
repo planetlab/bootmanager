@@ -42,6 +42,10 @@
 
 import os, sys, shutil
 import popen2
+import socket
+import fcntl
+import string
+import exceptions
 
 from Exceptions import *
 
@@ -157,4 +161,33 @@ def removefile( filepath ):
         raise BootManagerException, "Unable to remove file: %s" % filepath
 
     return 1
+
+
+
+# from: http://forums.devshed.com/archive/t-51149/
+#              Ethernet-card-address-Through-Python-or-C
+
+def hexy(n):
+    return "%02x" % (ord(n))
+
+def get_mac_from_interface(ifname):
+    """
+    given a device name, like eth0, return its mac_address.
+    return None if the device doesn't exist.
+    """
+    
+    SIOCGIFHWADDR = 0x8927 # magic number
+
+    s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    ifname = string.strip(ifname)
+    ifr = ifname + '\0'*(32-len(ifname))
+
+    try:
+        r= fcntl.ioctl(s.fileno(),SIOCGIFHWADDR,ifr)
+        addr = map(hexy,r[18:24])
+        ret = (':'.join(map(str, addr)))
+    except IOError, e:
+        ret = None
+        
+    return ret
 
