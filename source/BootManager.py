@@ -86,9 +86,6 @@ class log:
                 print( "Unable to open output file for log, continuing" )
                 self.OutputFile= None
 
-        # for upload
-        os.system( "ifconfig eth0 > /tmp/ifconfig" )
-
     
     def LogEntry( self, str, inc_newline= 1, display_screen= 1 ):
         if self.OutputFile:
@@ -128,7 +125,7 @@ class log:
             self.OutputFile= None
             
             curl_cmd= "%s -s --connect-timeout 60 --max-time 600 " \
-                      "--form log=@%s --form ifconfig=\</tmp/ifconfig %s" % \
+                      "--form log=@%s %s" % \
                       (CURL_PATH, self.OutputFilePath, UPLOAD_LOG_URL)
             os.system( curl_cmd )
         
