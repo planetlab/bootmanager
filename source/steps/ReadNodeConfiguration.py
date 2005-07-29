@@ -237,7 +237,7 @@ def Run( vars, log ):
 
             partitions= file("/proc/partitions", "r")
             for line in partitions:
-                if not re.search("%s[0-9]*$" % device, line):
+                if not re.search("%s[0-9]+$" % device, line):
                     continue
 
                 try:
@@ -247,6 +247,7 @@ def Run( vars, log ):
                     # ok, try to mount it and see if we have a conf file.
                     full_device= "/dev/%s" % parts[3]
                 except IndexError, e:
+                    log.write( "Incorrect /proc/partitions line:\n%s\n" % line )
                     continue
 
                 log.write( "Mounting %s on %s\n" % (full_device,mount_point) )
@@ -254,6 +255,7 @@ def Run( vars, log ):
                     utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
                                    % (full_device,mount_point), log )
                 except BootManagerException, e:
+                    log.write( "Unable to mount, trying next partition\n" )
                     continue
 
                 conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
