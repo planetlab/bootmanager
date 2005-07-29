@@ -161,17 +161,22 @@ def Run( vars, log ):
     
     # 1. check the regular floppy device
     log.write( "Checking standard floppy disk for plnode.txt file.\n" )
-    
+
+    log.write( "Mounting /dev/fd0 on %s\n" % mount_point )
     utils.sysexec_noerr( "mount -o ro -t ext2,msdos /dev/fd0 %s " \
                          % mount_point, log )
 
     conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
+    
+    log.write( "Checking for existance of %s\n" % conf_file_path )
     if os.access( conf_file_path, os.R_OK ):
         try:
             conf_file= file(conf_file_path,"r")
             conf_file_contents= conf_file.read()
             conf_file.close()
+            log.write( "Read in contents of file %s\n" % conf_file_path )
         except IOError, e:
+            log.write( "Unable to read file %s\n" % conf_file_path )
             pass
 
         utils.sysexec_noerr( "umount %s" % mount_point, log )
@@ -186,12 +191,16 @@ def Run( vars, log ):
     # order, but do it now to save mounting/unmounting the disk twice.
     # try to parse it later...
     conf_file_path= "%s/%s" % (mount_point,OLD_CONF_FILE_NAME)
+
+    log.write( "Checking for existance of %s (used later)\n" % conf_file_path )
     if os.access( conf_file_path, os.R_OK ):
         try:
             old_conf_file= file(conf_file_path,"r")
             old_conf_file_contents= old_conf_file.read()
             old_conf_file.close()
+            log.write( "Read in contents of file %s\n" % conf_file_path )
         except IOError, e:
+            log.write( "Unable to read file %s\n" % conf_file_path )
             pass
         
     utils.sysexec_noerr( "umount %s" % mount_point, log )
@@ -208,6 +217,7 @@ def Run( vars, log ):
 
         for device in devices:
             if device[:2] != "sd":
+                log.write( "Skipping non-scsi device %s\n" % device )
                 continue
 
             # test removable
@@ -220,6 +230,7 @@ def Run( vars, log ):
                 continue
 
             if not removable:
+                log.write( "Skipping non-removable device %s\n" % device )
                 continue
 
             log.write( "Checking removable device %s\n" % device )
@@ -238,6 +249,7 @@ def Run( vars, log ):
                 except IndexError, e:
                     continue
 
+                log.write( "Mounting %s on %s\n" % (full_device,mount_point) )
                 try:
                     utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
                                    % (full_device,mount_point), log )
@@ -245,12 +257,17 @@ def Run( vars, log ):
                     continue
 
                 conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
+
+                log.write( "Checking for existance of %s\n" % conf_file_path )
                 if os.access( conf_file_path, os.R_OK ):
                     try:
                         conf_file= file(conf_file_path,"r")
                         conf_file_contents= conf_file.read()
                         conf_file.close()
+                        log.write( "Read in contents of file %s\n" % \
+                                   conf_file_path )
                     except IOError, e:
+                        log.write( "Unable to read file %s\n" % conf_file_path )
                         pass
 
                 utils.sysexec_noerr( "umount %s" % mount_point, log )
@@ -263,7 +280,8 @@ def Run( vars, log ):
 
             
     # 3. check standard floppy disk for old file name planet.cnf
-    log.write( "Checking standard floppy disk for planet.cnf file.\n" )
+    log.write( "Checking standard floppy disk for planet.cnf file " \
+               "(from earlier.\n" )
 
     if old_conf_file_contents:
         if __parse_configuration_file( vars, log, old_conf_file_contents):
@@ -277,13 +295,17 @@ def Run( vars, log ):
     log.write( "Checking /usr/boot (cd) for plnode.txt file.\n" )
     
     conf_file_path= "/usr/boot/%s" % NEW_CONF_FILE_NAME
+
+    log.write( "Checking for existance of %s\n" % conf_file_path )
     if os.access(conf_file_path,os.R_OK):
         try:
             conf_file= file(conf_file_path,"r")
             conf_file_contents= conf_file.read()
             conf_file.close()
+            log.write( "Read in contents of file %s\n" % conf_file_path )
         except IOError, e:
-            pass    
+            log.write( "Unable to read file %s\n" % conf_file_path )
+            pass
     
         if __parse_configuration_file( vars, log, conf_file_contents):            
             return 1
@@ -297,12 +319,16 @@ def Run( vars, log ):
     log.write( "Checking /usr (cd) for plnode.txt file.\n" )
     
     conf_file_path= "/usr/%s" % NEW_CONF_FILE_NAME
+
+    log.write( "Checking for existance of %s\n" % conf_file_path )
     if os.access(conf_file_path,os.R_OK):
         try:
             conf_file= file(conf_file_path,"r")
             conf_file_contents= conf_file.read()
             conf_file.close()
+            log.write( "Read in contents of file %s\n" % conf_file_path )
         except IOError, e:
+            log.write( "Unable to read file %s\n" % conf_file_path )
             pass    
     
         if __parse_configuration_file( vars, log, conf_file_contents):            
@@ -330,6 +356,7 @@ def __parse_configuration_file( vars, log, file_contents ):
     NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
     
     if file_contents is None:
+        log.write( "__parse_configuration_file called with no file contents\n" )
         return 0
     
     try:
