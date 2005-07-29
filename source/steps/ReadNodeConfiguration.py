@@ -168,7 +168,7 @@ def Run( vars, log ):
 
     conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
     
-    log.write( "Checking for existance of %s\n" % conf_file_path )
+    log.write( "Checking for existence of %s\n" % conf_file_path )
     if os.access( conf_file_path, os.R_OK ):
         try:
             conf_file= file(conf_file_path,"r")
@@ -192,7 +192,7 @@ def Run( vars, log ):
     # try to parse it later...
     conf_file_path= "%s/%s" % (mount_point,OLD_CONF_FILE_NAME)
 
-    log.write( "Checking for existance of %s (used later)\n" % conf_file_path )
+    log.write( "Checking for existence of %s (used later)\n" % conf_file_path )
     if os.access( conf_file_path, os.R_OK ):
         try:
             old_conf_file= file(conf_file_path,"r")
@@ -237,7 +237,10 @@ def Run( vars, log ):
 
             partitions= file("/proc/partitions", "r")
             for line in partitions:
-                if not re.search("%s[0-9]+$" % device, line):
+                found_file= 0
+                parsed_file= 0
+                
+                if not re.search("%s[0-9]*$" % device, line):
                     continue
 
                 try:
@@ -260,24 +263,30 @@ def Run( vars, log ):
 
                 conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
 
-                log.write( "Checking for existance of %s\n" % conf_file_path )
+                log.write( "Checking for existence of %s\n" % conf_file_path )
                 if os.access( conf_file_path, os.R_OK ):
                     try:
                         conf_file= file(conf_file_path,"r")
                         conf_file_contents= conf_file.read()
                         conf_file.close()
+                        found_file= 1
                         log.write( "Read in contents of file %s\n" % \
                                    conf_file_path )
+
+                        if __parse_configuration_file( vars, log, \
+                                                       conf_file_contents):
+                            parsed_file= 1
                     except IOError, e:
                         log.write( "Unable to read file %s\n" % conf_file_path )
-                        pass
 
                 utils.sysexec_noerr( "umount %s" % mount_point, log )
-                if __parse_configuration_file( vars, log, conf_file_contents):
-                    return 1
-                else:
-                    raise BootManagerException("Found configuration file plnode.txt " \
-                                               "on floppy, but was unable to parse it.")
+                if found_file:
+                    if parsed_file:
+                        return 1
+                    else:
+                        raise BootManagerException( \
+                            "Found configuration file plnode.txt " \
+                            "on floppy, but was unable to parse it.")
 
 
             
@@ -298,7 +307,7 @@ def Run( vars, log ):
     
     conf_file_path= "/usr/boot/%s" % NEW_CONF_FILE_NAME
 
-    log.write( "Checking for existance of %s\n" % conf_file_path )
+    log.write( "Checking for existence of %s\n" % conf_file_path )
     if os.access(conf_file_path,os.R_OK):
         try:
             conf_file= file(conf_file_path,"r")
@@ -322,7 +331,7 @@ def Run( vars, log ):
     
     conf_file_path= "/usr/%s" % NEW_CONF_FILE_NAME
 
-    log.write( "Checking for existance of %s\n" % conf_file_path )
+    log.write( "Checking for existence of %s\n" % conf_file_path )
     if os.access(conf_file_path,os.R_OK):
         try:
             conf_file= file(conf_file_path,"r")
