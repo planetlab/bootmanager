@@ -13,6 +13,9 @@ def Run( vars, log ):
     scripts based on what PLC has. Also, update any slivers on the machine
     incase their network files are out of date (primarily /etc/hosts).
 
+    Also write out /etc/planetlab/session, a random string that gets
+    a new value at every request of BootGetNodeDetails (ie, every boot)
+
     This step expects the root to be already mounted on SYSIMG_PATH.
     
     Except the following keys to be set:
@@ -21,6 +24,9 @@ def Run( vars, log ):
     ROOT_MOUNTED             the node root file system is mounted
     NETWORK_SETTINGS  A dictionary of the values from the network
                                 configuration file
+    NODE_SESSION             the unique session val set when we requested
+                             the current boot state
+    PLCONF_DIR               The directory to store PL configuration files in
     """
     
     log.write( "\n\nStep: Updating node configuration.\n" )
@@ -38,6 +44,13 @@ def Run( vars, log ):
         ROOT_MOUNTED= vars["ROOT_MOUNTED"]
         if ROOT_MOUNTED == "":
             raise ValueError, "ROOT_MOUNTED"
+
+        PLCONF_DIR= vars["PLCONF_DIR"]
+        if PLCONF_DIR == "":
+            raise ValueError, "PLCONF_DIR"
+
+        # its ok if this is blank
+        NODE_SESSION= vars["NODE_SESSION"]
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -97,5 +110,17 @@ def Run( vars, log ):
     # the update flag is there
     for base_dir in update_path_list:
         InstallBuildVServer.update_vserver_network_files(base_dir,vars,log)
-        
+
+
+    # write out the session value /etc/planetlab/session
+    try:
+        session_file_path= "%s/%s/session" % (SYSIMG_PATH,PLCONF_DIR)
+        session_file= file( session_file_path, "w" )
+        session_file.write( str(NODE_SESSION) )
+        session_file.close()
+        session_file= None
+        log.write( "Updated /etc/planetlab/session" )
+    except IOError, e:
+        log.write( "Unable to write out /etc/planetlab/session, continuing anyway" )
+    
     return

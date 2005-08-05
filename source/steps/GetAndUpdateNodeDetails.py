@@ -30,7 +30,8 @@ def Run( vars, log ):
     NETWORK_SETTINGS         A dictionary of the values of the network settings
     SKIP_HARDWARE_REQUIREMENT_CHECK     Whether or not we should skip hardware
                                         requirement checks
-                                        
+    NODE_SESSION             The session value returned from BootGetNodeDetails
+    
     Return 1 if able to contact PLC and get node info.
     Raise a BootManagerException if anything fails.
     """
@@ -69,7 +70,8 @@ def Run( vars, log ):
 
     vars['BOOT_STATE']= details['boot_state']
     vars['NODE_MODEL']= string.strip(details['model'])
-
+    vars['NODE_SESSION']= details['session']
+    
     log.write( "Successfully retrieved node record.\n" )
     log.write( "Current boot state: %s\n" % vars['BOOT_STATE'] )
     log.write( "Node make/model: %s\n" % vars['NODE_MODEL'] )
