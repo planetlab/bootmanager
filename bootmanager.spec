@@ -25,12 +25,17 @@ nodes.
 
 %build
 ./build.sh
-make -C support-files PlanetLab-Bootstrap.tar.bz2
+make -C support-files
 
 %install
 rm -rf $RPM_BUILD_ROOT
 install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
-install -D -m 644 support-files/PlanetLab-Bootstrap.tar.bz2 $RPM_BUILD_ROOT/var/www/html/boot/PlanetLab-Bootstrap.tar.bz2
+for tarball in \
+    alpina-BootLVM.tar.gz \
+    alpina-PartDisks.tar.gz \
+    PlanetLab-Bootstrap.tar.bz2 ; do
+  install -D -m 644 support-files/$tarball $RPM_BUILD_ROOT/var/www/html/boot/$tarball
+done
 
 # If run under sudo, allow user to delete the build directory
 if [ -n "$SUDO_USER" ] ; then
@@ -53,8 +58,7 @@ EOF
 
 %files
 %defattr(-,root,root,-)
-/var/www/html/boot/bootmanager.sh
-/var/www/html/boot/PlanetLab-Bootstrap.tar.bz2
+/var/www/html/boot/*
 
 %changelog
 * Fri Sep  2 2005 Mark Huang <mlhuang@cotton.CS.Princeton.EDU> - 

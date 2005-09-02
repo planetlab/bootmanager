@@ -7,10 +7,10 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005 The Trustees of Princeton University
 #
-# $Id$
+# $Id: Makefile,v 1.2 2005/09/02 19:09:33 mlhuang Exp $
 # 
 
-all:	alpina-BootLVM.tar.gz alpina-BootstrapRPM.tar.gz alpina-PartDisks.tar.gz PlanetLab-Bootstrap.tar.bz2
+all:	alpina-BootLVM.tar.gz alpina-PartDisks.tar.gz PlanetLab-Bootstrap.tar.bz2
 
 alpina-BootLVM.tar.gz:
 	./buildsupport.sh build BootLVM
