@@ -9,13 +9,37 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005 The Trustees of Princeton University
 #
-# $Id$
+# $Id: buildnode.sh,v 1.1 2005/09/02 19:09:58 mlhuang Exp $
 #
 
-# Get the URL for the production /etc/yum.conf file. XXX When MAs
-# begin deploying their own boot servers and/or code, this will have
-# to change.
-YUM_CONF=http://boot.planet-lab.org/$(curl --silent --insecure --form node_id=0 --form file=/etc/yum.conf https://boot.planet-lab.org/db/plnodeconf/getsinglefile.php)
+# Get the production /etc/yum.conf file. XXX When MAs begin deploying
+# their own boot servers and/or code, this will have to change.
+curl --silent http://boot.planet-lab.org/$(curl --silent --insecure --form node_id=0 --form file=/etc/yum.conf https://boot.planet-lab.org/db/plnodeconf/getsinglefile.php) > yum.conf
+
+# Solve the bootstrap problem by including any just built packages in
+# the yum configuration. This cooperates with the PlanetLab build
+# system.
+if [ -n "$RPM_BUILD_DIR" ] ; then
+    # Remove any [PlanetLab*] sections
+    sed -i -f - yum.conf <<EOF
+# Match lines between [PlanetLab*] and the next [*
+/\[PlanetLab.*\]/I,/^\[/{
+# Delete [PlanetLab*]
+/\[PlanetLab.*\]/Id
+# Done when we see [*
+/^\[/b
+# Otherwise delete
+d
+}
+EOF
+
+    # And replace them with a section for the RPMS that were just built
+    cat >> yum.conf <<EOF
+[Bootstrap]
+name=Bootstrap RPMS -- $(dirname $RPM_BUILD_DIR)/RPMS/
+baseurl=file://$(dirname $RPM_BUILD_DIR)/RPMS/
+EOF
+fi
 
 # Make /
 VROOT=$PWD/PlanetLab-Bootstrap
@@ -79,8 +103,8 @@ ln -sf $VROOT/etc/rpm/macros $PWD/.rpmmacros
 mkdir -p $VROOT/var/lib/rpm
 rpm --root $VROOT --initdb
 
-# glibc must be specified explicitly for the correct arch to be chosen
-yum -c $YUM_CONF --installroot=$VROOT -y install glibc yum
+# glibc must be specified explicitly for the correct arch to be chosen.
+yum -c yum.conf --installroot=$VROOT -y install glibc yum
 
 # yum will annoyingly use the /etc/yum.conf file in the --installroot
 # even if overridden with -c
@@ -94,15 +118,7 @@ rm -f $VROOT/var/run/utmp
 export PL_BOOTCD=1
 
 # Go, baby, go
-yum -c $YUM_CONF --installroot=$VROOT -y groupinstall PlanetLab
-
-# Freshen the RPM set with any just built. This does not help when a
-# completely new PlanetLab package must be installed in the reference
-# image. To work around this limitation, introduce the new package in
-# one release, then include it in the VServer yumgroup in the next.
-if [ -d $RPM_BUILD_DIR/../RPMS ] ; then
-    rpm --root $VROOT --freshen --verbose $RPM_BUILD_DIR/../RPMS/*/*.rpm
-fi
+yum -c yum.conf --installroot=$VROOT -y groupinstall PlanetLab
 
 # Remove stale RPM locks
 rm -f $VROOT/var/lib/rpm/__db*
