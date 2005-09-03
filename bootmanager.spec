@@ -16,6 +16,9 @@ Group: System Environment/Base
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
+AutoReqProv: no
+%define debug_package %{nil}
+
 %description
 The PlanetLab Boot Manager securely authenticates and boots PlanetLab
 nodes.
