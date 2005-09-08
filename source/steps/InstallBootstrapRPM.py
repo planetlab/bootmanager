@@ -126,7 +126,7 @@ def Run( vars, log ):
     # download and extract support tarball for
     # this step, which has everything
     # we need to successfully run
-    step_support_file= "alpina-BootstrapRPM.tar.bz2"
+    step_support_file= "PlanetLab-Bootstrap.tar.bz2"
     source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
     dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
 

@@ -305,7 +305,6 @@ class BootManager:
         InstallInit.Run( self.VARS, self.LOG )                    
         InstallPartitionDisks.Run( self.VARS, self.LOG )            
         InstallBootstrapRPM.Run( self.VARS, self.LOG )            
-        InstallBase.Run( self.VARS, self.LOG )            
         InstallWriteConfig.Run( self.VARS, self.LOG )
         InstallBuildVServer.Run( self.VARS, self.LOG )
         InstallNodeInit.Run( self.VARS, self.LOG )
