@@ -126,16 +126,23 @@ def Run( vars, log ):
     # download and extract support tarball for
     # this step, which has everything
     # we need to successfully run
-    step_support_file= "PlanetLab-Bootstrap.tar.bz2"
-    source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
-    dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
+    for step_support_file in [ "PlanetLab-Bootstrap.tar.bz2",
+                               "alpina-BootstrapRPM.tar.bz2" ]: 
+        source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
+        dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
 
-    # 30 is the connect timeout, 7200 is the max transfer time
-    # in seconds (2 hours)
-    log.write( "downloading %s\n" % step_support_file )
-    result= bs_request.DownloadFile( source_file, None, None,
-                                          1, 1, dest_file,
-                                          30, 7200)
+        # 30 is the connect timeout, 7200 is the max transfer time
+        # in seconds (2 hours)
+        log.write( "downloading %s\n" % step_support_file )
+        result= bs_request.DownloadFile( source_file, None, None,
+                                         1, 1, dest_file,
+                                         30, 7200)
+        if result:
+            # New bootstrap tarball contains everything necessary to
+            # boot, no need to bootstrap further.
+            vars['SKIP_INSTALL_BASE']= (step_support_file == "PlanetLab-Bootstrap.tar.bz2")
+            break
+
     if not result:
         raise BootManagerException, "Unable to download %s from server." % \
               source_file
