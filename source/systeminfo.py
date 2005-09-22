@@ -289,18 +289,18 @@ class systeminfo:
 
 
 
-    def get_system_modules( self, install_root ):
+    def get_system_modules( self, install_root, kernel_version= None ):
         """
         Return a list of kernel modules that this system requires.
         This requires access to the installed system's root
         directory, as the following files must exist and are used:
         <install_root>/usr/share/hwdata/pcitable
-        <install_root>/lib/modules/(first entry)/modules.pcimap
-        <install_root>/lib/modules/(first entry)/modules.dep
+        <install_root>/lib/modules/(first entry if kernel_version unspecified)/modules.pcimap
+        <install_root>/lib/modules/(first entry if kernel version unspecified)/modules.dep
 
-        Note, that this assumes there is only one kernel
-        that is installed. If there are more than one, then
-        only the first one in a directory listing is used.
+        If there are more than one kernels installed, and the kernel
+        version is not specified, then only the first one in
+        /lib/modules is used.
 
         Returns a dictionary, keys being the type of module:
          - scsi       MODULE_CLASS_SCSI
@@ -315,18 +315,20 @@ class systeminfo:
         """
 
         # get the kernel version we are assuming
-        try:
-            kernel_version= os.listdir( "%s/lib/modules/" % install_root )
-        except OSError, e:
-            return
+        if kernel_version is None:
+            try:
+                kernel_version= os.listdir( "%s/lib/modules/" % install_root )
+            except OSError, e:
+                return
 
-        if len(kernel_version) == 0:
-            return
+            if len(kernel_version) == 0:
+                return
 
-        if len(kernel_version) > 1:
-            print( "WARNING: We may be returning modules for the wrong kernel." )
+            if len(kernel_version) > 1:
+                print( "WARNING: We may be returning modules for the wrong kernel." )
 
-        kernel_version= kernel_version[0]
+            kernel_version= kernel_version[0]
+
         print( "Using kernel version %s" % kernel_version )
 
         # test to make sure the three files we need are present
