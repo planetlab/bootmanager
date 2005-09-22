@@ -154,8 +154,12 @@ def Run( vars, log ):
     # boot cd.
     log.write( "Writing /etc/modprobe.conf\n" )
 
+    # get the kernel version
+    initrd= os.readlink( "%s/boot/initrd-boot" % SYSIMG_PATH )
+    kernel_version= initrd.replace("initrd-", "").replace(".img", "")
+
     sysinfo= systeminfo()
-    sysmods= sysinfo.get_system_modules(SYSIMG_PATH)
+    sysmods= sysinfo.get_system_modules(SYSIMG_PATH, kernel_version)
     if sysmods is None:
         raise BootManagerException, "Unable to get list of system modules."
         
@@ -256,11 +260,10 @@ def Run( vars, log ):
         rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
         rootdev.close()
 
-    utils.sysexec( "chroot %s sh -c '" \
-                   "kernelversion=`ls /lib/modules | tail -1` && " \
-                   "rm -f /boot/initrd-$kernelversion.img && " \
-                   "mkinitrd /boot/initrd-$kernelversion.img $kernelversion'" % \
-                   SYSIMG_PATH, log )
+    # initrd set above
+    utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
+    utils.sysexec( "chroot %s mkinitrd /boot/initrd-%s.img %s" % \
+                   (SYSIMG_PATH, kernel_version, kernel_version), log )
 
     if fake_root_lvm == 1:
         utils.removefile( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) )
