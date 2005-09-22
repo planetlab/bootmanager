@@ -82,6 +82,11 @@ def Run( vars, log ):
         if CACERT_PATH == "":
             raise ValueError, "CACERT_PATH"
 
+        SKIP_INSTALL_BASE= vars["SKIP_INSTALL_BASE"]
+        if SKIP_INSTALL_BASE:
+            log.write( "Skipping base group install\n" )
+            return 1
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
