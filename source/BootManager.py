@@ -62,7 +62,7 @@ import notify_messages
 # all output is written to this file
 LOG_FILE= "/tmp/bm.log"
 CURL_PATH= "curl"
-UPLOAD_LOG_URL = "http://boot.planet-lab.org/alpina-logs/upload.php"
+
 
 # the new contents of PATH when the boot manager is running
 BIN_PATH= ('/usr/local/bin',
@@ -78,6 +78,9 @@ BIN_PATH= ('/usr/local/bin',
 class log:
 
     def __init__( self, OutputFilePath= None ):
+
+        self.UPLOAD_LOG_URL= None
+        
         if OutputFilePath:
             try:
                 self.OutputFilePath= OutputFilePath
@@ -103,7 +106,6 @@ class log:
             self.OutputFile.flush()
 
             
-
     def write( self, str ):
         """
         make log behave like a writable file object (for traceback
@@ -112,21 +114,27 @@ class log:
         self.LogEntry( str, 0, 1 )
 
 
+    def SetUploadServer( self, server ):
+        """
+        set the url we should use to upload the logs to
+        """
+        self.UPLOAD_LOG_URL = "http://%s/alpina-logs/upload.php" % server
+
     
     def Upload( self ):
         """
         upload the contents of the log to the server
         """
 
-        if self.OutputFile is not None:
-            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_URL )
+        if self.OutputFile is not None and self.UPLOAD_LOG_URL is not None:
+            self.LogEntry( "Uploading logs to %s" % self.UPLOAD_LOG_URL )
             
             self.OutputFile.close()
             self.OutputFile= None
             
             curl_cmd= "%s -s --connect-timeout 60 --max-time 600 " \
                       "--form log=@%s %s" % \
-                      (CURL_PATH, self.OutputFilePath, UPLOAD_LOG_URL)
+                      (CURL_PATH, self.OutputFilePath, self.UPLOAD_LOG_URL)
             os.system( curl_cmd )
         
     
@@ -164,7 +172,7 @@ class BootManager:
         # not sure what the current PATH is set to, replace it with what
         # we know will work with all the boot cds
         os.environ['PATH']= string.join(BIN_PATH,":")
-                   
+        
         self.CAN_RUN= 1
         
 
