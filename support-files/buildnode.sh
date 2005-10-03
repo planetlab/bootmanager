@@ -9,12 +9,12 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.1 2005/09/02 19:09:58 mlhuang Exp $
+# $Id: buildnode.sh,v 1.2 2005/09/03 21:42:07 mlhuang Exp $
 #
 
 # Get the production /etc/yum.conf file. XXX When MAs begin deploying
 # their own boot servers and/or code, this will have to change.
-curl --silent http://boot.planet-lab.org/$(curl --silent --insecure --form node_id=0 --form file=/etc/yum.conf https://boot.planet-lab.org/db/plnodeconf/getsinglefile.php) > yum.conf
+curl --silent http://boot.planet-lab.org/$(curl --silent --insecure --form node_id=1 --form file=/etc/yum.conf https://boot.planet-lab.org/db/plnodeconf/getsinglefile.php) > yum.conf
 
 # Solve the bootstrap problem by including any just built packages in
 # the yum configuration. This cooperates with the PlanetLab build
