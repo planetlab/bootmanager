@@ -58,7 +58,7 @@ def Run( vars, log ):
     # info in /usr/bootme; 3.x cds in /usr/boot
     if BOOT_CD_VERSION[0] == 2:
         try:
-            boot_server= file(V2X_BOOTCD_SERVER_FILE).read().strip()                
+            boot_server= file(V2X_BOOTCD_SERVER_FILE).readline().strip()                
         except IOError:
             raise BootManagerException, \
                   "It appears we are running on a v2.x boot cd, but could " \
