@@ -1,5 +1,5 @@
 %define name bootmanager
-%define version 3.1.9
+%define version 3.1.10
 %define release 1.planetlab%{?date:.%{date}}
 
 Vendor: PlanetLab
