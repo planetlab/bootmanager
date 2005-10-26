@@ -4,3 +4,6 @@
 /sbin/vgchange
 /sbin/vgscan
 /sbin/vgmknodes
+/sbin/vgextend
+/sbin/lvextend
+/sbin/pvdisplay
