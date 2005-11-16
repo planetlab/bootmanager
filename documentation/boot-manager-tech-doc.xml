@@ -41,6 +41,19 @@
           <para>Updated post implementation and deployment.</para>
         </revdescription>
       </revision>
+
+      <revision>
+        <revnumber>1.2</revnumber>
+
+        <date>November 16, 2005</date>
+
+        <authorinitials>AK</authorinitials>
+
+        <revdescription>
+          <para>Add section on where source code is, and other updates to make
+          it consistent with implementation.</para>
+        </revdescription>
+      </revision>
     </revhistory>
   </articleinfo>
 
@@ -57,12 +70,18 @@
       </listitem>
 
       <listitem>
-        <para>A package to be run in the boot cd environment on nodes</para>
+        <para>An API authentication mechanism used exclusively by the
+        BootManager, for the above API calls</para>
       </listitem>
 
       <listitem>
-        <para>An appropriate user interface allowing administrators to add
-        nodes and create node configuration files</para>
+        <para>A package to be run in the boot cd environment on nodes
+        containing core logic</para>
+      </listitem>
+
+      <listitem>
+        <para>A user interface allowing authorized users to add and manage
+        nodes and create node/BootManager configuration files</para>
       </listitem>
     </itemizedlist>
 
@@ -72,12 +91,22 @@
     state. Only the necessary script for the current state would be
     downloaded, and the logic behind which script the node was sent to the
     node existed on the boot server in the form of PHP scripts. However, the
-    intention with the new Boot Manager system is to send the same boot
-    manager back for all nodes, in all boot states, each time the node starts.
-    Then, the boot manager will run and detiremine which operations to perform
-    on the node, based on the current boot state. All state based logic for
-    the node boot, install, debug, and reconfigure operations are contained in
-    one place; there is no longer any boot state specific logic at PLC.</para>
+    intention with the new BootManager system is to send the same script back
+    for all nodes (consisting of the core BootManager code), in all boot
+    states, each time the node starts. Then, the boot manager will run and
+    detiremine which operations to perform on the node, based on the current
+    boot state. All state based logic for the node boot, install, debug, and
+    reconfigure operations are contained in one place; there is no longer any
+    boot state specific logic at PLC.</para>
+  </section>
+
+  <section>
+    <title>Soure Code</title>
+
+    <para>All BootManager source code is located in the repository
+    'bootmanager' on the PlanetLab CVS system. For information on how to
+    access CVS, consult the PlanetLab website. Unless otherwise noted, all
+    file references refer to this repository.</para>
   </section>
 
   <section>
@@ -93,7 +122,7 @@
       <title>Authentication</title>
 
       <para>As is done with other PLC API calls, the first parameter to all
-      Boot Manager related calls will be an authentication structure,
+      BootManager related calls will be an authentication structure,
       consisting of these named fields:</para>
 
       <itemizedlist>
@@ -122,8 +151,8 @@
 
           <para>The authentication string, depending on method. For the 'hmac'
           method, a hash for the call using the HMAC algorithm, made from the
-          parameters of the call the key contained on the configuration
-          file.</para>
+          parameters of the call the key contained on the configuration file.
+          For specifics on how this is created, see below.</para>
         </listitem>
       </itemizedlist>
 
@@ -157,9 +186,15 @@
         </listitem>
 
         <listitem>
-          <para>Prepend the string with the method name.</para>
+          <para>Prepend the string with the method name and [, and append
+          ].</para>
         </listitem>
       </orderedlist>
+
+      <para>The implementation of this algorithm is in the function
+      serialize_params in the file source/BootAPI.py. The same algorithm is
+      located in the 'plc_api' repository, in the function serialize_params in
+      the file PLC/Auth.py.</para>
 
       <para>The resultant string is fed into the HMAC algorithm with the node
       key, and the resultant hash value is used in the authentication
@@ -179,17 +214,21 @@
           could be sent directly to PLC, assuming the connection is made to an
           HTTPS server with a third party signed SSL certificate.</para>
         </listitem>
-      </orderedlist>
 
-      <para></para>
+        <listitem>
+          <para>Athough calls are done over SSL, they use the Python class
+          libary xmlrpclib, which does not do SSL certificate
+          verification.</para>
+        </listitem>
+      </orderedlist>
     </section>
 
     <section>
       <title>PLC API Calls</title>
 
       <para>Full, up to date technical documentation of these functions can be
-      found in the PlanetLab API documentation. They are listed here for
-      completeness.</para>
+      found in the PlanetLab Central API documentation. They are listed here
+      for completeness.</para>
 
       <itemizedlist>
         <listitem>
@@ -222,13 +261,6 @@
           and optionally include the site PIs, technical contacts, and
           PlanetLab Support.</para>
         </listitem>
-
-        <listitem>
-          <para>BootUpdateNodeHardware( authentication, pci_entries )</para>
-
-          <para>Send the set of hardware this node has and update the record
-          at PLC.</para>
-        </listitem>
       </itemizedlist>
     </section>
   </section>
@@ -242,7 +274,8 @@
 
     <itemizedlist>
       <listitem>
-        <para>Installing the node operating system</para>
+        <para>Configuring node hardware and installing the PlanetLab operating
+        system</para>
       </listitem>
 
       <listitem>
@@ -256,7 +289,8 @@
       </listitem>
 
       <listitem>
-        <para>Booting an already installed node</para>
+        <para>Booting an already installed node into the PlanetLab operating
+        system</para>
       </listitem>
     </itemizedlist>
 
@@ -308,7 +342,8 @@
       <title>Flow Chart</title>
 
       <para>Below is a high level flow chart of the boot manager, from the
-      time it is executed to when it exits.</para>
+      time it is executed to when it exits. This core state machine is located
+      in source/BootManager.py.</para>
 
       <para><figure>
           <title>Boot Manager Flow Chart</title>
@@ -333,6 +368,10 @@
       run. Depending on the size of these files, they may only be downloaded
       by specific steps in the flow chart in figure 1, and thus are not
       mentioned.</para>
+
+      <para>See the PlanetLab BootCD Documentation for more information about
+      the current, 3.x boot cds, how they are build, and what they provide to
+      the BootManager.</para>
     </section>
 
     <section>
@@ -404,8 +443,9 @@ NODE_ID="121"</programlisting>
 
       <para>However, the Boot Manager will also need to identify the location
       of and read in the file, so it can get the extra fields not initially
-      used to bring the network online (node_key and node_id). Below is the
-      search order that the boot manager will use to locate a file.</para>
+      used to bring the network online (primarily node_key and node_id). Below
+      is the search order that the BootManager will use to locate a
+      file.</para>
 
       <para>Configuration file location search order:<informaltable>
           <tgroup cols="5">
@@ -448,8 +488,6 @@ NODE_ID="121"</programlisting>
             </tbody>
           </tgroup>
         </informaltable></para>
-
-      <para></para>
     </section>
   </section>
 
@@ -540,7 +578,7 @@ NODE_ID="121"</programlisting>
     <title>BootManager Configuration</title>
 
     <para>All run time configuration options for the BootManager exist in a
-    single file named 'configuration'. These values are described
+    single file located at source/configuration. These values are described
     below.</para>
 
     <itemizedlist>
@@ -549,13 +587,6 @@ NODE_ID="121"</programlisting>
 
         <para>The current BootManager version. During install, written out to
         /etc/planetlab/install_version</para>
-      </listitem>
-
-      <listitem>
-        <para><literal>BOOT_API_SERVER</literal></para>
-
-        <para>The full url of the Boot API server to contact and make API
-        calls against.</para>
       </listitem>
 
       <listitem>
@@ -573,19 +604,23 @@ NODE_ID="121"</programlisting>
       </listitem>
 
       <listitem>
+        <para>CACERT_PATH</para>
+
+        <para>Variable not used anymore.</para>
+      </listitem>
+
+      <listitem>
         <para><literal>NONCE_FILE</literal></para>
 
-        <para>The location of the nonce value that is sent to PLC when the
-        initial script to run is requested. Used only as a replace for
-        node_key when one does not exist (see Backward Compatibiltiy for more
-        information).</para>
+        <para>Variable not used anymore.</para>
       </listitem>
 
       <listitem>
         <para><literal>PLCONF_DIR</literal></para>
 
         <para>The path that PlanetLab node configuration files will be created
-        in during install</para>
+        in during install. This should not be changed from /etc/planetlab, as
+        this path is assumed in other PlanetLab components.</para>
       </listitem>
 
       <listitem>
@@ -666,7 +701,7 @@ NODE_ID="121"</programlisting>
     hardware the machine has that is applicable to a running node, and
     configure the node properly so it can boot properly post-install. The
     general procedure for doing so is outline in this section. It is
-    implemented in the <filename>systeminfo.py</filename> file.</para>
+    implemented in the <filename>source/systeminfo.py</filename> file.</para>
 
     <para>The process for identifying which kernel module needs to be load
     is:</para>
@@ -800,9 +835,10 @@ NODE_ID="121"</programlisting>
   <section>
     <title>Common Scenarios</title>
 
-    <para>Below are common scenarios that the boot manager might encounter
-    that would exist outside of the documented procedures for handling nodes.
-    A full description of how they will be handled follows each.</para>
+    <para>Below are common scenarios that the BootManager might encounter that
+    would exist outside of the documented procedures for handling nodes. A
+    full description of how they will be handled by the BootManager follows
+    each.</para>
 
     <itemizedlist>
       <listitem>
