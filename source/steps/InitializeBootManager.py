@@ -11,14 +11,6 @@ import utils
 BOOT_VERSION_2X_FILE='/usr/bootme/ID'
 BOOT_VERSION_3X_FILE='/pl_version'
 
-# locations of boot server name/certificate files
-V2X_BOOTCD_SERVER_FILE = "/usr/bootme/BOOTSERVER"
-V2X_BOOTCD_SERVER_CACERT_DIR = "/usr/bootme/cacert"
-V2X_CACERT_NAME = "cacert.pem"
-    
-V3X_BOOTCD_SERVER_FILE = "/usr/boot/boot_server"
-V3X_BOOTCD_SERVER_CACERT = "/usr/boot/cacert.pem"
-
 # minimium version of the boot os we need to run, as a (major,minor) tuple
 MINIMUM_BOOT_VERSION= (2,0)
 
@@ -33,14 +25,19 @@ def Run( vars, log ):
 
     Sets the following variables:
     BOOT_CD_VERSION           A two number tuple of the boot cd version
-    MA_BOOT_SERVER            The boot server we contacted, identified from
-                              files on the boot cd.
-    MA_BOOT_SERVER_CACERT     The SSL certificate for the above server
-
     """
 
     log.write( "\n\nStep: Initializing the BootManager.\n" )
 
+    
+    log.write( "Opening connection to API server\n" )
+    try:
+        api_inst= xmlrpclib.Server( vars['BOOT_API_SERVER'], verbose=0 )
+    except KeyError, e:
+        raise BootManagerException, \
+              "configuration file does not specify API server URL"
+
+    vars['API_SERVER_INST']= api_inst
 
     if not __check_boot_version( vars, log ):
         raise BootManagerException, \
@@ -50,84 +47,6 @@ def Run( vars, log ):
                    str(vars['BOOT_CD_VERSION']) )
 
     BOOT_CD_VERSION= vars['BOOT_CD_VERSION']
-
-
-    log.write( "Identifying boot server and setting up /etc/planetlab entries" )
-
-    # need to pull the server name we contacted. 2.x cds will have the
-    # info in /usr/bootme; 3.x cds in /usr/boot
-    if BOOT_CD_VERSION[0] == 2:
-        try:
-            boot_server= file(V2X_BOOTCD_SERVER_FILE).readline().strip()                
-        except IOError:
-            raise BootManagerException, \
-                  "It appears we are running on a v2.x boot cd, but could " \
-                  "not load contacted boot server from %s" % V2X_BOOTCD_SERVER_FILE
-        
-        if boot_server == "":
-            raise BootManagerException, \
-                  "It appears we are running on a v2.x boot cd, but %s " \
-                  "appears to be blank." % V2X_BOOTCD_SERVER_FILE
-
-        cacert_file= "%s/%s/%s" % (V2X_BOOTCD_SERVER_CACERT_DIR,
-                                   boot_server, V2X_CACERT_NAME)
-
-    elif BOOT_CD_VERSION[0] == 3:
-        try:
-            boot_server= file(V3X_BOOTCD_SERVER_FILE).read().strip()                
-        except IOError:
-            raise BootManagerException, \
-                  "It appears we are running on a v3.x boot cd, but could " \
-                  "not load contacted boot server from %s" % V3X_BOOTCD_SERVER_FILE
-        
-        if boot_server == "":
-            raise BootManagerException, \
-                  "It appears we are running on a v3.x boot cd, but %s " \
-                  "appears to be blank." % V3X_BOOTCD_SERVER_FILE
-
-        cacert_file= V3X_BOOTCD_SERVER_CACERT
-
-    else:
-        raise BootManagerException, "Unknown boot cd version."
-
-    if not os.access(cacert_file, os.R_OK):
-        raise BootManagerException, \
-              "Could not find the certificate for the " \
-              "specified boot server (at %s)" % cacert_file
-
-    # tell the log instance about the boot server so it knows
-    # where to upload the logs
-    try:
-        log.SetUploadServer( self.VARS['MA_BOOT_SERVER'] )
-    except KeyError, e:
-        log.LogEntry( "configuration does not contain boot server name." )
-        return
-
-
-    # now that we have the boot server name and the location of its certificate,
-    # write out /etc/planetlab/primary_ma with this info.
-    try:
-        primary_ma_file= file("/etc/planetlab/primary_ma","w")
-        primary_ma_file.write( "MA_NAME=\"Unknown\"\n" )
-        primary_ma_file.write( "MA_BOOT_SERVER=\"%s\"\n" % boot_server )
-        primary_ma_file.write( "MA_BOOT_SERVER_CACERT=\"%s\"\n" % cacert_file )
-        primary_ma_file.close()
-        primary_ma_file= None
-    except IOError:
-        raise BootManagerException, "Unable to write out /etc/planetlab/primary_ma"
-    
-    vars['MA_BOOT_SERVER']= boot_server
-    vars['MA_BOOT_SERVER_CACRET']= cacert_file
-
-    self.Message( "Using boot server %s with certificate" %
-                  (boot_server,cacert_file) )
-
-    
-    log.write( "Opening connection to API server\n" )
-    api_server_url= "https://%s/PLCAPI/" % vars['MA_BOOT_SERVER']
-    api_inst= xmlrpclib.Server( api_server_url, verbose=0 )
-    vars['API_SERVER_INST']= api_inst
-
     
     # old cds need extra modules loaded for compaq smart array
     if BOOT_CD_VERSION[0] == 2:
