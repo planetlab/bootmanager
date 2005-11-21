@@ -67,8 +67,8 @@ def Run( vars, log ):
     these files can exist in several different locations with
     several different names. Below is the search order:
 
-    filename      floppy   flash    cd
-    plnode.txt      1        2      4 (/usr/boot), 5 (/usr)
+    filename      floppy   flash    ramdisk    cd
+    plnode.txt      1        2      4 (/)      5 (/usr/boot), 6 (/usr)
     planet.cnf      3
 
     The locations will be searched in the above order, plnode.txt
@@ -302,7 +302,30 @@ def Run( vars, log ):
                                         "on floppy, but was unable to parse it." )
 
 
-    # 4. check for plnode.txt in /usr/boot (mounted already)
+    # 4. check for plnode.txt in / (ramdisk)
+    log.write( "Checking / (ramdisk) for plnode.txt file.\n" )
+    
+    conf_file_path= "/%s" % NEW_CONF_FILE_NAME
+
+    log.write( "Checking for existence of %s\n" % conf_file_path )
+    if os.access(conf_file_path,os.R_OK):
+        try:
+            conf_file= file(conf_file_path,"r")
+            conf_file_contents= conf_file.read()
+            conf_file.close()
+            log.write( "Read in contents of file %s\n" % conf_file_path )
+        except IOError, e:
+            log.write( "Unable to read file %s\n" % conf_file_path )
+            pass
+    
+        if __parse_configuration_file( vars, log, conf_file_contents):            
+            return 1
+        else:
+            raise BootManagerException( "Found configuration file plnode.txt " \
+                                        "in /, but was unable to parse it.")
+
+    
+    # 5. check for plnode.txt in /usr/boot (mounted already)
     log.write( "Checking /usr/boot (cd) for plnode.txt file.\n" )
     
     conf_file_path= "/usr/boot/%s" % NEW_CONF_FILE_NAME
@@ -326,7 +349,7 @@ def Run( vars, log ):
 
 
 
-    # 5. check for plnode.txt in /usr (mounted already)
+    # 6. check for plnode.txt in /usr (mounted already)
     log.write( "Checking /usr (cd) for plnode.txt file.\n" )
     
     conf_file_path= "/usr/%s" % NEW_CONF_FILE_NAME
