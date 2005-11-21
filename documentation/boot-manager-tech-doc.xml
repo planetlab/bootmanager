@@ -450,7 +450,7 @@ NODE_ID="121"</programlisting>
       file.</para>
 
       <para>Configuration file location search order:<informaltable>
-          <tgroup cols="5">
+          <tgroup cols="6">
             <tbody>
               <row>
                 <entry>File name</entry>
@@ -458,6 +458,8 @@ NODE_ID="121"</programlisting>
                 <entry>Floppy drive</entry>
 
                 <entry>Flash devices</entry>
+
+                <entry>Root file system, in /</entry>
 
                 <entry>CDRom, in /usr/boot</entry>
 
@@ -474,12 +476,16 @@ NODE_ID="121"</programlisting>
                 <entry>4</entry>
 
                 <entry>5</entry>
+
+                <entry>6</entry>
               </row>
 
               <row>
                 <entry>planet.cnf</entry>
 
                 <entry>3</entry>
+
+                <entry></entry>
 
                 <entry></entry>
 
@@ -589,6 +595,13 @@ NODE_ID="121"</programlisting>
 
         <para>The current BootManager version. During install, written out to
         /etc/planetlab/install_version</para>
+      </listitem>
+
+      <listitem>
+        <para><literal>BOOT_API_SERVER</literal></para>
+
+        <para>The full URL of the API server to contact for authenticated
+        operations.</para>
       </listitem>
 
       <listitem>
