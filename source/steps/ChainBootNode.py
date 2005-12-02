@@ -180,9 +180,23 @@ def Run( vars, log ):
     except IOError:
         log.write( "Couldn't read /proc/modules, continuing.\n" )
 
+
+    kargs = "ramdisk_size=8192"
     try:
-        utils.sysexec( "kexec --force --initrd=/tmp/initrd " \
-                       "--append=ramdisk_size=8192 /tmp/kernel" )
+        kargsfb = open("/kargs.txt","r")
+        moreargs = kargsfb.readline()
+        kargsfb.close()
+        moreargs = moreargs.strip()
+        log.write( 'Parsed in "%s" kexec args from /kargs.txt\n' % moreargs )
+        kargs = kargs + " " + moreargs
+    except IOError:
+        # /kargs.txt does not exist, which is fine. Just kexec with default
+        # kargs, which is ramdisk_size=8192
+        pass 
+
+    try:
+        utils.sysexec( 'kexec --force --initrd=/tmp/initrd ' \
+                       '--append="%s" /tmp/kernel' % kargs)
     except BootManagerException, e:
         # if kexec fails, we've shut the machine down to a point where nothing
         # can run usefully anymore (network down, all modules unloaded, file
