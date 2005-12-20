@@ -4,7 +4,7 @@
 
 
 # the current version of the bootmanager
-VERSION=3.1.11
+VERSION=3.1.12
 
 
 # full url to which api server to contact
