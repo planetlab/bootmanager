@@ -359,6 +359,7 @@ def write_network_configuration( vars, log ):
         network= network_settings['network']
         netmask= network_settings['netmask']
         dns1= network_settings['dns1']
+        mac= network_settings['mac']
     except KeyError, e:
         raise BootManagerException, "Missing value %s in network settings." % str(e)
 
@@ -390,6 +391,8 @@ def write_network_configuration( vars, log ):
     else:
         eth0_file.write( "BOOTPROTO=dhcp\n" )
         eth0_file.write( "DHCP_HOSTNAME=%s\n" % hostname )
+    if mac != "":
+        eth0_file.write( "HWADDR=%s\n" % mac )
     eth0_file.write( "ONBOOT=yes\n" )
     eth0_file.write( "USERCTL=no\n" )
     eth0_file.close()
