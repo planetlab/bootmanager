@@ -18,7 +18,10 @@ def Run( vars, log ):
     SYSIMG_PATH           the path where the system image will be mounted
                           (always starts with TEMP_PATH)
     ROOT_MOUNTED          the node root file system is mounted
-
+    NODE_SESSION             the unique session val set when we requested
+                             the current boot state
+    PLCONF_DIR               The directory to store PL configuration files in
+    
     Sets the following variables:
     ROOT_MOUNTED          the node root file system is mounted
     """
@@ -34,7 +37,14 @@ def Run( vars, log ):
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
-        
+
+        PLCONF_DIR= vars["PLCONF_DIR"]
+        if PLCONF_DIR == "":
+            raise ValueError, "PLCONF_DIR"
+
+        # its ok if this is blank
+        NODE_SESSION= vars["NODE_SESSION"]
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -83,7 +93,18 @@ def Run( vars, log ):
         ssh_host_key_file= None
     except IOError, e:
         pass
-    
+
+    # write out the session value /etc/planetlab/session
+    try:
+        session_file_path= "%s/%s/session" % (SYSIMG_PATH,PLCONF_DIR)
+        session_file= file( session_file_path, "w" )
+        session_file.write( str(NODE_SESSION) )
+        session_file.close()
+        session_file= None
+        log.write( "Updated /etc/planetlab/session\n" )
+    except IOError, e:
+        log.write( "Unable to write out /etc/planetlab/session, continuing anyway\n" )
+
     update_vals= {}
     update_vals['ssh_host_key']= ssh_host_key
     BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
