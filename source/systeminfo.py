@@ -222,12 +222,6 @@ class systeminfo:
             
             device= parts[3]
 
-            # if the last char in device is a number, its
-            # a partition, and we ignore it
-            
-            if device[len(device)-1].isdigit():
-                continue
-
             dev_name= "/dev/%s" % device
             
             try:
@@ -237,6 +231,10 @@ class systeminfo:
             except ValueError, err:
                 continue
 
+            # skip and ignore any partitions
+            if minor != 0:
+                continue
+                
             gb_size= blocks/self.BLOCKS_PER_GB
             
             # parse the output of hdparm <disk> to get the readonly flag;
