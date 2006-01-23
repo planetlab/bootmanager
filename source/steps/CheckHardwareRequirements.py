@@ -194,8 +194,8 @@ def Run( vars, log ):
         (major,minor,blocks,gb_size,readonly)= install_devices[device]
         
         # if the device string starts with
-        # planetlab, ignore it (could be old lvm setup)
-        if device[:14] == "/dev/planetlab":
+        # planetlab or dm- (device mapper), ignore it (could be old lvm setup)
+        if device[:14] == "/dev/planetlab" or device[:8] == "/dev/dm-":
             del install_devices[device]
             continue
 
