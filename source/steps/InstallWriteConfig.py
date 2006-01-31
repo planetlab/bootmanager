@@ -153,42 +153,8 @@ def Run( vars, log ):
     # if the network modules are activated in a different order that the
     # boot cd.
     log.write( "Writing /etc/modprobe.conf\n" )
-
-    # get the kernel version
-    initrd= os.readlink( "%s/boot/initrd-boot" % SYSIMG_PATH )
-    kernel_version= initrd.replace("initrd-", "").replace(".img", "")
-
-    sysinfo= systeminfo()
-    sysmods= sysinfo.get_system_modules(SYSIMG_PATH, kernel_version)
-    if sysmods is None:
-        raise BootManagerException, "Unable to get list of system modules."
-        
-    eth_count= 0
-    scsi_count= 0
-
-    modulesconf_file= file("%s/etc/modprobe.conf" % SYSIMG_PATH, "w" )
-
-    for type in sysmods:
-        if type == sysinfo.MODULE_CLASS_SCSI:
-            for a_mod in sysmods[type]:
-                if scsi_count == 0:
-                    modulesconf_file.write( "alias scsi_hostadapter %s\n" %
-                                            a_mod )
-                else:
-                    modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
-                                            (scsi_count,a_mod) )
-                scsi_count= scsi_count + 1
-
-        elif type == sysinfo.MODULE_CLASS_NETWORK:
-            for a_mod in sysmods[type]:
-                modulesconf_file.write( "alias eth%d %s\n" %
-                                        (eth_count,a_mod) )
-                eth_count= eth_count + 1
-
-    modulesconf_file.close()
-    modulesconf_file= None
-
-
+    write_modprobeconf_file( vars, log )
+    
     # dump the modprobe.conf file to the log (not to screen)
     log.write( "Contents of new modprobe.conf file:\n" )
     modulesconf_file= file("%s/etc/modprobe.conf" % SYSIMG_PATH, "r" )
@@ -260,7 +226,8 @@ def Run( vars, log ):
         rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
         rootdev.close()
 
-    # initrd set above
+    initrd= os.readlink( "%s/boot/initrd-boot" % SYSIMG_PATH )
+    kernel_version= initrd.replace("initrd-", "").replace(".img", "")
     utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
     utils.sysexec( "chroot %s mkinitrd /boot/initrd-%s.img %s" % \
                    (SYSIMG_PATH, kernel_version, kernel_version), log )
@@ -417,4 +384,65 @@ def write_network_configuration( vars, log ):
         network_file.write( "GATEWAY=%s\n" % gateway )
     network_file.close()
     network_file= None
+
+
+
+def write_modprobeconf_file( vars, log ):
+    """
+    write out the system file /etc/modprobe.conf with the current
+    set of modules.
+
+    returns a tuple of the number of network driver lines and storage
+    driver lines written as (networkcount,storagecount)
+    """
+
+    # make sure we have this class loaded
+    from systeminfo import systeminfo
+    
+    try:
+        SYSIMG_PATH= vars["SYSIMG_PATH"]
+        if SYSIMG_PATH == "":
+            raise ValueError, "SYSIMG_PATH"
+
+    except KeyError, var:
+        raise BootManagerException, "Missing variable in vars: %s\n" % var
+    except ValueError, var:
+        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
+
+    
+    # get the kernel version
+    initrd= os.readlink( "%s/boot/initrd-boot" % SYSIMG_PATH )
+    kernel_version= initrd.replace("initrd-", "").replace(".img", "")
+
+    sysinfo= systeminfo()
+    sysmods= sysinfo.get_system_modules(SYSIMG_PATH, kernel_version)
+    if sysmods is None:
+        raise BootManagerException, "Unable to get list of system modules."
+        
+    eth_count= 0
+    scsi_count= 0
+
+    modulesconf_file= file("%s/etc/modprobe.conf" % SYSIMG_PATH, "w" )
+
+    for type in sysmods:
+        if type == sysinfo.MODULE_CLASS_SCSI:
+            for a_mod in sysmods[type]:
+                if scsi_count == 0:
+                    modulesconf_file.write( "alias scsi_hostadapter %s\n" %
+                                            a_mod )
+                else:
+                    modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
+                                            (scsi_count,a_mod) )
+                scsi_count= scsi_count + 1
+
+        elif type == sysinfo.MODULE_CLASS_NETWORK:
+            for a_mod in sysmods[type]:
+                modulesconf_file.write( "alias eth%d %s\n" %
+                                        (eth_count,a_mod) )
+                eth_count= eth_count + 1
+
+    modulesconf_file.close()
+    modulesconf_file= None
+
+    return (eth_count,scsi_count)
 

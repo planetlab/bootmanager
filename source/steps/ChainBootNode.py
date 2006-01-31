@@ -1,17 +1,22 @@
 import string
 import re
 
+import InstallWriteConfig
+import UpdateBootStateWithPLC
 from Exceptions import *
 import utils
 import compatibility
 from systeminfo import systeminfo
 import BootAPI
+import notify_messages
 
 
 def Run( vars, log ):
     """
     Load the kernel off of a node and boot to it.
     This step assumes the disks are mounted on SYSIMG_PATH.
+    If successful, this function will not return. If it returns, no chain
+    booting has occurred.
     
     Expect the following variables:
     BOOT_CD_VERSION       A tuple of the current bootcd version
@@ -109,6 +114,11 @@ def Run( vars, log ):
     update_vals['ssh_host_key']= ssh_host_key
     BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
 
+    # rewrite modprobe.conf in case there were any module changes
+    # from a new kernel installed.
+    log.write( "Rewriting /etc/modprobe.conf\n" )
+    (network_count,storage_count)= \
+             InstallWriteConfig.write_modprobeconf_file( vars, log )
 
     log.write( "Copying kernel and initrd for booting.\n" )
     utils.sysexec( "cp %s/boot/kernel-boot /tmp/kernel" % SYSIMG_PATH, log )
@@ -122,6 +132,20 @@ def Run( vars, log ):
 
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
+
+    # before we do the real kexec, check to see if we had any
+    # network drivers written to modprobe.conf. if not, return -1,
+    # which will cause this node to be switched to a debug state.
+    if network_count == 0:
+        log.write( "\nIt appears we don't have any network drivers. Aborting.\n" )
+        
+        vars['BOOT_STATE']= 'dbg'
+        vars['STATE_CHANGE_NOTIFY']= 1
+        vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
+                          notify_messages.MSG_NO_DETECTED_NETWORK
+        UpdateBootStateWithPLC.Run( vars, log )
+        
+        return
 
     log.write( "Unloading modules and chain booting to new kernel.\n" )
 
