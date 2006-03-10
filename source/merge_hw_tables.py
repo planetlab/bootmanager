@@ -44,186 +44,247 @@ cciss 0e11:b060 0e11:b178
 import os, sys
 import string
 
+PCI_ANY = 0xffffffffL
 
+def merge_files(modules_dep_path, modules_pcimap_path, pcitable_path):
+    """
+    merge the three files as described above, and return a dictionary.
+    keys are module names, value is a list of pci ids for that module,
+    in the form "0e11:b178"
+    """
 
-class merge_hw_tables:
-    
-    def merge_files(self, modules_dep_path, modules_pcimap_path, pcitable_path):
-        """
-        merge the three files as described above, and return a dictionary.
-        keys are module names, value is a list of pci ids for that module,
-        in the form "0e11:b178"
-        """
+    try:
+        modulesdep_file= file(modules_dep_path,"r")
+    except IOError:
+        sys.stderr.write( "Unable to open modules.dep: %s\n" %
+                          modules_dep_path )
+        return
+
+    try:
+        pcimap_file= file(modules_pcimap_path,"r")
+    except IOError:
+        sys.stderr.write( "Unable to open modules.pcimap: %s\n" %
+                          modules_pcimap_path )
+        return
+
+    try:
+        pcitable_file= file(pcitable_path,"r")
+    except IOError:
+        sys.stderr.write( "Unable to open pcitable: %s\n" %
+                          pcitable_path )
+        return
+
+    # associative array to store all matches of module -> ['vendor:device',..]
+    # entries
+    all_modules= {}
+    all_pci_ids= {}
+
+    # first step, create an associative array of all the built modules
+    for line in modulesdep_file:
+        parts= string.split(line,":")
+        if len(parts) < 2:
+            continue
+
+        full_mod_path= parts[0]
+        parts= string.split(full_mod_path,"/")
+        module= parts[len(parts)-1]
+        module_len= len(module)
+        if module[module_len-3:] == ".ko":
+            module= module[:-3]
+            all_modules[module]= []
+
+    modulesdep_file.close()
+
+    # now, parse the pcimap and add devices
+    line_num= 0
+    for line in pcimap_file:
+        line_num= line_num+1
+
+        # skip blank lines, or lines that begin with # (comments)
+        line= string.strip(line)
+        if len(line) == 0:
+            continue
+
+        if line[0] == "#":
+            continue
+
+        line_parts= string.split(line)
+        if line_parts is None or len(line_parts) != 8:
+            sys.stderr.write( "Skipping line %d in pcimap " \
+                              "(incorrect format %s)\n" % (line_num,line) )
+            continue
+
+        # first two parts are always vendor / device id
+        module= line_parts[0]
 
         try:
-            modulesdep_file= file(modules_dep_path,"r")
-        except IOError:
-            sys.stderr.write( "Unable to open modules.dep: %s\n" %
-                              modules_dep_path )
-            return
+            vendor_id= long(line_parts[1],16)
+        except ValueError, e:
+            sys.stderr.write( "Skipping line %d in %s " \
+                              "(incorrect vendor id format %s)\n" % (line_num,modules_pcimap_path,line_parts[1]))
+            continue
 
         try:
-            pcimap_file= file(modules_pcimap_path,"r")
-        except IOError:
-            sys.stderr.write( "Unable to open modules.pcimap: %s\n" %
-                              modules_pcimap_path )
-            return
+            device_id= long(line_parts[2],16)
+        except ValueError, e:
+            sys.stderr.write( "Skipping line %d in %s " \
+                              "(incorrect device id format %s)\n" % (line_num,modules_pcimap_path,line_parts[2]))
+            continue
 
         try:
-            pcitable_file= file(pcitable_path,"r")
-        except IOError:
-            sys.stderr.write( "Unable to open pcitable: %s\n" %
-                              pcitable_path )
-            return
+            subvendor_id= long(line_parts[3],16)
+        except ValueError, e:
+            sys.stderr.write( "Skipping line %d in %s " \
+                              "(incorrect subvendor id format %s)\n" % (line_num,modules_pcimap_path,line_parts[3]))
+            continue
 
+        try:
+            subdevice_id= long(line_parts[4],16)
+        except ValueError, e:
+            sys.stderr.write( "Skipping line %d in %s " \
+                              "(incorrect subdevice id format %s)\n" % (line_num,modules_pcimap_path,line_parts[4]))
+            continue
 
-        # associative array to store all matches of module -> ['vendor:device',..]
-        # entries
-        all_modules= {}
+        full_id= (vendor_id, device_id, subvendor_id, subdevice_id)
+        if not all_modules.has_key(module):
+            # normally shouldn't get here, as the list is
+            # prepopulated with all the built modules
 
-
-        # first step, create an associative array of all the built modules
-        for line in modulesdep_file:
-            parts= string.split(line,":")
-            if len(parts) < 2:
-                continue
-
-            full_mod_path= parts[0]
-            parts= string.split(full_mod_path,"/")
-            module_name= parts[len(parts)-1]
-            module_name_len= len(module_name)
-            if module_name[module_name_len-3:] == ".ko":
-                all_modules[module_name[:-3]]= []
-
-
-        # now, parse the pcimap and add devices
-        line_num= 0
-        for line in pcimap_file:
-            line_num= line_num+1
+            # XXX we probably shouldn't be doing this at all
+            all_modules[module] = [full_id]
+        else:
+            all_modules[module].append(full_id)
             
-            # skip blank lines, or lines that begin with # (comments)
-            line= string.strip(line)
-            if len(line) == 0:
-                continue
+        if all_pci_ids.has_key(full_id):
+            # conflict as there are multiple modules that support
+            # particular pci device
+            all_pci_ids[full_id].append(module)
+        else:
+            all_pci_ids[full_id]= [module]
 
-            if line[0] == "#":
-                continue
+    pcimap_file.close()
 
-            line_parts= string.split(line)
-            if line_parts is None or len(line_parts) != 8:
-                sys.stderr.write( "Skipping line %d in pcimap " \
-                                  "(incorrect format)\n" % line_num )
-                continue
+    # parse pcitable, add any more ids for the devices
+    # We make the (potentially risky) assumption that pcitable contains
+    # only unique (vendor,device,subvendor,subdevice) entries.
+    line_num= 0
+    for line in pcitable_file:
+        line_num= line_num+1
 
-            # first two parts are always vendor / device id
-            module= line_parts[0]
-            vendor_id= line_parts[1]
-            device_id= line_parts[2]
+        # skip blank lines, or lines that begin with # (comments)
+        line= string.strip(line)
+        if len(line) == 0:
+            continue
 
+        if line[0] == "#":
+            continue
 
-            # valid vendor and devices are 10 chars (0xXXXXXXXX) and begin with 0x
-            if len(vendor_id) != 10 or len(device_id) != 10:
-                sys.stderr.write( "Skipping line %d in pcimap " \
-                                  "(invalid vendor/device id length)\n" %
-                                  line_num )
-                continue
-            
-            if string.lower(vendor_id[:2]) != "0x" \
-                   or string.lower(device_id[:2]) != "0x":
-                sys.stderr.write( "Skipping line %d in pcimap " \
-                                  "(invalid vendor/device id format)\n" % line_num )
-                continue
+        line_parts= string.split(line)
+        if line_parts is None or len(line_parts) <= 2:
+            sys.stderr.write( "Skipping line %d in pcitable " \
+                              "(incorrect format 1)\n" % line_num )
+            continue
 
-            # cut down the ids, only need last 4 bytes
-            # start at 6 = (10 total chars - 4 last chars need)
-            vendor_id= string.lower(vendor_id[6:])
-            device_id= string.lower(device_id[6:])
-            
-            full_id= "%s:%s" % (vendor_id, device_id)
-            
-            if all_modules.has_key(module):
-                if full_id not in all_modules[module]:
-                    all_modules[module].append( full_id )
-            else:
-                # normally shouldn't get here, as the list is
-                # prepopulated with all the built modules
-                all_modules[module]= [full_id,]
+        # vendor id is always the first field, device the second. also,
+        # strip off first two chars (the 0x)
+        try:
+            vendor_id= long(line_parts[0],16)
+        except ValueError, e:
+            sys.stderr.write( "Skipping vendor_id %s in %s on line %d\n" \
+                              % (line_parts[0],pcitable_path,line_num))
+            continue
 
+        try:
+            device_id= long(line_parts[1],16)
+        except ValueError, e:
+            sys.stderr.write( "Skipping device %s in %s on line %d\n" \
+                              % (line_parts[1],pcitable_path,line_num))
+            continue
 
-        # parse pcitable, add any more ids for the devices
-        line_num= 0
-        for line in pcitable_file:
-            line_num= line_num+1
-            
-            # skip blank lines, or lines that begin with # (comments)
-            line= string.strip(line)
-            if len(line) == 0:
-                continue
+        # if the first char of the third field is a double
+        # quote, the third field is a module, else if the first
+        # char of the third field is a 0 (zero), the fifth field is
+        # the module name. it would nice if there was any easy way
+        # to split a string on spaces, but recognize quoted strings,
+        # so they wouldn't be split up. that is the reason for this wierd check
+        if line_parts[2][0] == '"':
+            module= line_parts[2]
 
-            if line[0] == "#":
-                continue
-
-            line_parts= string.split(line)
-            if line_parts is None or len(line_parts) <= 2:
+            subvendor_id=PCI_ANY
+            subdevice_id=PCI_ANY
+        elif line_parts[2][0] == '0':
+            try:
+                module= line_parts[4]
+            except ValueError, e:
                 sys.stderr.write( "Skipping line %d in pcitable " \
-                                  "(incorrect format 1)\n" % line_num )
+                                  "(incorrect format 2)\n" % line_num )
                 continue
-
-            # vendor id is always the first field, device the second. also,
-            # strip off first two chars (the 0x)
-            vendor_id= string.lower(line_parts[0][2:])
-            device_id= string.lower(line_parts[1][2:])
-            
-            full_id= "%s:%s" % (vendor_id, device_id)
-            
-            # if the first char of the third field is a double
-            # quote, the third field is a module, else if the first
-            # char of the third field is a 0 (zero), the fifth field is
-            # the module name. it would nice if there was any easy way
-            # to split a string on spaces, but recognize quoted strings,
-            # so they wouldn't be split up. that is the reason for this wierd check
-            if line_parts[2][0] == '"':
-                module= line_parts[2]
-            elif line_parts[2][0] == '0':
-                try:
-                    module= line_parts[4]
-                except ValueError, e:
-                    sys.stderr.write( "Skipping line %d in pcitable " \
-                                      "(incorrect format 2)\n" % line_num )
-                    continue
-            else:
+            try:
+                subvendor_id= long(line_parts[2],16)
+            except ValueError, e:
                 sys.stderr.write( "Skipping line %d in pcitable " \
-                                  "(incorrect format 3)\n" % line_num )
+                                  "(incorrect format 2a)\n" % line_num )
                 continue
-
-            # remove the first and last char of module (quote marks)
-            module= module[1:]
-            module= module[:len(module)-1]
             
-            # now add it if we don't already have this module -> id mapping
-            if all_modules.has_key(module):
-                if full_id not in all_modules[module]:
-                    all_modules[module].append( full_id )
-            else:
-                # don't add any modules from pcitable that we don't
-                # already know about
-                pass
+            try:
+                subdevice_id= long(line_parts[3],16)
+            except ValueError, e:
+                sys.stderr.write( "Skipping line %d in pcitable " \
+                                  "(incorrect format 2b)\n" % line_num )
 
-        pcitable_file.close()
-        pcimap_file.close()
-        modulesdep_file.close()
+        else:
+            sys.stderr.write( "Skipping line %d in pcitable " \
+                              "(incorrect format 3)\n" % line_num )
+            continue
 
-        return all_modules
-    
+        # remove the first and last char of module (quote marks)
+        module= module[1:]
+        module= module[:len(module)-1]
 
+        full_id= (vendor_id, device_id, subvendor_id, subdevice_id)
+
+        if not all_modules.has_key(module):
+            # Do not process any modules listed in pcitable for which
+            # we do not have a prebuilt module.
+            continue
+
+        if not full_id in all_modules[module]:
+            all_modules[module].append(full_id)
+
+        if all_pci_ids.has_key(full_id):
+            if not module in all_pci_ids[full_id]:
+                all_pci_ids[full_id].append(module)
+            
+            # check if there are duplicate mappings between modules
+            # and full_ids
+            if len(all_pci_ids[full_id])>1:
+                # collect the set of modules that are different than what
+                # is listed in the pcitables file
+                other_modules = []
+                for other_module in all_pci_ids[full_id]:
+                    if other_module != module:
+                        other_modules.append(other_module)
+
+                # remove full_id from the set of other modules in all_modules {}
+                for other_module in other_modules:
+                    all_modules[other_module].remove(full_id)
+
+                # ensure that there is only one full_id -> module 
+                all_pci_ids[full_id] = [module]
+
+        else:
+            all_pci_ids[full_id] = [module]
+                
+    pcitable_file.close()
+
+    return (all_pci_ids,all_modules)
 
 if __name__ == "__main__":
     def usage():
         print( "\nUsage:" )
-        print( "rewrite-pcitable.py <modules.dep> <modules.pcimap> " \
-               "<pcitable> [<output>]" )
+        print( "%s <modules.dep> <modules.pcimap> " \
+               "<pcitable> [<output>]" % sys.argv[0] )
         print( "" )
-
         
     if len(sys.argv) < 4:
         usage()
@@ -241,15 +302,17 @@ if __name__ == "__main__":
         output_file= sys.stdout
 
 
-    all_modules= merge_hw_tables().merge_files( sys.argv[1], sys.argv[2],
-                                                sys.argv[3] )
-
+    (all_pci_ids,all_modules)=merge_files( sys.argv[1],
+                                           sys.argv[2],
+                                           sys.argv[3] )
     if all_modules is not None:
         for module in all_modules.keys():
-            devices= all_modules[module]
-            if len(devices) > 0:
-                devices_str= string.join( all_modules[module], " " )
-                output_file.write( "%s %s\n" % (module,devices_str) )
+            pci_ids = all_modules[module]
+            if len(pci_ids)>0:
+                output_file.write("%s" % module)
+                for pci_id in pci_ids:
+                    output_file.write(" %x:%x:%x:%x" % pci_id)
+                output_file.write(" \n")
     else:
         sys.stderr.write( "Unable to list modules.\n" )
 
