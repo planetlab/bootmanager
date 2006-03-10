@@ -64,7 +64,7 @@
 import string
 import os
 import popen2
-from merge_hw_tables import merge_hw_tables
+import merge_hw_tables
 
 
 class systeminfo:
@@ -343,14 +343,12 @@ class systeminfo:
 
         # now, with those three files, merge them all into one easy to
         # use lookup table
-        all_modules= merge_hw_tables().merge_files( modules_dep_path,
-                                                    modules_pcimap_path,
-                                                    pcitable_path )
-
+        (all_pci_ids, all_modules) = merge_hw_tables.merge_files( modules_dep_path,
+                                                                  modules_pcimap_path,
+                                                                  pcitable_path )
         if all_modules is None:
             print( "Unable to merge pci id tables." )
             return
-
 
         # this is the actual data structure we return
         system_mods= {}
@@ -381,8 +379,6 @@ class systeminfo:
 
             try:
                 classid= self.remove_quotes(parts[2])
-                vendorid= self.remove_quotes(parts[3])
-                deviceid= self.remove_quotes(parts[4])
             except IndexError:
                 print( "Skipping invalid line:", string.strip(line) )
                 continue
@@ -392,18 +388,78 @@ class systeminfo:
                                self.PCI_CLASS_RAID2,
                                self.PCI_CLASS_IDE):
                 continue
-            
-            full_deviceid= "%s:%s" % (vendorid,deviceid)
 
-            for module in all_modules.keys():
-                if full_deviceid in all_modules[module]:
-                    if classid == self.PCI_CLASS_NETWORK:
-                        network_mods.append(module)
-                    elif classid in (self.PCI_CLASS_RAID,
-                                     self.PCI_CLASS_RAID2,
-                                     self.PCI_CLASS_IDE):
-                        scsi_mods.append(module)
-                        
+            try:
+                vendorid= self.remove_quotes(parts[3])
+                vendorid= long(vendorid,16)
+                deviceid= self.remove_quotes(parts[4])
+                deviceid= long(deviceid,16)
+            except IndexError:
+                print( "Skipping invalid line:", string.strip(line) )
+                continue
+            except ValueError, e:
+                print( "Skipping invalid line:", string.strip(line) )
+                continue
+
+
+            # full device id with subvednor & subdevice set to ANY
+            PCI_ANY = 0xffffffffL
+            full_id= (vendorid,deviceid,PCI_ANY,PCI_ANY)
+            module = all_pci_ids.get(full_id, None)
+            if module is None:
+                # continue searching parts[5:] for module with
+                # subvendor first and then subdevice
+                subvendorindex = -1
+                subdeviceindex = -1
+                for i in range(5,len(parts)):
+                    p = self.remove_quotes(parts[i])
+                    if p[0] != '-':
+                        subvendorindex = i
+                        break
+
+                if subvendorindex != -1:
+                    try:
+                        subvendorid= self.remove_quotes(parts[subvendorindex])
+                        subvendorid= long(subvendorid,16)
+                    except IndexError:
+                        print( "Skipping invalid line:", string.strip(line) )
+                        continue
+                    except ValueError, e:
+                        print( "Skipping invalid line:", string.strip(line) )
+                        continue
+
+                    full_id=(vendorid,deviceid,subvendorid,PCI_ANY)
+                    module = all_pci_ids.get(full_id, None)
+                    if module is None:
+                        for i in range(subvendorindex+1,len(parts)):
+                            p = self.remove_quotes(parts[i])
+                            if p[0] != '-':
+                                subdeviceindex = i
+                                break
+
+                        if subdeviceindex != -1:
+                            try:
+                                subdeviceid= self.remove_quotes(parts[subdeviceindex])
+                                subdeviceid= long(subdeviceid,16)
+                            except IndexError:
+                                print( "Skipping invalid line:", string.strip(line) )
+                                continue
+                            except ValueError, e:
+                                print( "Skipping invalid line:", string.strip(line) )
+                                continue
+                            
+                            full_id= (vendorid,deviceid,subvendorid,subdeviceid)
+                            module = all_pci_ids.get(full_id, None)
+                            if module is None:
+                                continue
+
+            if classid == self.PCI_CLASS_NETWORK:
+                network_mods.append(module[0])
+            elif classid in (self.PCI_CLASS_RAID,
+                             self.PCI_CLASS_RAID2,
+                             self.PCI_CLASS_IDE):
+                scsi_mods.append(module[0])
+
         system_mods[self.MODULE_CLASS_SCSI]= scsi_mods
         system_mods[self.MODULE_CLASS_NETWORK]= network_mods
         
@@ -445,7 +501,13 @@ if __name__ == "__main__":
         
 
     print ""
-    modules= info.get_system_modules("/")
+
+    import sys
+    kernel_version = None
+    if len(sys.argv) > 2:
+        kernel_version = sys.argv[1]
+        
+    modules= info.get_system_modules("/",kernel_version)
     if not modules:
         print "unable to list system modules"
     else:
