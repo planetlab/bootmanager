@@ -387,7 +387,7 @@ def write_network_configuration( vars, log ):
 
 
 
-def write_modprobeconf_file( vars, log ):
+def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
     """
     write out the system file /etc/modprobe.conf with the current
     set of modules.
@@ -422,7 +422,7 @@ def write_modprobeconf_file( vars, log ):
     eth_count= 0
     scsi_count= 0
 
-    modulesconf_file= file("%s/etc/modprobe.conf" % SYSIMG_PATH, "w" )
+    modulesconf_file= file("%s/%s" % (SYSIMG_PATH,filename), "w" )
 
     for type in sysmods:
         if type == sysinfo.MODULE_CLASS_SCSI:
