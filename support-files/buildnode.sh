@@ -9,7 +9,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.2 2005/09/03 21:42:07 mlhuang Exp $
+# $Id: buildnode.sh,v 1.3 2005/10/03 14:34:58 mlhuang Exp $
 #
 
 # Get the production /etc/yum.conf file. XXX When MAs begin deploying
@@ -34,6 +34,7 @@ d
 EOF
 
     # And replace them with a section for the RPMS that were just built
+    yum-arch $(dirname $RPM_BUILD_DIR)/RPMS
     cat >> yum.conf <<EOF
 [Bootstrap]
 name=Bootstrap RPMS -- $(dirname $RPM_BUILD_DIR)/RPMS/
