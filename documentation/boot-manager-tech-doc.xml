@@ -86,17 +86,13 @@
     <title>Components</title>
 
     <para>The entire BootManager system consists of several primary
-    components. These consist of:</para>
+    components. These are:</para>
 
     <itemizedlist>
       <listitem>
         <para>The existing, stardard MA provided calls to allow principals to
-        add and manage node records</para>
-      </listitem>
-
-      <listitem>
-        <para>New MA API calls, for use by principals, to generate
-        node-specific configuration files</para>
+        add and manage node records, and a new call to generate node-specific
+        configuration files</para>
       </listitem>
 
       <listitem>
@@ -111,12 +107,12 @@
     </itemizedlist>
 
     <para>The intention with the BootManager system is to send the same script
-    back for all nodes (consisting of the core BootManager code), in all boot
-    states, each time the node starts. Then, the BootManager will run and
-    detiremine which operations to perform on the node, based on the current
-    boot state. All state based logic for the node boot, install, debug, and
-    reconfigure operations are contained in one place; there is no boot state
-    specific logic located on the MA servers.</para>
+    to all nodes (consisting of the core BootManager code), each time the node
+    starts. Then, the BootManager will run and detiremine which operations to
+    perform on the node, based on its state of installation. All state based
+    logic for the node boot, install, debug, and reconfigure operations are
+    contained in one place; there is no boot state specific logic located on
+    the MA servers.</para>
   </section>
 
   <section>
@@ -129,10 +125,10 @@
   </section>
 
   <section>
-    <title> Management Authority Node Fields</title>
+    <title>Management Authority Node Fields</title>
 
-    <para>The following fields MA database fields are directly applicable to
-    the BootManager operation, and to the node-related API calls (detailed
+    <para>The following MA database fields are directly applicable to the
+    BootManager operation, and to the node-related API calls (detailed
     below).</para>
 
     <section>
@@ -167,10 +163,10 @@
           <para>'inst'</para>
 
           <para>Install. The boot state cooresponds to a new node that has not
-          yet been installed, but record of it does exist. When the boot
-          manager starts, and the node is in this state, the user is prompted
-          to continue with the installation. The intention here is to prevent
-          a non-PlanetLab machine (like a user's desktop machine) from
+          yet been installed, but record of it does exist. When the
+          BootManager starts, and the node is in this state, the user is
+          prompted to continue with the installation. The intention here is to
+          prevent a non-PlanetLab machine (like a user's desktop machine) from
           becoming inadvertantly wiped and installed with the PlanetLab node
           software. This is the default state for new nodes.</para>
         </listitem>
@@ -186,9 +182,9 @@
         <listitem>
           <para>'boot'</para>
 
-          <para>Boot. This state cooresponds with nodes that have sucessfully
-          installed, and can be chain booted to the runtime node
-          kernel.</para>
+          <para>Boot to bring a node online. This state cooresponds with nodes
+          that have sucessfully installed, and can be chain booted to the
+          runtime node kernel.</para>
         </listitem>
 
         <listitem>
@@ -196,7 +192,8 @@
 
           <para>Debug. Regardless of whether or not a machine has been
           installed, this state sets up a node to be debugged by
-          administrators.</para>
+          administrators. In debug mode, no node software is running, and the
+          node can be accessed remotely by administrators.</para>
         </listitem>
       </orderedlist>
     </section>
@@ -206,7 +203,7 @@
     <title>Existing Management Authority API Calls</title>
 
     <para>These calls, take from the PlanetLab Core Specification and extended
-    with additional parameters, are used by Principals to maintain the set of
+    with additional parameters, are used by principals to maintain the set of
     nodes managed by a MA. See the Core Specification for more information.
     The MA may provide an easy to use interface, such as a web interface, that
     calls these directly.</para>
@@ -215,9 +212,9 @@
         <listitem>
           <para>AddNode( authentication, node_values )</para>
 
-          <para>Add a new node record. node_values contains hostname,
-          ipaddress, and the new fields: boot_state. The resultant node_id is
-          returned.</para>
+          <para>Add a new node record. node_values contains hostname, ip
+          address and other network settings, and the new fields: boot_state.
+          The resultant node_id is returned.</para>
         </listitem>
 
         <listitem>
@@ -277,8 +274,8 @@
 
           <para>The authentication string, depending on method. For the 'hmac'
           method, a hash for the call using the HMAC algorithm, made from the
-          parameters of the call the key contained on the configuration file.
-          For specifics on how this is created, see below.</para>
+          parameters of the call and the key contained on the configuration
+          file. For specifics on how this is created, see below.</para>
         </listitem>
       </itemizedlist>
 
@@ -338,7 +335,8 @@
           prevent replay attacks. In fact, the current use of SSL negates the
           need to create and send hashes across - technically, the key itself
           could be sent directly to the MA, assuming the connection is made to
-          an HTTPS server with a third party signed SSL certificate.</para>
+          an HTTPS server with a third party signed SSL certificate being
+          verified.</para>
         </listitem>
 
         <listitem>
@@ -383,8 +381,8 @@
           include_tech, include_support )</para>
 
           <para>Notify someone about an event that happened on the machine,
-          and optionally include the site PIs, technical contacts, and
-          PlanetLab Support.</para>
+          and optionally include the site Principal Investigators, technical
+          contacts, and PlanetLab Support.</para>
         </listitem>
       </itemizedlist>
 
@@ -399,8 +397,8 @@
             <para>Generate a configuration file to be used by the BootManager
             and the BootCD to configure the network for the node during boot.
             This resultant file also contains the node_id and node_key values.
-            A new node_key is generated each time. The full contents and
-            format of this file is detailed below.</para>
+            A new node_key is generated each time, invalidating old files. The
+            full contents and format of this file is detailed below.</para>
           </listitem>
         </itemizedlist></para>
     </section>
@@ -472,8 +470,6 @@
             </imageobject>
           </mediaobject>
         </figure></para>
-
-      <para></para>
     </section>
 
     <section>
