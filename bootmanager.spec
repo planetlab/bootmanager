@@ -1,5 +1,5 @@
 %define name bootmanager
-%define version 3.1.10
+%define version 3.1.15
 %define release 1%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
 Vendor: PlanetLab
