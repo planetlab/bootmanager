@@ -1,6 +1,6 @@
 %define name bootmanager
 %define version 3.1.15
-%define release 1%{?pldistro:.%{pldistro}}%{?date:.%{date}}
+%define release 2%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
 Vendor: PlanetLab
 Packager: PlanetLab Central <support@planet-lab.org>
@@ -16,6 +16,8 @@ Group: System Environment/Base
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
+Requires: tar, gnupg, sharutils, bzip2
+
 AutoReqProv: no
 %define debug_package %{nil}
 
@@ -27,30 +29,44 @@ nodes.
 %setup -q
 
 %build
+pushd bootmanager
+
 ./build.sh
 make -C support-files
 
+popd
+
 %install
 rm -rf $RPM_BUILD_ROOT
+
+pushd bootmanager
+
+# Install source so that it can be rebuilt
+find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
+
 install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
-for tarball in \
+for file in \
+    uudecode.gz \
     alpina-BootLVM.tar.gz \
     alpina-PartDisks.tar.gz \
     PlanetLab-Bootstrap.tar.bz2 ; do
-  install -D -m 644 support-files/$tarball $RPM_BUILD_ROOT/var/www/html/boot/$tarball
+  install -D -m 644 support-files/$file $RPM_BUILD_ROOT/var/www/html/boot/$file
 done
 
-# If run under sudo, allow user to delete the build directory
-if [ -n "$SUDO_USER" ] ; then
-    chown -R $SUDO_USER .
-fi
+popd
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-# If run under sudo, allow user to delete the built RPM
+# If run under sudo
 if [ -n "$SUDO_USER" ] ; then
-    chown $SUDO_USER %{_rpmdir}/%{_arch}/%{name}-%{version}-%{release}.%{_arch}.rpm
+    # Allow user to delete the build directory
+    chown -R $SUDO_USER .
+    # Some temporary cdroot files like /var/empty/sshd and
+    # /usr/bin/sudo get created with non-readable permissions.
+    find . -not -perm +0600 -exec chmod u+rw {} \;
+    # Allow user to delete the built RPM(s)
+    chown -R $SUDO_USER %{_rpmdir}/%{_arch}
 fi
 
 %post
@@ -61,6 +77,7 @@ EOF
 
 %files
 %defattr(-,root,root,-)
+%{_datadir}/%{name}
 /var/www/html/boot/*
 
 %changelog
