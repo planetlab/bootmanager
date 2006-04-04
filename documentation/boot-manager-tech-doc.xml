@@ -445,8 +445,8 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata align="left" fileref="boot-manager-flowchart.png"
-                         scalefit="1" />
+              <imagedata align="center" fileref="bm_flowchart.svg"
+                         scalefit="1" width="6in"/>
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -465,8 +465,8 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata align="left" fileref="bootmanager-sequence.png"
-                         scalefit="1" />
+              <imagedata align="center" fileref="bm_sequence.svg"
+                         scalefit="1" width="6in"/>
             </imageobject>
           </mediaobject>
         </figure></para>
