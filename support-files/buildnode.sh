@@ -6,7 +6,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005-2006 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.5 2006/03/21 14:57:29 mlhuang Exp $
+# $Id: buildnode.sh,v 1.6 2006/04/03 19:40:23 mlhuang Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -66,8 +66,11 @@ export PL_BOOTCD=1
 # Install the "PlanetLab" group. This requires that the PlanetLab
 # build system install the appropriate yumgroups.xml file (currently
 # build/groups/v3_yumgroups.xml) in $RPM_BUILD_DIR/../RPMS/ and that
-# mkfedora runs either yum-arch or createrepo on that directory.
-mkfedora -v -r $releasever -a $basearch -g PlanetLab $VROOT
+# mkfedora runs either yum-arch or createrepo on that directory. dev
+# is specified explicitly because of a stupid bug in its %post script
+# that causes its installation to fail; see the mkfedora script for a
+# full explanation.
+mkfedora -v -r $releasever -a $basearch -g PlanetLab -p dev $VROOT
 
 # Disable unnecessary services
 echo "* Disabling unnecessary services"
