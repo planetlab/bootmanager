@@ -6,6 +6,7 @@ different cds are included here
 import string
 import os, sys
 
+from Exceptions import *
 import utils
 import BootServerRequest
 
