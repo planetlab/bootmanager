@@ -91,7 +91,14 @@ def Run( vars, log ):
     # so who knows what the current state is
 
     log.write( "Unmounting any previous mounts\n" )
-    utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+
+    try:
+        # backwards compat, though, we should never hit this case post PL 3.2
+        os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
+        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+    except OSError, e:
+        pass
+
     utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
     utils.sysexec_noerr( "umount %s/mnt/cdrom" % SYSIMG_PATH, log )
     utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )

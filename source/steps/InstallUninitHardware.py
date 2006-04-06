@@ -96,14 +96,15 @@ def Run( vars, log ):
     except KeyError, part:
         raise BootManagerException, "Missing partition in PARTITIONS: %s\n" % part
 
-    # workaround
-    utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+    try:
+        # backwards compat, though, we should never hit this case post PL 3.2
+        os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
+        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+    except OSError, e:
+        pass
             
     log.write( "Unmounting proc.\n" )
     utils.sysexec( "umount %s/proc" % SYSIMG_PATH, log )
-
-    log.write( "Unmounting rcfs file system in image.\n" )
-    utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
 
     log.write( "Shutting down swap\n" )
     utils.sysexec( "swapoff %s" % PARTITIONS["swap"], log )

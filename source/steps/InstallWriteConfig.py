@@ -175,7 +175,8 @@ def Run( vars, log ):
     fstab.write( "none         /proc       proc      defaults  0 0\n" )
     fstab.write( "none         /dev/shm    tmpfs     defaults  0 0\n" )
     fstab.write( "none         /dev/pts    devpts    defaults  0 0\n" )
-    fstab.write( "none         /rcfs       rcfs      defaults  0 0\n" )
+    # no longer needed
+    # fstab.write( "none         /rcfs       rcfs      defaults  0 0\n" )
     fstab.close()
 
 

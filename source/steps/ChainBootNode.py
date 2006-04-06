@@ -1,5 +1,6 @@
 import string
 import re
+import os
 
 import InstallWriteConfig
 import UpdateBootStateWithPLC
@@ -125,7 +126,12 @@ def Run( vars, log ):
     utils.sysexec( "cp %s/boot/initrd-boot /tmp/initrd" % SYSIMG_PATH, log )
 
     log.write( "Unmounting disks.\n" )
-    utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+    try:
+        # backwards compat, though, we should never hit this case post PL 3.2
+        os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
+        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+    except OSError, e:
+        pass
     utils.sysexec_noerr( "umount -r /dev/planetlab/vservers", log )
     utils.sysexec_noerr( "umount -r /dev/planetlab/root", log )
     utils.sysexec_noerr( "vgchange -an", log )

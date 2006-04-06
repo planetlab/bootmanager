@@ -5,6 +5,7 @@ from Exceptions import *
 from systeminfo import systeminfo
 import compatibility
 import utils
+import os
 
 
 def Run( vars, log ):
@@ -123,7 +124,13 @@ def Run( vars, log ):
         log.write( "Extending planetlab volume group.\n" )
         
         log.write( "Unmounting disks.\n" )
-        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+        try:
+            # backwards compat, though, we should never hit this case post PL 3.2
+            os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
+            utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+        except OSError, e:
+            pass
+
         utils.sysexec_noerr( "umount /dev/planetlab/vservers", log )
         utils.sysexec_noerr( "umount /dev/planetlab/root", log )
         utils.sysexec( "vgchange -an", log )
