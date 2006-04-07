@@ -166,9 +166,6 @@ class BootManager:
         os.environ['PATH']= string.join(BIN_PATH,":")
                    
         self.CAN_RUN= 1
-        
-
-
 
     def ReadBMConf(self):
         """
@@ -198,7 +195,6 @@ class BootManager:
 
         return 1
     
-
     def Run(self):
         """
         core boot manager logic.
@@ -219,72 +215,86 @@ class BootManager:
         For exact return values and expected operations, see the comments
         at the top of each of the invididual step functions.
         """
-        
+
+        def _nodeNotInstalled():
+            # called by the _xxxState() functions below upon failure
+            self.VARS['BOOT_STATE']= 'dbg'
+            self.VARS['STATE_CHANGE_NOTIFY']= 1
+            self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
+                      notify_messages.MSG_NODE_NOT_INSTALLED
+            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+
+        def _rinsRun():
+            # implements the reinstall logic, which will check whether
+            # the min. hardware requirements are met, install the
+            # software, and upon correct installation will switch too
+            # 'boot' state and chainboot into the production system
+            if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
+                self.VARS['BOOT_STATE']= 'dbg'
+                UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+                raise BootManagerException, "Hardware requirements not met."
+
+            self.RunInstaller()
+
+            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
+                SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
+                ChainBootNode.Run( self.VARS, self.LOG )
+            else:
+                self._nodeNotInstalled()
+
+        def _newRun():
+            # implements the new install logic, which will first check
+            # with the user whether it is ok to install on this
+            # machine, switch to 'rins' state and then invoke the rins
+            # logic.  See rinsState logic comments for further
+            # details.
+            if not ConfirmInstallWithUser.Run( self.VARS, self.LOG ):
+                return 0
+            self.VARS['BOOT_STATE']= 'rins'
+            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+            self._rins()
+
+        def _bootRun():
+            # implements the boot logic, which consists of first
+            # double checking that the node was properly installed,
+            # checking whether someone added or changed disks, and
+            # then finally chain boots.
+
+            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
+                UpdateNodeConfiguration.Run( self.VARS, self.LOG )
+                CheckForNewDisks.Run( self.VARS, self.LOG )
+                SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
+                ChainBootNode.Run( self.VARS, self.LOG )
+            else:
+                self._nodeNotInstalled()
+
+
+        def _debugRun():
+            # implements debug logic, which just starts the sshd
+            # and just waits around
+            StartDebug.Run( self.VARS, self.LOG )
+
+        def _badRun():
+            # should never happen; log event
+            self.LOG.write( "\nInvalid BOOT_STATE = %s\n" % self.VARS['BOOT_STATE'])
+            self.VARS['BOOT_STATE']= 'dbg'
+            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+            StartDebug.Run( self.VARS, self.LOG )            
+
+        # setup state -> function hash table
+        states = {'new':_newRun,
+                  'inst':_newRun,
+                  'rins':_rinsRun,
+                  'boot':_bootRun,
+                  'dbg':_debugRun}
         try:
             InitializeBootManager.Run( self.VARS, self.LOG )
             ReadNodeConfiguration.Run( self.VARS, self.LOG )
             AuthenticateWithPLC.Run( self.VARS, self.LOG )
             GetAndUpdateNodeDetails.Run( self.VARS, self.LOG )
-            
-            if self.VARS['BOOT_STATE'] == 'new' or \
-                   self.VARS['BOOT_STATE'] == 'inst':
-                if not ConfirmInstallWithUser.Run( self.VARS, self.LOG ):
-                    return 0
-                
-                self.VARS['BOOT_STATE']= 'rins'
-                UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-            
-                if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
-                    self.VARS['BOOT_STATE']= 'dbg'
-                    UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-                    raise BootManagerException, "Hardware requirements not met."
 
-                self.RunInstaller()
-
-                if ValidateNodeInstall.Run( self.VARS, self.LOG ):
-                    SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
-                    ChainBootNode.Run( self.VARS, self.LOG )
-                else:
-                    self.VARS['BOOT_STATE']= 'dbg'
-                    self.VARS['STATE_CHANGE_NOTIFY']= 1
-                    self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                              notify_messages.MSG_NODE_NOT_INSTALLED
-                    UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-                    
-
-            elif self.VARS['BOOT_STATE'] == 'rins':
-                if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
-                    self.VARS['BOOT_STATE']= 'dbg'
-                    UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-                    raise BootManagerException, "Hardware requirements not met."
-                
-                self.RunInstaller()
-
-                if ValidateNodeInstall.Run( self.VARS, self.LOG ):
-                    SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
-                    ChainBootNode.Run( self.VARS, self.LOG )
-                else:
-                    self.VARS['BOOT_STATE']= 'dbg'
-                    self.VARS['STATE_CHANGE_NOTIFY']= 1
-                    self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                              notify_messages.MSG_NODE_NOT_INSTALLED
-                    UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-
-            elif self.VARS['BOOT_STATE'] == 'boot':
-                if ValidateNodeInstall.Run( self.VARS, self.LOG ):
-                    UpdateNodeConfiguration.Run( self.VARS, self.LOG )
-                    CheckForNewDisks.Run( self.VARS, self.LOG )
-                    SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
-                    ChainBootNode.Run( self.VARS, self.LOG )
-                else:
-                    self.VARS['BOOT_STATE']= 'dbg'
-                    self.VARS['STATE_CHANGE_NOTIFY']= 1
-                    self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                              notify_messages.MSG_NODE_NOT_INSTALLED
-                    UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-                    
-            elif self.VARS['BOOT_STATE'] == 'dbg':
-                StartDebug.Run( self.VARS, self.LOG )
+            stateRun = states.get(self.VARS['BOOT_STATE'],_badRun)
+            stateRun()
 
         except KeyError, e:
             self.LOG.write( "\n\nKeyError while running: %s\n" % str(e) )
