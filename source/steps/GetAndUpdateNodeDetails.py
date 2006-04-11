@@ -3,15 +3,28 @@ import string
 from Exceptions import *
 import BootAPI
 
+MINHW_OPT  = 0x001
+SMP_OPT    = 0x002
+X86_64_OPT = 0x004
+INTEL_OPT  = 0x008
+AMD_OPT    = 0x010
+NUMA_OPT   = 0x020
+LAST_OPT   = 0x040
 
-SKIP_MODEL_STRING= "/minhw"
-
+modeloptions = {'smp':SMP_OPT,
+                'x64':X86_64_OPT,
+                'i64':X86_64_OPT|INTEL_OPT,
+                'a64':X86_64_OPT|AMD_OPT,
+                'i32':INTEL_OPT,
+                'a32':AMD_OPT,
+                'numa':NUMA_OPT,
+                'minhw':MINHW_OPT}
 
 def Run( vars, log ):
     """
-    Contact PLC and get the attributes for this node. Also, if the node model
-    string ends in SKIP_MODEL_STRING, override the hardware requirements
-    configuration value, and skip the checks.
+
+    Contact PLC and get the attributes for this node. Also, parse in
+    options from the node model strong.
 
     Also, update any node network settings at PLC, minus the ip address,
     so, upload the mac (if node_id was in conf file), gateway, network,
@@ -27,6 +40,8 @@ def Run( vars, log ):
     WAS_NODE_KEY_IN_CONF     Set to 1 if the node key was in the conf file
     BOOT_STATE               The current node boot state
     NODE_MODEL               The user specified model of this node
+    NODE_MODEL_OPTIONS       The options extracted from the user specified
+                             model of this node 
     NETWORK_SETTINGS         A dictionary of the values of the network settings
     SKIP_HARDWARE_REQUIREMENT_CHECK     Whether or not we should skip hardware
                                         requirement checks
@@ -65,7 +80,6 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-
     details= BootAPI.call_api_function( vars, "BootGetNodeDetails", () )
 
     vars['BOOT_STATE']= details['boot_state']
@@ -76,14 +90,23 @@ def Run( vars, log ):
     log.write( "Current boot state: %s\n" % vars['BOOT_STATE'] )
     log.write( "Node make/model: %s\n" % vars['NODE_MODEL'] )
     
-    # if the end of NODE_MODEL string ends in SKIP_MODEL_STRING, skip hardware
-    # requirement checks (overrides configuration)
+    # parse in the model options from the node_model string
     model= vars['NODE_MODEL']
-    len_skip_str= len(SKIP_MODEL_STRING)
-    if model[-len_skip_str:] == SKIP_MODEL_STRING:
-        vars['SKIP_HARDWARE_REQUIREMENT_CHECK']= 1
+    modelinfo = string.split(model,'/')
+    options= 0
+    for mi in modelinfo:
+        info = string.strip(mi)
+        info = info.lower()
+        options = options | modeloptions.get(info,0)
+
+    print "node model options = %d" % options
+    vars['NODE_MODEL_OPTIONS']=options
+
+    # if the end of NODE_MODEL string contains the minhw string, skip hardware
+    # requirement checks (overrides configuration)
+    if options & MINHW_OPT:
+        vars['SKIP_HARDWARE_REQUIREMENT_CHECK']=1
         log.write( "node model indicates override to hardware requirements.\n" )
-        
 
     # this contains all the node networks, for now, we are only concerned
     # in the primary network
