@@ -6,7 +6,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005-2006 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.7 2006/04/05 21:45:34 mlhuang Exp $
+# $Id: buildnode.sh,v 1.8 2006/04/11 15:42:04 mlhuang Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -69,10 +69,11 @@ export PL_BOOTCD=1
 # mkfedora runs either yum-arch or createrepo on that directory. dev
 # is specified explicitly because of a stupid bug in its %post script
 # that causes its installation to fail; see the mkfedora script for a
-# full explanation. coreutils is specified explicitly because
-# groupinstall does not honor Requires(pre) dependencies properly, and
-# most %pre scripts require coreutils to be installed first.
-mkfedora -v -r $releasever -a $basearch -p dev -p coreutils -g PlanetLab $VROOT
+# full explanation. coreutils and python are specified explicitly
+# because groupinstall does not honor Requires(pre) dependencies
+# properly, most %pre scripts require coreutils to be installed first,
+# and some of our %post scripts require python.
+mkfedora -v -r $releasever -a $basearch -p dev -p coreutils -p python -g PlanetLab $VROOT
 
 # Disable unnecessary services
 echo "* Disabling unnecessary services"
