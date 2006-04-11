@@ -6,7 +6,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005-2006 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.8 2006/04/11 15:42:04 mlhuang Exp $
+# $Id: buildnode.sh,v 1.9 2006/04/11 20:34:14 mlhuang Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -84,6 +84,5 @@ done
 # Build tarball
 echo "* Building bootstrap tarball"
 tar -cpjf PlanetLab-Bootstrap.tar.bz2 -C $VROOT .
-rm -rf $VROOT
 
 exit 0
