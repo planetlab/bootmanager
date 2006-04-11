@@ -11,6 +11,8 @@ from systeminfo import systeminfo
 import BootAPI
 import notify_messages
 
+from GetAndUpdateNodeDetails import SMP_OPT
+
 
 def Run( vars, log ):
     """
@@ -50,6 +52,8 @@ def Run( vars, log ):
 
         # its ok if this is blank
         NODE_SESSION= vars["NODE_SESSION"]
+
+        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -121,9 +125,14 @@ def Run( vars, log ):
     (network_count,storage_count)= \
              InstallWriteConfig.write_modprobeconf_file( vars, log )
 
+    # get the kernel version
+    option = ''
+    if NODE_MODEL_OPTIONS & SMP_OPT:
+        option = 'smp'
+
     log.write( "Copying kernel and initrd for booting.\n" )
-    utils.sysexec( "cp %s/boot/kernel-boot /tmp/kernel" % SYSIMG_PATH, log )
-    utils.sysexec( "cp %s/boot/initrd-boot /tmp/initrd" % SYSIMG_PATH, log )
+    utils.sysexec( "cp %s/boot/kernel-boot%s /tmp/kernel" % (SYSIMG_PATH,option), log )
+    utils.sysexec( "cp %s/boot/initrd-boot%s /tmp/initrd" % (SYSIMG_PATH,option), log )
 
     log.write( "Unmounting disks.\n" )
     try:

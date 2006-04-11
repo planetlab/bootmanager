@@ -4,6 +4,7 @@ from Exceptions import *
 import utils
 from systeminfo import systeminfo
 import compatibility
+from GetAndUpdateNodeDetails import SMP_OPT
 
 
 def Run( vars, log ):
@@ -44,6 +45,8 @@ def Run( vars, log ):
         if PLCONF_DIR == "":
             raise ValueError, "PLCONF_DIR"
         
+        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -89,15 +92,21 @@ def Run( vars, log ):
         ROOT_MOUNTED= 1
         vars['ROOT_MOUNTED']= 1
         
-    valid= 0
     
-    if os.access("%s/boot/kernel-boot" % SYSIMG_PATH, os.F_OK | os.R_OK) and \
-           os.access("%s/boot/initrd-boot" % SYSIMG_PATH, os.F_OK | os.R_OK):
-        valid= 1
+    # get the kernel version
+    option = ''
+    if NODE_MODEL_OPTIONS & SMP_OPT:
+        option = 'smp'
 
+    files = ("kernel-boot%s" % option, "initrd-boot%s" % option)
+    valid= 1
+    for filepath in files:
+        if not os.access("%s/boot/%s"%(SYSIMG_PATH,filepath),os.F_OK|os.R_OK):
+            log.write( "Node not properly installed:\n")
+            log.write( "\tmissing file /boot/%s\n" % filepath )
+            valid= 0
+    
     if not valid:
-        log.write( "Node does not appear to be installed correctly:\n" )
-        log.write( "missing file /boot/ initrd-boot or kernel-boot\n" )
         return 0
 
     # write out the node id to /etc/planetlab/node_id. if this fails, return

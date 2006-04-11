@@ -47,6 +47,7 @@ import utils
 from systeminfo import systeminfo
 import BootAPI
 
+from GetAndUpdateNodeDetails import SMP_OPT
 
 def Run( vars, log ):
 
@@ -105,6 +106,8 @@ def Run( vars, log ):
         BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
         if BOOT_CD_VERSION == "":
             raise ValueError, "BOOT_CD_VERSION"
+
+        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -227,7 +230,10 @@ def Run( vars, log ):
         rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
         rootdev.close()
 
-    initrd= os.readlink( "%s/boot/initrd-boot" % SYSIMG_PATH )
+    option = ''
+    if NODE_MODEL_OPTIONS & SMP_OPT:
+        option = 'smp'
+    initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
     kernel_version= initrd.replace("initrd-", "").replace(".img", "")
     utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
     utils.sysexec( "chroot %s mkinitrd /boot/initrd-%s.img %s" % \
@@ -405,6 +411,8 @@ def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
 
+        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -412,7 +420,10 @@ def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
 
     
     # get the kernel version
-    initrd= os.readlink( "%s/boot/initrd-boot" % SYSIMG_PATH )
+    option = ''
+    if NODE_MODEL_OPTIONS & SMP_OPT:
+        option = 'smp'
+    initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
     kernel_version= initrd.replace("initrd-", "").replace(".img", "")
 
     sysinfo= systeminfo()
