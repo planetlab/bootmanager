@@ -240,7 +240,7 @@ class BootManager:
                 SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
                 ChainBootNode.Run( self.VARS, self.LOG )
             else:
-                self._nodeNotInstalled()
+                _nodeNotInstalled()
 
         def _newRun():
             # implements the new install logic, which will first check
@@ -252,7 +252,7 @@ class BootManager:
                 return 0
             self.VARS['BOOT_STATE']= 'rins'
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-            self._rins()
+            _rinsRun()
 
         def _bootRun():
             # implements the boot logic, which consists of first
@@ -266,7 +266,7 @@ class BootManager:
                 SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
                 ChainBootNode.Run( self.VARS, self.LOG )
             else:
-                self._nodeNotInstalled()
+                _nodeNotInstalled()
 
 
         def _debugRun():
