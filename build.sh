@@ -13,7 +13,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2004-2006 The Trustees of Princeton University
 #
-# $Id$
+# $Id: build.sh,v 1.5 2006/04/03 19:40:55 mlhuang Exp $
 #
 
 # Source PLC configuration
@@ -72,8 +72,8 @@ sed -i -e "s@^BOOT_API_SERVER.*@BOOT_API_SERVER=https://$PLC_API_HOST:443/$PLC_A
     $srcdir/source/configuration
 
 # Replace the default debug SSH key
-if [ -f "$PLC_DEBUG_SSH_KEY" ] ; then
-    install -D -m 644 "$PLC_DEBUG_SSH_KEY" $srcdir/source/debug_files/debug_root_ssh_key
+if [ -f "$PLC_DEBUG_SSH_KEY_PUB" ] ; then
+    install -D -m 644 "$PLC_DEBUG_SSH_KEY_PUB" $srcdir/source/debug_files/debug_root_ssh_key
 fi
 
 # Embed the uuencoded tarball in the script
