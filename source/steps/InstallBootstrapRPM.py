@@ -43,6 +43,7 @@
 
 import os, sys, string
 import popen2
+import shutil
 
 from Exceptions import *
 import utils
@@ -207,12 +208,27 @@ def Run( vars, log ):
     log.write( "Copying resolv.conf to temp dir\n" )
     utils.sysexec( "cp /etc/resolv.conf %s/etc/" % SYSIMG_PATH, log )
 
-    # mount the boot cd in the temp path, under /mnt/cdrom. this way,
-    # we can use the certs when programs are running
-    # chrooted in the temp path
-    cdrom_mount_point= "%s/mnt/cdrom" % SYSIMG_PATH
-    utils.makedirs( cdrom_mount_point )
-    log.write( "Copying contents of /usr/bootme to /mnt/cdrom\n" )
-    utils.sysexec( "cp -r /usr/bootme %s/mnt/cdrom/" % SYSIMG_PATH, log )
+    # Copy the boot server certificate(s) and GPG public key to
+    # /usr/boot in the temp dir.
+    log.write( "Copying boot server certificates and public key\n" )
+
+    if os.path.exists("/usr/boot"):
+        utils.makedirs(SYSIMG_PATH + "/usr")
+        shutil.copytree("/usr/boot", SYSIMG_PATH + "/usr/boot")
+    elif os.path.exists("/usr/bootme"):
+        utils.makedirs(SYSIMG_PATH + "/usr/boot")
+        boot_server = file("/usr/bootme/BOOTSERVER").readline().strip()
+        shutil.copy("/usr/bootme/cacert/" + boot_server + "/cacert.pem",
+                    SYSIMG_PATH + "/usr/boot/cacert.pem")
+        file(SYSIMG_PATH + "/usr/boot/boot_server", "w").write(boot_server)
+        shutil.copy("/usr/bootme/pubring.gpg", SYSIMG_PATH + "/usr/boot/pubring.gpg")
+        
+    # Import the GPG key into the RPM database so that RPMS can be verified
+    utils.makedirs(SYSIMG_PATH + "/etc/pki/rpm-gpg")
+    utils.sysexec("gpg --homedir=/root --export --armor" \
+                  " --no-default-keyring --keyring %s/usr/boot/pubring.gpg" \
+                  " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH))
+    utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
+                  SYSIMG_PATH)
 
     return 1
