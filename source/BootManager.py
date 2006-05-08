@@ -56,13 +56,13 @@ from gzip import GzipFile
 from steps import *
 from Exceptions import *
 import notify_messages
+import BootServerRequest
 
 
 
 # all output is written to this file
 LOG_FILE= "/tmp/bm.log"
-CURL_PATH= "curl"
-UPLOAD_LOG_URL = "http://boot.planet-lab.org/alpina-logs/upload.php"
+UPLOAD_LOG_PATH = "/alpina-logs/upload.php"
 
 # the new contents of PATH when the boot manager is running
 BIN_PATH= ('/usr/local/bin',
@@ -119,15 +119,16 @@ class log:
         """
 
         if self.OutputFile is not None:
-            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_URL )
+            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_PATH )
             
             self.OutputFile.close()
             self.OutputFile= None
-            
-            curl_cmd= "%s -s --connect-timeout 60 --max-time 600 " \
-                      "--form log=@%s %s" % \
-                      (CURL_PATH, self.OutputFilePath, UPLOAD_LOG_URL)
-            os.system( curl_cmd )
+
+            bs_request = BootServerRequest.BootServerRequest()
+            bs_request.MakeRequest(PartialPath = UPLOAD_LOG_PATH,
+                                   GetVars = None, PostVars = None,
+                                   FormData = ["log=@" + self.OutputFilePath],
+                                   DoSSL = True, DoCertCheck = True)
         
     
 
@@ -315,7 +316,6 @@ class BootManager:
         InstallInit.Run( self.VARS, self.LOG )                    
         InstallPartitionDisks.Run( self.VARS, self.LOG )            
         InstallBootstrapRPM.Run( self.VARS, self.LOG )            
-        InstallBase.Run( self.VARS, self.LOG )            
         InstallWriteConfig.Run( self.VARS, self.LOG )
         InstallBuildVServer.Run( self.VARS, self.LOG )
         InstallNodeInit.Run( self.VARS, self.LOG )

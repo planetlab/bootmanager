@@ -210,7 +210,8 @@ class BootServerRequest:
     def MakeRequest( self, PartialPath, GetVars,
                      PostVars, DoSSL, DoCertCheck,
                      ConnectTimeout= DEFAULT_CURL_CONNECT_TIMEOUT,
-                     MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME):
+                     MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME,
+                     FormData= None):
 
         if PYCURL_LOADED == 0:
             self.Error( "MakeRequest method requires pycurl." )
@@ -291,7 +292,11 @@ class BootServerRequest:
 
             if dopostdata:
                 curl.setopt(pycurl.POSTFIELDS, postdata)
-                
+
+            # setup multipart/form-data upload
+            if FormData:
+                curl.setopt(pycurl.HTTPPOST, FormData)
+
             curl.setopt(pycurl.URL, url)
             self.Message( "URL: %s" % url )
             
