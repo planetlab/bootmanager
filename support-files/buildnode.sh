@@ -9,7 +9,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.5 2006/03/21 14:57:29 mlhuang Exp $
+# $Id: buildnode.sh,v 1.5.2.1 2006/05/08 21:52:43 mlhuang Exp $
 #
 
 # Get the production /etc/yum.conf file. XXX When MAs begin deploying
@@ -126,6 +126,9 @@ export PL_BOOTCD=1
 
 # Go, baby, go
 yum -c yum.conf --installroot=$VROOT -y groupinstall PlanetLab
+
+# Clean yum cache
+yum -c yum.conf --installroot=$VROOT -y clean all
 
 # Remove stale RPM locks
 rm -f $VROOT/var/lib/rpm/__db*
