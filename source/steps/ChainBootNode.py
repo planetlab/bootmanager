@@ -241,7 +241,7 @@ def Run( vars, log ):
         log.write( "Couldn't read /proc/modules, continuing.\n" )
 
 
-    kargs = "ramdisk_size=8192"
+    kargs = "root=/dev/mapper/planetlab-root ramdisk_size=8192"
     try:
         kargsfb = open("/kargs.txt","r")
         moreargs = kargsfb.readline()
