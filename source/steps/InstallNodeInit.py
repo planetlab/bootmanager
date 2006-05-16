@@ -42,6 +42,7 @@
 
 from Exceptions import *
 import utils
+import os
 
 
 def Run( vars, log ):
@@ -104,8 +105,9 @@ def Run( vars, log ):
                 
     services= [ "netfs", "rawdevices", "cpuspeed", "smartd" ]
     for service in services:
-        log.write( "Disabling unneeded service: %s\n" % service )
-        utils.sysexec( "chroot %s chkconfig --level 12345 %s off" %
-                       (SYSIMG_PATH,service), log )
+        if os.path.exists("%s/etc/init.d/%s" % (SYSIMG_PATH,service)):
+            log.write( "Disabling unneeded service: %s\n" % service )
+            utils.sysexec( "chroot %s chkconfig --level 12345 %s off" %
+                           (SYSIMG_PATH,service), log )
             
     return 1
