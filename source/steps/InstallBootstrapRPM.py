@@ -152,57 +152,6 @@ def Run( vars, log ):
     result= utils.sysexec( "tar -C %s -xpjf %s" % (SYSIMG_PATH,dest_file), log )
     utils.removefile( dest_file )
 
-    # get the yum configuration file for this node (yum.conf).
-    # this needs to come from the configuration file service,
-    # so, if its a beta node, it'll install the beta rpms from
-    # the beginning. The configuration file service will return
-    # the url for the file we need to request to get the actual
-    # conf file, so two requests need to be made.
-
-    # the only changes we will need to make to it are to change
-    # the cache and log directories, so when we run yum from
-    # the chrooted tempfs mount, it'll cache the rpms on the
-    # sysimg partition
-
-    log.write( "Fetching URL for yum.conf from configuration file service\n" )
-
-    postVars= {"node_id" : NODE_ID,
-               "file" : "/etc/yum.conf"}
-
-    yum_conf_url_file= "/tmp/yumconf.url"
-
-    result= bs_request.DownloadFile(
-        "/db/plnodeconf/getsinglefile.php",
-        None, postVars, 1, 1, yum_conf_url_file)
-    
-    if result == 0:
-        log.write( "Unable to make request to get url for yum.conf\n" )
-        return 0
-
-    try:
-        yum_conf_url= file(yum_conf_url_file,"r").read()
-        yum_conf_url= string.strip(yum_conf_url)
-        if yum_conf_url == "":
-            raise BootManagerException, \
-                  "Downloaded yum configuration file URL is empty."
-    except IOError:
-        raise BootManagerException, \
-              "Unable to open downloaded yum configuration file URL."
-
-    # now, get the actual contents of yum.conf for this node
-    log.write( "Fetching yum.conf contents from configuration file service\n" )
-
-    postVars= {}
-    download_file_loc= "%s/etc/yum.conf" % SYSIMG_PATH
-
-    result= bs_request.DownloadFile( yum_conf_url,
-                                     None, postVars, 1, 1,
-                                     download_file_loc)
-
-    if result == 0:
-        log.write( "Unable to make request to get yum.conf\n" )
-        return 0
-
     # copy resolv.conf from the base system into our temp dir
     # so DNS lookups work correctly while we are chrooted
     log.write( "Copying resolv.conf to temp dir\n" )
