@@ -6,7 +6,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005-2006 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.9 2006/04/11 20:34:14 mlhuang Exp $
+# $Id: buildnode.sh,v 1.10 2006/04/11 22:13:18 mlhuang Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -25,7 +25,7 @@ fi
 export PATH
 
 # Release and architecture to install
-releasever=2
+releasever=4
 basearch=i386
 
 usage()
@@ -73,12 +73,14 @@ export PL_BOOTCD=1
 # because groupinstall does not honor Requires(pre) dependencies
 # properly, most %pre scripts require coreutils to be installed first,
 # and some of our %post scripts require python.
-mkfedora -v -r $releasever -a $basearch -p dev -p coreutils -p python -g PlanetLab $VROOT
+mkfedora -v -r $releasever -a $basearch -k -p dev -p coreutils -p python -g PlanetLab $VROOT
 
 # Disable unnecessary services
 echo "* Disabling unnecessary services"
 for service in netfs rawdevices cpuspeed smartd ; do
-    /usr/sbin/chroot $VROOT /sbin/chkconfig $service off
+    if [ -x $VROOT/etc/init.d/$service ] ; then
+	/usr/sbin/chroot $VROOT /sbin/chkconfig $service off
+    fi
 done
 
 # Build tarball
