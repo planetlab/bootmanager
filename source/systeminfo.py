@@ -439,7 +439,7 @@ class systeminfo:
             subvendorindex = -1
             for i in range(5,len(parts)):
                 p = self.remove_quotes(parts[i])
-                if p[0] != '-':
+                if len(p)>0 and p[0] != '-':
                     subvendorindex = i
                     break
 
