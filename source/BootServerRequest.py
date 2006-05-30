@@ -46,6 +46,7 @@ import os, sys
 import re
 import string
 import urllib
+import tempfile
 
 # try to load pycurl
 try:
@@ -213,128 +214,26 @@ class BootServerRequest:
                      MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME,
                      FormData= None):
 
-        if PYCURL_LOADED == 0:
-            self.Error( "MakeRequest method requires pycurl." )
-            return None
+        buffer = tempfile.NamedTemporaryFile()
 
-        self.CheckProxy()
-        
-        self.Message( "Attempting to retrieve %s" % PartialPath )
-        
-        # we can't do ssl and check the cert if we don't have a bootcd
-        if DoSSL and DoCertCheck and not self.HAS_BOOTCD:
-            self.Error( "No boot cd exists (needed to use -c and -s.\n" )
-            return None
+        ok = self.DownloadFile(PartialPath, GetVars, PostVars,
+                               DoSSL, DoCertCheck, buffer.name,
+                               ConnectTimeout,
+                               MaxTransferTime,
+                               FormData)
 
-        # didn't pass a path in? just get the root doc
-        if PartialPath == "":
-            PartialPath= "/"
-
-        # ConnectTimeout has to be greater than 0
-        if ConnectTimeout <= 0:
-            self.Error( "Connect timeout must be greater than zero.\n" )
-            return None
-
-        # setup the post and get vars for the request
-        if PostVars:
-            dopostdata= 1
-            postdata = urllib.urlencode(PostVars)
-            self.Message( "Posting data:\n%s\n" % postdata )
+        # check the code, return the string only if it was successfull
+        if ok:
+            buffer.seek(0)
+            return buffer.read()
         else:
-            dopostdata= 0
-
-        getstr= ""
-        if GetVars:
-            getstr= "?" + urllib.urlencode(GetVars)
-            self.Message( "Get data:\n%s\n" % getstr )
-
-        # now, attempt to make the request, starting at the first
-        # server in the list
-        for server in self.BOOTSERVER_CERTS:
-            self.Message( "Contacting server %s." % server )
-            
-            certpath = self.BOOTSERVER_CERTS[server]
-            
-            curl= pycurl.Curl()
-
-            # don't want curl sending any signals
-            curl.setopt(pycurl.NOSIGNAL, 1)
-
-            curl.setopt(pycurl.CONNECTTIMEOUT, ConnectTimeout)
-            self.Message( "Connect timeout is %s seconds" % \
-                          ConnectTimeout )
-
-            curl.setopt(pycurl.TIMEOUT, MaxTransferTime)
-            self.Message( "Max transfer time is %s seconds" % \
-                          MaxTransferTime )
-            
-            curl.setopt(pycurl.FOLLOWLOCATION, 1)
-            curl.setopt(pycurl.MAXREDIRS, 2)
-
-            if self.USE_PROXY:
-                curl.setopt(pycurl.PROXY, self.PROXY )
-            
-            if DoSSL:
-                curl.setopt(pycurl.SSLVERSION, self.CURL_SSL_VERSION)
-
-                url = "https://%s/%s%s" % (server,PartialPath,getstr)
-                if DoCertCheck:
-                    curl.setopt(pycurl.CAINFO, certpath)
-                    curl.setopt(pycurl.SSL_VERIFYPEER, 2)    
-                    self.Message( "Using SSL version %d and verifying peer." % \
-                                  self.CURL_SSL_VERSION )
-                else:
-                    curl.setopt(pycurl.SSL_VERIFYPEER, 0)
-                    self.Message( "Using SSL version %d" % \
-                                  self.CURL_SSL_VERSION )
-            else:
-                url = "http://%s/%s%s" % (server,PartialPath,getstr)
-
-            if dopostdata:
-                curl.setopt(pycurl.POSTFIELDS, postdata)
-
-            # setup multipart/form-data upload
-            if FormData:
-                curl.setopt(pycurl.HTTPPOST, FormData)
-
-            curl.setopt(pycurl.URL, url)
-            self.Message( "URL: %s" % url )
-            
-            # setup the output buffer
-            buffer = StringIO()
-            curl.setopt(pycurl.WRITEFUNCTION, buffer.write)
-            
-            try:
-                self.Message( "Fetching..." )
-                curl.perform()
-                self.Message( "Done." )
-                
-                http_result= curl.getinfo(pycurl.HTTP_CODE)
-                curl.close()
-
-                # check the code, return the string only if it was successfull
-                if http_result == self.HTTP_SUCCESS:
-                    self.Message( "Successfull!" )
-                    return buffer.getvalue()
-                else:
-                    self.Message( "Failure, resultant http code: %d" % \
-                                  http_result )
-                    return None
-                
-            except pycurl.error, err:
-                errno, errstr= err
-                self.Error( "connect to %s failed; curl error %d: '%s'\n" %
-                       (server,errno,errstr) ) 
-
-        self.Error( "Unable to successfully contact any boot servers.\n" )
-        return None
-   
-
+            return None
 
     def DownloadFile(self, PartialPath, GetVars, PostVars,
                      DoSSL, DoCertCheck, DestFilePath,
                      ConnectTimeout= DEFAULT_CURL_CONNECT_TIMEOUT,
-                     MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME):
+                     MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME,
+                     FormData= None):
 
         self.Message( "Attempting to retrieve %s" % PartialPath )
 
@@ -429,6 +328,10 @@ class BootServerRequest:
                 if dopostdata:
                     curl.setopt(pycurl.POSTFIELDS, postdata)
 
+                # setup multipart/form-data upload
+                if FormData:
+                    curl.setopt(pycurl.HTTPPOST, FormData)
+
                 curl.setopt(pycurl.URL, url)
             else:
 
@@ -443,6 +346,9 @@ class BootServerRequest:
 
                 if dopostdata:
                     cmdline = cmdline + "--data '" + postdata + "' "
+
+                if FormData:
+                    cmdline = cmdline + "".join(["--form '" + field + "' " for field in FormData])
 
                 if not self.VERBOSE:
                     cmdline = cmdline + "--silent "
