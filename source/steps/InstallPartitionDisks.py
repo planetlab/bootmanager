@@ -304,6 +304,9 @@ def create_lvm_physical_volume( part_path, vars, log ):
     try:
         # again, wipe any old data, this time on the partition
         utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % part_path, log )
+        ### patch Thierry Parmentelat, required on some hardware
+        import time
+        time.sleep(1)
         utils.sysexec( "pvcreate -fy %s" % part_path, log )
     except BootManagerException, e:
         log.write( "create_lvm_physical_volume failed.\n" )
