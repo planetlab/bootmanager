@@ -214,10 +214,15 @@ class BootServerRequest:
                      MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME,
                      FormData= None):
 
-        buffer = tempfile.NamedTemporaryFile()
+        if hasattr(tempfile, "NamedTemporaryFile"):
+            buffer = tempfile.NamedTemporaryFile()
+            buffer_name = buffer.name
+        else:
+            buffer_name = tempfile.mktemp("MakeRequest")
+            buffer = open(buffer_name, "w+")
 
         ok = self.DownloadFile(PartialPath, GetVars, PostVars,
-                               DoSSL, DoCertCheck, buffer.name,
+                               DoSSL, DoCertCheck, buffer_name,
                                ConnectTimeout,
                                MaxTransferTime,
                                FormData)
@@ -402,7 +407,7 @@ class BootServerRequest:
                 if not outfile.closed:
                     try:
                         os.unlink(DestFilePath)
-                        outfile.close
+                        outfile.close()
                     except OSError:
                         pass
 
