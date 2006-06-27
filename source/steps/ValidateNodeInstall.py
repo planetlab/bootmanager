@@ -84,6 +84,7 @@ def Run( vars, log ):
             utils.sysexec( "mount /dev/planetlab/root %s" % SYSIMG_PATH, log )
             utils.sysexec( "mount /dev/planetlab/vservers %s/vservers" %
                            SYSIMG_PATH, log )
+            utils.sysexec( "mount -t proc none %s/proc" % SYSIMG_PATH, log )
         except BootManagerException, e:
             log.write( "BootManagerException during vgscan/vgchange: %s\n" %
                        str(e) )

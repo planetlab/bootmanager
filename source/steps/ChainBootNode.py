@@ -84,6 +84,7 @@ def Run( vars, log ):
         utils.sysexec( "mount /dev/planetlab/root %s" % SYSIMG_PATH, log )
         utils.sysexec( "mount /dev/planetlab/vservers %s/vservers" %
                        SYSIMG_PATH, log )
+        utils.sysexec( "mount -t proc none %s/proc" % SYSIMG_PATH, log )
 
         ROOT_MOUNTED= 1
         vars['ROOT_MOUNTED']= 1
@@ -141,6 +142,7 @@ def Run( vars, log ):
         utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
     except OSError, e:
         pass
+    utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
     utils.sysexec_noerr( "umount -r /dev/planetlab/vservers", log )
     utils.sysexec_noerr( "umount -r /dev/planetlab/root", log )
     utils.sysexec_noerr( "vgchange -an", log )
