@@ -117,6 +117,11 @@ def merge_files(modules_dep_path, modules_pcimap_path, pcitable_path):
         # first two parts are always vendor / device id
         module= line_parts[0]
 
+        # XXX In kernel versions <2.6.14, mptscsih is the actual
+        # module that should be loaded instead of mptbase.
+        if module == "mptbase":
+            module= "mptscsih"
+
         try:
             vendor_id= long(line_parts[1],16)
         except ValueError, e:
