@@ -307,7 +307,7 @@ def create_lvm_physical_volume( part_path, vars, log ):
         ### patch Thierry Parmentelat, required on some hardware
         import time
         time.sleep(1)
-        utils.sysexec( "pvcreate -fy %s" % part_path, log )
+        utils.sysexec( "pvcreate -ffy %s" % part_path, log )
     except BootManagerException, e:
         log.write( "create_lvm_physical_volume failed.\n" )
         return 0
