@@ -172,6 +172,11 @@ def Run( vars, log ):
         file(SYSIMG_PATH + "/usr/boot/boot_server", "w").write(boot_server)
         shutil.copy("/usr/bootme/pubring.gpg", SYSIMG_PATH + "/usr/boot/pubring.gpg")
         
+    # For backward compatibility
+    if os.path.exists("/usr/bootme"):
+        utils.makedirs(SYSIMG_PATH + "/mnt/cdrom")
+        shutil.copytree("/usr/bootme", SYSIMG_PATH + "/mnt/cdrom/bootme")
+
     # Import the GPG key into the RPM database so that RPMS can be verified
     utils.makedirs(SYSIMG_PATH + "/etc/pki/rpm-gpg")
     utils.sysexec("gpg --homedir=/root --export --armor" \
