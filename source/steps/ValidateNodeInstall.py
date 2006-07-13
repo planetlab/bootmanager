@@ -4,7 +4,7 @@ from Exceptions import *
 import utils
 from systeminfo import systeminfo
 import compatibility
-from GetAndUpdateNodeDetails import SMP_OPT
+import ModelOptions
 
 
 def Run( vars, log ):
@@ -96,7 +96,7 @@ def Run( vars, log ):
     
     # get the kernel version
     option = ''
-    if NODE_MODEL_OPTIONS & SMP_OPT:
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
         option = 'smp'
 
     files = ("kernel-boot%s" % option, "initrd-boot%s" % option)

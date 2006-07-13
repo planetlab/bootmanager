@@ -2,23 +2,7 @@ import string
 
 from Exceptions import *
 import BootAPI
-
-MINHW_OPT  = 0x001
-SMP_OPT    = 0x002
-X86_64_OPT = 0x004
-INTEL_OPT  = 0x008
-AMD_OPT    = 0x010
-NUMA_OPT   = 0x020
-LAST_OPT   = 0x040
-
-modeloptions = {'smp':SMP_OPT,
-                'x64':X86_64_OPT,
-                'i64':X86_64_OPT|INTEL_OPT,
-                'a64':X86_64_OPT|AMD_OPT,
-                'i32':INTEL_OPT,
-                'a32':AMD_OPT,
-                'numa':NUMA_OPT,
-                'minhw':MINHW_OPT}
+import ModelOptions
 
 def Run( vars, log ):
     """
@@ -92,19 +76,11 @@ def Run( vars, log ):
     
     # parse in the model options from the node_model string
     model= vars['NODE_MODEL']
-    modelinfo = string.split(model,'/')
-    options= 0
-    for mi in modelinfo:
-        info = string.strip(mi)
-        info = info.lower()
-        options = options | modeloptions.get(info,0)
-
-    print "node model options = %d" % options
+    options= ModelOptions.Get(model)
     vars['NODE_MODEL_OPTIONS']=options
 
-    # if the end of NODE_MODEL string contains the minhw string, skip hardware
-    # requirement checks (overrides configuration)
-    if options & MINHW_OPT:
+    # Check if we should skip hardware requirement check
+    if options & ModelOptions.MINHW:
         vars['SKIP_HARDWARE_REQUIREMENT_CHECK']=1
         log.write( "node model indicates override to hardware requirements.\n" )
 

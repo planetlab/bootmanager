@@ -46,8 +46,7 @@ from Exceptions import *
 import utils
 from systeminfo import systeminfo
 import BootAPI
-
-from GetAndUpdateNodeDetails import SMP_OPT
+import ModelOptions
 
 def Run( vars, log ):
 
@@ -231,7 +230,7 @@ def Run( vars, log ):
         rootdev.close()
 
     option = ''
-    if NODE_MODEL_OPTIONS & SMP_OPT:
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
         option = 'smp'
     initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
     kernel_version= initrd.replace("initrd-", "").replace(".img", "")
@@ -421,7 +420,7 @@ def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
     
     # get the kernel version
     option = ''
-    if NODE_MODEL_OPTIONS & SMP_OPT:
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
         option = 'smp'
     initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
     kernel_version= initrd.replace("initrd-", "").replace(".img", "")
