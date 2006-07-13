@@ -75,11 +75,7 @@ BIN_PATH= ('/usr/local/bin',
            
 
 # the set of valid node run states
-NodeRunStates = {'new':None,
-                 'inst':None,
-                 'rins':None,
-                 'boot':None,
-                 'dbg':None}
+NodeRunStates = {}
 
 class log:
 
@@ -348,8 +344,14 @@ class BootManager:
     
 def main(argv):
     global NodeRunStates
-    # set to 0 if no error occurred
-    error= 1
+    NodeRunStates = {'new':None,
+                     'inst':None,
+                     'rins':None,
+                     'boot':None,
+                     'dbg':None}
+
+    # set to 1 if error occurred
+    error= 0
     
     # all output goes through this class so we can save it and post
     # the data back to PlanetLab central
@@ -364,9 +366,9 @@ def main(argv):
             fState = argv[1]
             if NodeRunStates.has_key(fState):
                 forceState = fState
-                error = 0
             else:
                 LOG.LogEntry("FATAL: cannot force node run state to=%s" % fState)
+                error = 1
     except:
         traceback.print_exc(file=LOG.OutputFile)
         traceback.print_exc()
@@ -376,8 +378,6 @@ def main(argv):
                       strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
         LOG.Upload()
         return error
-    else:
-        error = 1
 
     try:
         bm= BootManager(LOG,forceState)
@@ -389,9 +389,9 @@ def main(argv):
             success= bm.Run()
             if success:
                 LOG.LogEntry( "\nDone!" );
-                error = 0
             else:
                 LOG.LogEntry( "\nError occurred!" );
+                error = 1
     except:
         traceback.print_exc(file=LOG.OutputFile)
         traceback.print_exc()
