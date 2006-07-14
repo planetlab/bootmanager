@@ -106,8 +106,6 @@ def Run( vars, log ):
         if BOOT_CD_VERSION == "":
             raise ValueError, "BOOT_CD_VERSION"
 
-        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
-
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -222,23 +220,19 @@ def Run( vars, log ):
     log.write( "Making initrd\n" )
 
     # trick mkinitrd in case the current environment does not have device mapper
-    fake_root_lvm= 0
+    fake_root_lvm= False
     if not os.path.exists( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) ):
-        fake_root_lvm= 1
+        fake_root_lvm= True
         utils.makedirs( "%s/dev/mapper" % SYSIMG_PATH )
         rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
         rootdev.close()
 
-    option = ''
-    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
-        option = 'smp'
-    initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
-    kernel_version= initrd.replace("initrd-", "").replace(".img", "")
+    initrd, kernel_version= getKernelVersion(vars,log)
     utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
     utils.sysexec( "chroot %s mkinitrd /boot/initrd-%s.img %s" % \
                    (SYSIMG_PATH, kernel_version, kernel_version), log )
 
-    if fake_root_lvm == 1:
+    if fake_root_lvm == True:
         utils.removefile( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) )
 
     log.write( "Writing node install version\n" )
@@ -410,21 +404,12 @@ def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
 
-        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
-
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    
-    # get the kernel version
-    option = ''
-    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
-        option = 'smp'
-    initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
-    kernel_version= initrd.replace("initrd-", "").replace(".img", "")
-
+    initrd, kernel_version= getKernelVersion(vars,log)
     sysinfo= systeminfo()
     sysmods= sysinfo.get_system_modules(SYSIMG_PATH, kernel_version)
     if sysmods is None:
@@ -457,3 +442,33 @@ def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
 
     return (eth_count,scsi_count)
 
+def getKernelVersion( vars, log):
+    # make sure we have the variables we need
+    try:
+        SYSIMG_PATH= vars["SYSIMG_PATH"]
+        if SYSIMG_PATH == "":
+            raise ValueError, "SYSIMG_PATH"
+
+        NODE_MODEL_OPTIONS=vars["NODE_MODEL_OPTIONS"]
+    except KeyError, var:
+        raise BootManagerException, "Missing variable in vars: %s\n" % var
+    except ValueError, var:
+        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
+
+    option = ''
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
+        option = 'smp'
+        try:
+            os.stat("%s/boot/kernel-boot%s" % (SYSIMG_PATH,option))
+            os.stat("%s/boot/initrd-boot%s" % (SYSIMG_PATH,option))
+        except OSError, e:
+            # smp kernel is not there; remove option from modeloptions
+            # such that the rest of the code base thinks we are just
+            # using the base kernel.
+            NODE_MODEL_OPTIONS = NODE_MODEL_OPTIONS & ~ModelOptions.SMP
+            vars["NODE_MODEL_OPTIONS"] = NODE_MODEL_OPTIONS
+            log.write( "WARNING: Couldn't locate smp kernel.\n")
+            option = ''
+    initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
+    kernel_version= initrd.replace("initrd-", "").replace(".img", "")    
+    return (initrd, kernel_version)
