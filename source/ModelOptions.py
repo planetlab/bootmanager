@@ -7,6 +7,7 @@ INTEL   = 0x008
 AMD     = 0x010
 NUMA    = 0x020
 GEODE   = 0x040
+BADHD   = 0x080
 LAST    = 0x100
 
 modeloptions = {'smp':SMP,
@@ -17,6 +18,7 @@ modeloptions = {'smp':SMP,
                 'a32':AMD,
                 'numa':NUMA,
                 'geode':GEODE,
+                'badhd':BADHD,
                 'minhw':MINHW}
 
 def Get(model):
