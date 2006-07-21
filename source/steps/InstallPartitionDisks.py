@@ -50,7 +50,7 @@ import utils
 import BootServerRequest
 import compatibility
 
-
+import ModelOptions
 
 def Run( vars, log ):
     """
@@ -95,6 +95,8 @@ def Run( vars, log ):
         BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
         if BOOT_CD_VERSION == "":
             raise ValueError, "BOOT_CD_VERSION"
+
+        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -183,11 +185,24 @@ def Run( vars, log ):
     # make swap
     utils.sysexec( "mkswap %s" % PARTITIONS["swap"], log )
 
-    # make root file system
-    utils.sysexec( "mkfs.ext2 -j %s" % PARTITIONS["root"], log )
+    # check if badhd option has been set
+    option = ''
+    txt = ''
+    if NODE_MODEL_OPTIONS & ModelOptions.BADHD:
+        option = '-c'
+        txt = " with bad block search enabled, which may take a while"
+    
+    # filesystems partitions names and their corresponding
+    # reserved-blocks-percentages
+    filesystems = {"root":5,"vservers":0}
 
-    # make vservers file system
-    utils.sysexec( "mkfs.ext2 -m 0 -j %s" % PARTITIONS["vservers"], log )
+    # make the file systems
+    for fs in filesystems.keys():
+        # get the reserved blocks percentage
+        rbp = filesystems[fs]
+        devname = PARTITIONS[fs]
+        log.write("formatting %s partition (%s)%s.\n" % (fs,devname,txt))
+        utils.sysexec( "mkfs.ext2 -q %s -m %d -j %s" % (option,rbp,devname), log )
 
     # save the list of block devices in the log
     log.write( "Block devices used (in lvm):\n" )

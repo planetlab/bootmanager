@@ -11,8 +11,7 @@ from systeminfo import systeminfo
 import BootAPI
 import notify_messages
 
-from GetAndUpdateNodeDetails import SMP_OPT
-
+import ModelOptions
 
 def Run( vars, log ):
     """
@@ -128,7 +127,7 @@ def Run( vars, log ):
 
     # get the kernel version
     option = ''
-    if NODE_MODEL_OPTIONS & SMP_OPT:
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
         option = 'smp'
 
     log.write( "Copying kernel and initrd for booting.\n" )
@@ -244,6 +243,8 @@ def Run( vars, log ):
 
 
     kargs = "root=/dev/mapper/planetlab-root ramdisk_size=8192"
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
+        kargs = kargs + " " + "acpi=off"
     try:
         kargsfb = open("/kargs.txt","r")
         moreargs = kargsfb.readline()

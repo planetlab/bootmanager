@@ -4,7 +4,7 @@ from Exceptions import *
 import utils
 from systeminfo import systeminfo
 import compatibility
-from GetAndUpdateNodeDetails import SMP_OPT
+import ModelOptions
 
 
 def Run( vars, log ):
@@ -94,22 +94,29 @@ def Run( vars, log ):
         vars['ROOT_MOUNTED']= 1
         
     
-    # get the kernel version
-    option = ''
-    if NODE_MODEL_OPTIONS & SMP_OPT:
-        option = 'smp'
-
-    files = ("kernel-boot%s" % option, "initrd-boot%s" % option)
-    valid= 1
-    for filepath in files:
-        if not os.access("%s/boot/%s"%(SYSIMG_PATH,filepath),os.F_OK|os.R_OK):
-            log.write( "Node not properly installed:\n")
-            log.write( "\tmissing file /boot/%s\n" % filepath )
-            valid= 0
-    
-    if not valid:
+    # check if the base kernel is installed
+    try:
+        os.stat("%s/boot/kernel-boot" % SYSIMG_PATH)
+        os.stat("%s/boot/initrd-boot" % SYSIMG_PATH)
+    except OSError, e:            
+        log.write( "FATAL: Couldn't locate base kernel.\n")                
         return 0
 
+    # check if the model specified kernel is installed
+    option = ''
+    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
+        option = 'smp'
+        try:
+            os.stat("%s/boot/kernel-boot%s" % (SYSIMG_PATH,option))
+            os.stat("%s/boot/initrd-boot%s" % (SYSIMG_PATH,option))
+        except OSError, e:
+            # smp kernel is not there; remove option from modeloptions
+            # such that the rest of the code base thinks we are just
+            # using the base kernel.
+            NODE_MODEL_OPTIONS = NODE_MODEL_OPTIONS & ~ModelOptions.SMP
+            vars["NODE_MODEL_OPTIONS"] = NODE_MODEL_OPTIONS
+            log.write( "WARNING: Couldn't locate smp kernel.\n")
+            
     # write out the node id to /etc/planetlab/node_id. if this fails, return
     # 0, indicating the node isn't a valid install.
     try:
@@ -118,9 +125,9 @@ def Run( vars, log ):
         node_id_file.write( str(NODE_ID) )
         node_id_file.close()
         node_id_file= None
-        log.write( "Updated /etc/planetlab/node_id" )
+        log.write( "Updated /etc/planetlab/node_id\n" )
     except IOError, e:
-        log.write( "Unable to write out /etc/planetlab/node_id" )
+        log.write( "Unable to write out /etc/planetlab/node_id\n" )
         return 0
 
     log.write( "Everything appears to be ok\n" )

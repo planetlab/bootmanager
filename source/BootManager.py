@@ -74,6 +74,8 @@ BIN_PATH= ('/usr/local/bin',
            '/usr/local/planetlab/bin')
            
 
+# the set of valid node run states
+NodeRunStates = {}
 
 class log:
 
@@ -141,7 +143,10 @@ class BootManager:
     VARS_FILE = "configuration"
 
     
-    def __init__(self, log):
+    def __init__(self, log, forceState):
+        # override machine's current state from the command line
+        self.forceState = forceState
+
         # this contains a set of information used and updated
         # by each step
         self.VARS= {}
@@ -282,19 +287,26 @@ class BootManager:
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )            
 
+        global NodeRunStates
         # setup state -> function hash table
-        states = {'new':_newRun,
-                  'inst':_newRun,
-                  'rins':_rinsRun,
-                  'boot':_bootRun,
-                  'dbg':_debugRun}
+        NodeRunStates['new']  = _newRun
+        NodeRunStates['inst'] = _newRun
+        NodeRunStates['rins'] = _rinsRun
+        NodeRunStates['boot'] = _bootRun
+        NodeRunStates['dbg']  = _debugRun
+
         try:
             InitializeBootManager.Run( self.VARS, self.LOG )
             ReadNodeConfiguration.Run( self.VARS, self.LOG )
             AuthenticateWithPLC.Run( self.VARS, self.LOG )
             GetAndUpdateNodeDetails.Run( self.VARS, self.LOG )
 
-            stateRun = states.get(self.VARS['BOOT_STATE'],_badRun)
+            # override machine's current state from the command line
+            if self.forceState is not None:
+                self.VARS['BOOT_STATE']= self.forceState
+                UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+
+            stateRun = NodeRunStates.get(self.VARS['BOOT_STATE'],_badRun)
             stateRun()
 
         except KeyError, e:
@@ -330,11 +342,16 @@ class BootManager:
         SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
 
     
-    
-if __name__ == "__main__":
+def main(argv):
+    global NodeRunStates
+    NodeRunStates = {'new':None,
+                     'inst':None,
+                     'rins':None,
+                     'boot':None,
+                     'dbg':None}
 
-    # set to 0 if no error occurred
-    error= 1
+    # set to 1 if error occurred
+    error= 0
     
     # all output goes through this class so we can save it and post
     # the data back to PlanetLab central
@@ -344,7 +361,26 @@ if __name__ == "__main__":
                   strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
 
     try:
-        bm= BootManager(LOG)
+        forceState = None
+        if len(argv) == 2:
+            fState = argv[1]
+            if NodeRunStates.has_key(fState):
+                forceState = fState
+            else:
+                LOG.LogEntry("FATAL: cannot force node run state to=%s" % fState)
+                error = 1
+    except:
+        traceback.print_exc(file=LOG.OutputFile)
+        traceback.print_exc()
+        
+    if error:
+        LOG.LogEntry( "BootManager finished at: %s" % \
+                      strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+        LOG.Upload()
+        return error
+
+    try:
+        bm= BootManager(LOG,forceState)
         if bm.CAN_RUN == 0:
             LOG.LogEntry( "Unable to initialize BootManager." )
         else:
@@ -355,14 +391,18 @@ if __name__ == "__main__":
                 LOG.LogEntry( "\nDone!" );
             else:
                 LOG.LogEntry( "\nError occurred!" );
-
+                error = 1
     except:
         traceback.print_exc(file=LOG.OutputFile)
         traceback.print_exc()
 
     LOG.LogEntry( "BootManager finished at: %s" % \
                   strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
-
     LOG.Upload()
+
+    return error
+
     
+if __name__ == "__main__":
+    error = main(sys.argv)
     sys.exit(error)
