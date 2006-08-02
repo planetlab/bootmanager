@@ -66,6 +66,7 @@ import os
 import popen2
 import merge_hw_tables
 import re
+import errno
 
 hwdatapath = "usr/share/hwdata"
 class systeminfo:
@@ -168,6 +169,20 @@ class systeminfo:
         if not os.access(self.PROC_PARTITIONS_PATH, os.F_OK):
             return None
 
+        # table with valid scsi/sata/ide/raid block device names
+        valid_blk_names = {}
+        # add in valid sd and hd block device names
+        for blk_prefix in ('sd','hd'):
+            for blk_num in map ( \
+                lambda x: chr(x), range(ord('a'),ord('z')+1)):
+                devicename="%s%c" % (blk_prefix, blk_num)
+                valid_blk_names[devicename]=None
+
+        # add in valid scsi raid block device names
+        for M in range(0,1+1):
+            for N in range(0,7+1):
+                devicename = "cciss/c%dd%d" % (M,N)
+                valid_blk_names[devicename]=None
 
         # only do this once every system boot
         if not os.access(self.DEVICES_SCANNED_FLAG, os.R_OK):
@@ -179,41 +194,19 @@ class systeminfo:
             # so, lets run sfdisk -l (list partitions) against
             # most possible block devices, that way they show
             # up when it comes time to do the install.
-            for dev_prefix in ('sd','hd'):
-                block_dev_num= 0
-                while block_dev_num < 10:
-                    if block_dev_num < 26:
-                        devicename= "/dev/%s%c" % \
-                                    (dev_prefix, chr(ord('a')+block_dev_num))
-                    else:
-                        devicename= "/dev/%s%c%c" % \
-                                    ( dev_prefix,
-                                      chr(ord('a')+((block_dev_num/26)-1)),
-                                      chr(ord('a')+(block_dev_num%26)) )
+            devicenames = valid_blk_names.keys()
+            devicenames.sort()
+            for devicename in devicenames:
+                os.system( "sfdisk -l /dev/%s > /dev/null 2>&1" % devicename )
 
-                    os.system( "sfdisk -l %s > /dev/null 2>&1" % devicename )
-                    block_dev_num = block_dev_num + 1
-
-            additional_scan_devices= ("/dev/cciss/c0d0p", "/dev/cciss/c0d1p",
-                                      "/dev/cciss/c0d2p", "/dev/cciss/c0d3p",
-                                      "/dev/cciss/c0d4p", "/dev/cciss/c0d5p",
-                                      "/dev/cciss/c0d6p", "/dev/cciss/c0d7p",
-                                      "/dev/cciss/c1d0p", "/dev/cciss/c1d1p",
-                                      "/dev/cciss/c1d2p", "/dev/cciss/c1d3p",
-                                      "/dev/cciss/c1d4p", "/dev/cciss/c1d5p",
-                                      "/dev/cciss/c1d6p", "/dev/cciss/c1d7p",)
-            
-            for devicename in additional_scan_devices:
-                os.system( "sfdisk -l %s > /dev/null 2>&1" % devicename )
-
-            os.system( "touch %s" % self.DEVICES_SCANNED_FLAG )
-            
+            # touch file
+            fb = open(self.DEVICES_SCANNED_FLAG,"w")
+            fb.close()
 
         devicelist= {}
 
         partitions_file= file(self.PROC_PARTITIONS_PATH,"r")
         line_count= 0
-        
         for line in partitions_file:
             line_count= line_count + 1
 
@@ -227,9 +220,11 @@ class systeminfo:
                 continue
             
             device= parts[3]
-
-            dev_name= "/dev/%s" % device
             
+            # skip and ignore any partitions
+            if not valid_blk_names.has_key(device):
+                continue
+
             try:
                 major= int(parts[0])
                 minor= int(parts[1])
@@ -237,58 +232,25 @@ class systeminfo:
             except ValueError, err:
                 continue
 
-            # skip and ignore any partitions
-            if minor != 0:
-                continue
-                
             gb_size= blocks/self.BLOCKS_PER_GB
             
-            # parse the output of hdparm <disk> to get the readonly flag;
-            # if this fails, assume it isn't read only
-            readonly= 0
-            
-            hdparm_cmd = popen2.Popen3("hdparm %s 2> /dev/null" % dev_name)
-            status= hdparm_cmd.wait()
-
-            if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
-                try:
-                    hdparm_output= hdparm_cmd.fromchild.read()
-                    hdparm_cmd= None
-                    
-                    # parse the output of hdparm, the lines we are interested
-                    # in look
-                    # like:
-                    #
-                    #  readonly     =  0 (off)
-                    #
-                    
-                    for line in string.split(hdparm_output,"\n"):
-                        
-                        line= string.strip(line)
-                        if line == "":
-                            continue
-                        
-                        line_parts= string.split(line,"=")
-                        if len(line_parts) < 2:
-                            continue
-
-                        name= string.strip(line_parts[0])
-
-                        if name == "readonly":
-                            value= string.strip(line_parts[1])
-                            if len(value) == 0:
-                                break
-
-                            if value[0] == "1":
-                                readonly= 1
-                                break
-
-                except IOError:
-                    pass
+            # check to see if the blk device is readonly
+            try:
+                # can we write to it?
+                dev_name= "/dev/%s" % device
+                fb = open(dev_name,"w")
+                fb.close()
+                readonly=False
+            except IOError, e:
+                # check if EROFS errno
+                if errno.errorcode.get(e.errno,None) == 'EROFS':
+                    readonly=True
+                else:
+                    # got some other errno, pretend device is readonly
+                    readonly=True
 
             devicelist[dev_name]= (major,minor,blocks,gb_size,readonly)
 
-            
         return devicelist
 
 
