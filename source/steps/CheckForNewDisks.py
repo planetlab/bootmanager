@@ -131,8 +131,10 @@ def Run( vars, log ):
         except OSError, e:
             pass
 
-        utils.sysexec_noerr( "umount /dev/planetlab/vservers", log )
-        utils.sysexec_noerr( "umount /dev/planetlab/root", log )
+        # umount in order to extend disk size
+        utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
+        utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
+        utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
         utils.sysexec( "vgchange -an", log )
         
         vars['ROOT_MOUNTED']= 0
@@ -150,19 +152,33 @@ def Run( vars, log ):
 
         log.write( "Extending vservers logical volume.\n" )
         
+        # make all LVMs known again for lvextend/resize2fs to work
+        utils.sysexec( "vgchange -ay", log )
+
         if not utils.sysexec_noerr("lvextend -l +%s /dev/planetlab/vservers" %
                                    remaining_extents, log):
             log.write( "Failed to extend vservers logical volume, continuing\n" )
             return 1
 
         log.write( "making the ext3 filesystem match new logical volume size.\n" )
-        if not utils.sysexec_noerr("resize2fs /dev/planetlab/vservers",log):
-            log.write( "Failed to make ext3 file system match, continuing\n" )
+        if BOOT_CD_VERSION[0] == 2:
+            resize = utils.sysexec_noerr("resize2fs /dev/planetlab/vservers",log)
+        elif BOOT_CD_VERSION[0] == 3:
+            vars['ROOT_MOUNTED']= 1
+            utils.sysexec_noerr( "mount /dev/planetlab/root %s" % SYSIMG_PATH, log )
+            utils.sysexec_noerr( "mount /dev/planetlab/vservers %s/vservers" % SYSIMG_PATH, log )
+            resize = utils.sysexec_noerr("ext2online /dev/planetlab/vservers",log)
+            utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
+            utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
+            vars['ROOT_MOUNTED']= 0
+
+        if not resize:
+            log.write( "Failed to resize vservers partition, continuing\n" )
             return 1
-            
-        log.write( "Succesfully extended vservers partition by %4.2f GB\n" %
-                   extended_gb_size )
+        else:
+            log.write( "Succesfully extended vservers partition by %4.2f GB\n" %
+                       extended_gb_size )
+            return 1
     else:
         log.write( "No new disk devices to add to volume group.\n" )
-
-    return 1
+        return 1
