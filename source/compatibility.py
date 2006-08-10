@@ -1,3 +1,12 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
+
 """
 Various functions that are used to allow the boot manager to run on various
 different cds are included here

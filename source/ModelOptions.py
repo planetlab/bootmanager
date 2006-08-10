@@ -1,3 +1,12 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
+
 import string
 
 MINHW   = 0x001
@@ -30,3 +39,4 @@ def Get(model):
         options = options | modeloptions.get(info,0)
 
     return options
+

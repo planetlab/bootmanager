@@ -1,4 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
 
 """
 The point of this small utility is to take a file in the format
