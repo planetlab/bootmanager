@@ -1,52 +1,10 @@
 #!/usr/bin/python2 -u
 
-# ------------------------------------------------------------------------
-# THIS file used to be named alpina.py, from the node installer. Since then
-# the installer has been expanded to include all the functions of the boot
-# manager as well, hence the new name for this file.
-# ------------------------------------------------------------------------
-
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
-
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-
-#     * Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following
-#       disclaimer in the documentation and/or other materials provided
-#       with the distribution.
-
-#     * Neither the name of the Intel Corporation nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE INTEL OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-# EXPORT LAWS: THIS LICENSE ADDS NO RESTRICTIONS TO THE EXPORT LAWS OF
-# YOUR JURISDICTION. It is licensee's responsibility to comply with any
-# export regulations applicable in licensee's jurisdiction. Under
-# CURRENT (May 2000) U.S. export regulations this software is eligible
-# for export from the U.S. and can be downloaded by or otherwise
-# exported or reexported worldwide EXCEPT to U.S. embargoed destinations
-# which include Cuba, Iraq, Libya, North Korea, Iran, Syria, Sudan,
-# Afghanistan and any other country to which the U.S. has embargoed
-# goods and services.
-
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
 
 import string
 import sys, os, traceback
@@ -57,8 +15,6 @@ from steps import *
 from Exceptions import *
 import notify_messages
 import BootServerRequest
-
-
 
 # all output is written to this file
 LOG_FILE= "/tmp/bm.log"
@@ -147,43 +103,19 @@ class BootManager:
         # override machine's current state from the command line
         self.forceState = forceState
 
-        # this contains a set of information used and updated
-        # by each step
-        self.VARS= {}
-
         # the main logging point
         self.LOG= log
 
         # set to 1 if we can run after initialization
         self.CAN_RUN = 0
              
-        if not self.ReadBMConf():
-            self.LOG.LogEntry( "Unable to read configuration vars." )
-            return
-
-        # find out which directory we are running it, and set a variable
-        # for that. future steps may need to get files out of the bootmanager
-        # directory
-        current_dir= os.getcwd()
-        self.VARS['BM_SOURCE_DIR']= current_dir
-
-        # not sure what the current PATH is set to, replace it with what
-        # we know will work with all the boot cds
-        os.environ['PATH']= string.join(BIN_PATH,":")
-                   
-        self.CAN_RUN= 1
-
-    def ReadBMConf(self):
-        """
-        read in and store all variables in VARS_FILE into
-        self.VARS
-        
-        each line is in the format name=val (any whitespace around
-        the = is removed. everything after the = to the end of
-        the line is the value
-        """
-        
+        # read in and store all variables in VARS_FILE into each line
+        # is in the format name=val (any whitespace around the = is
+        # removed. everything after the = to the end of the line is
+        # the value
+        vars = {}
         vars_file= file(self.VARS_FILE,'r')
+        validConfFile = True
         for line in vars_file:
             # if its a comment or a whitespace line, ignore
             if line[:1] == "#" or string.strip(line) == "":
@@ -192,15 +124,34 @@ class BootManager:
             parts= string.split(line,"=")
             if len(parts) != 2:
                 self.LOG.LogEntry( "Invalid line in vars file: %s" % line )
-                return 0
+                validConfFile = False
+                break
 
             name= string.strip(parts[0])
             value= string.strip(parts[1])
+            vars[name]= value
 
-            self.VARS[name]= value
+        vars_file.close()
+        if not validConfFile:
+            self.LOG.LogEntry( "Unable to read configuration vars." )
+            return
 
-        return 1
-    
+        # find out which directory we are running it, and set a variable
+        # for that. future steps may need to get files out of the bootmanager
+        # directory
+        current_dir= os.getcwd()
+        vars['BM_SOURCE_DIR']= current_dir
+
+        # not sure what the current PATH is set to, replace it with what
+        # we know will work with all the boot cds
+        os.environ['PATH']= string.join(BIN_PATH,":")
+                   
+        # this contains a set of information used and updated
+        # by each step
+        self.VARS= vars
+
+        self.CAN_RUN= 1
+
     def Run(self):
         """
         core boot manager logic.
@@ -228,7 +179,26 @@ class BootManager:
             self.VARS['STATE_CHANGE_NOTIFY']= 1
             self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
                       notify_messages.MSG_NODE_NOT_INSTALLED
-            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+            raise BootManagerException, \
+                  notify_messages.MSG_NODE_NOT_INSTALLED
+
+        def _bootRun():
+            # implements the boot logic, which consists of first
+            # double checking that the node was properly installed,
+            # checking whether someone added or changed disks, and
+            # then finally chain boots.
+
+            InstallInit.Run( self.VARS, self.LOG )                    
+            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
+                WriteModprobeConfig.Run( self.VARS, self.LOG )
+                WriteNetworkConfig.Run( self.VARS, self.LOG )
+                # the following step should be done by NM
+                UpdateNodeConfiguration.Run( self.VARS, self.LOG )
+                CheckForNewDisks.Run( self.VARS, self.LOG )
+                SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
+                ChainBootNode.Run( self.VARS, self.LOG )
+            else:
+                _nodeNotInstalled()
 
         def _rinsRun():
             # implements the reinstall logic, which will check whether
@@ -237,17 +207,23 @@ class BootManager:
             # 'boot' state and chainboot into the production system
             if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
                 self.VARS['BOOT_STATE']= 'dbg'
-                UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
                 raise BootManagerException, "Hardware requirements not met."
 
-            self.RunInstaller()
-
-            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
-                SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
-                ChainBootNode.Run( self.VARS, self.LOG )
-            else:
-                _nodeNotInstalled()
-
+            # runinstaller
+            InstallInit.Run( self.VARS, self.LOG )                    
+            InstallPartitionDisks.Run( self.VARS, self.LOG )            
+            InstallBootstrapRPM.Run( self.VARS, self.LOG )            
+            InstallWriteConfig.Run( self.VARS, self.LOG )
+            InstallBuildVServer.Run( self.VARS, self.LOG )
+            InstallNodeInit.Run( self.VARS, self.LOG )
+            InstallUninitHardware.Run( self.VARS, self.LOG )
+            self.VARS['BOOT_STATE']= 'boot'
+            self.VARS['STATE_CHANGE_NOTIFY']= 1
+            self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
+                 notify_messages.MSG_INSTALL_FINISHED
+            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+            _bootRun()
+            
         def _newRun():
             # implements the new install logic, which will first check
             # with the user whether it is ok to install on this
@@ -260,32 +236,17 @@ class BootManager:
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             _rinsRun()
 
-        def _bootRun():
-            # implements the boot logic, which consists of first
-            # double checking that the node was properly installed,
-            # checking whether someone added or changed disks, and
-            # then finally chain boots.
-
-            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
-                UpdateNodeConfiguration.Run( self.VARS, self.LOG )
-                CheckForNewDisks.Run( self.VARS, self.LOG )
-                SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
-                ChainBootNode.Run( self.VARS, self.LOG )
-            else:
-                _nodeNotInstalled()
-
-
         def _debugRun():
             # implements debug logic, which just starts the sshd
             # and just waits around
+            self.VARS['BOOT_STATE']='dbg'
+            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )
 
         def _badRun():
             # should never happen; log event
             self.LOG.write( "\nInvalid BOOT_STATE = %s\n" % self.VARS['BOOT_STATE'])
-            self.VARS['BOOT_STATE']= 'dbg'
-            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-            StartDebug.Run( self.VARS, self.LOG )            
+            _debugRun()
 
         global NodeRunStates
         # setup state -> function hash table
@@ -295,6 +256,7 @@ class BootManager:
         NodeRunStates['boot'] = _bootRun
         NodeRunStates['dbg']  = _debugRun
 
+        success = 0
         try:
             InitializeBootManager.Run( self.VARS, self.LOG )
             ReadNodeConfiguration.Run( self.VARS, self.LOG )
@@ -308,40 +270,30 @@ class BootManager:
 
             stateRun = NodeRunStates.get(self.VARS['BOOT_STATE'],_badRun)
             stateRun()
+            success = 1
 
         except KeyError, e:
             self.LOG.write( "\n\nKeyError while running: %s\n" % str(e) )
         except BootManagerException, e:
             self.LOG.write( "\n\nException while running: %s\n" % str(e) )
-        
-        return 1
+        except:
+            self.LOG.write( "\n\nImplementation Error\n")
+            traceback.print_exc(file=self.LOG.OutputFile)
+            traceback.print_exc()
+
+        if not success:
+            try:
+                _debugRun()
+            except BootManagerException, e:
+                self.LOG.write( "\n\nException while running: %s\n" % str(e) )
+            except:
+                self.LOG.write( "\n\nImplementation Error\n")
+                traceback.print_exc(file=self.LOG.OutputFile)
+                traceback.print_exc()
+
+        return success
             
-
             
-    def RunInstaller(self):
-        """
-        since the installer can be invoked at more than one place
-        in the boot manager logic, seperate the steps necessary
-        to do it here
-        """
-        
-        InstallInit.Run( self.VARS, self.LOG )                    
-        InstallPartitionDisks.Run( self.VARS, self.LOG )            
-        InstallBootstrapRPM.Run( self.VARS, self.LOG )            
-        InstallWriteConfig.Run( self.VARS, self.LOG )
-        InstallBuildVServer.Run( self.VARS, self.LOG )
-        InstallNodeInit.Run( self.VARS, self.LOG )
-        InstallUninitHardware.Run( self.VARS, self.LOG )
-        
-        self.VARS['BOOT_STATE']= 'boot'
-        self.VARS['STATE_CHANGE_NOTIFY']= 1
-        self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                                       notify_messages.MSG_INSTALL_FINISHED
-        UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-
-        SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
-
-    
 def main(argv):
     global NodeRunStates
     NodeRunStates = {'new':None,
