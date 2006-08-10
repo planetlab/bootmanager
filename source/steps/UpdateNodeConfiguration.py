@@ -1,6 +1,14 @@
+#!/usr/bin/python2 -u
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
+
 import os
 
-import InstallWriteConfig
 import InstallBuildVServer
 from Exceptions import *
 import utils
@@ -59,11 +67,6 @@ def Run( vars, log ):
     
     if not ROOT_MOUNTED:
         raise BootManagerException, "Root isn't mounted on SYSIMG_PATH\n"
-
-
-    log.write( "Updating node network configuration\n" )
-    InstallWriteConfig.write_network_configuration( vars, log )
-
 
     log.write( "Updating vserver's /etc/hosts and /etc/resolv.conf files\n" )
 

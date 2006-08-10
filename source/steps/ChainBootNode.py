@@ -1,13 +1,21 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
+
 import string
 import re
 import os
 
-import InstallWriteConfig
 import UpdateBootStateWithPLC
 from Exceptions import *
 import utils
 import compatibility
-from systeminfo import systeminfo
+import systeminfo
 import BootAPI
 import notify_messages
 
@@ -54,6 +62,10 @@ def Run( vars, log ):
 
         NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
+        PARTITIONS= vars["PARTITIONS"]
+        if PARTITIONS == None:
+            raise ValueError, "PARTITIONS"
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -73,26 +85,28 @@ def Run( vars, log ):
         # simply creating an instance of this class and listing the system
         # block devices will make them show up so vgscan can find the planetlab
         # volume group
-        systeminfo().get_block_device_list()
+        systeminfo.get_block_device_list(vars, log)
         
         utils.sysexec( "vgscan", log )
         utils.sysexec( "vgchange -ay planetlab", log )
 
         utils.makedirs( SYSIMG_PATH )
 
-        utils.sysexec( "mount /dev/planetlab/root %s" % SYSIMG_PATH, log )
-        utils.sysexec( "mount /dev/planetlab/vservers %s/vservers" %
-                       SYSIMG_PATH, log )
-        utils.sysexec( "mount -t proc none %s/proc" % SYSIMG_PATH, log )
+        cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
+        utils.sysexec( cmd, log )
+        cmd = "mount %s %s/vservers" % (PARTITIONS["vservers"],SYSIMG_PATH)
+        utils.sysexec( cmd, log )
+        cmd = "mount -t proc none %s/proc" % SYSIMG_PATH
+        utils.sysexec( cmd, log )
 
         ROOT_MOUNTED= 1
         vars['ROOT_MOUNTED']= 1
         
 
-    node_update_cmd= "/usr/local/planetlab/bin/NodeUpdate.py start noreboot"
-
     log.write( "Running node update.\n" )
-    utils.sysexec( "chroot %s %s" % (SYSIMG_PATH,node_update_cmd), log )
+    cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" \
+          % SYSIMG_PATH
+    utils.sysexec( cmd, log )
 
     log.write( "Updating ssh public host key with PLC.\n" )
     ssh_host_key= ""
@@ -119,12 +133,6 @@ def Run( vars, log ):
     update_vals['ssh_host_key']= ssh_host_key
     BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
 
-    # rewrite modprobe.conf in case there were any module changes
-    # from a new kernel installed.
-    log.write( "Rewriting /etc/modprobe.conf\n" )
-    (network_count,storage_count)= \
-             InstallWriteConfig.write_modprobeconf_file( vars, log )
-
     # get the kernel version
     option = ''
     if NODE_MODEL_OPTIONS & ModelOptions.SMP:
@@ -141,27 +149,14 @@ def Run( vars, log ):
         utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
     except OSError, e:
         pass
+
     utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "umount -r /dev/planetlab/vservers", log )
-    utils.sysexec_noerr( "umount -r /dev/planetlab/root", log )
+    utils.sysexec_noerr( "umount -r %s/vservers" % SYSIMG_PATH, log )
+    utils.sysexec_noerr( "umount -r %s" % SYSIMG_PATH, log )
     utils.sysexec_noerr( "vgchange -an", log )
 
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
-
-    # before we do the real kexec, check to see if we had any
-    # network drivers written to modprobe.conf. if not, return -1,
-    # which will cause this node to be switched to a debug state.
-    if network_count == 0:
-        log.write( "\nIt appears we don't have any network drivers. Aborting.\n" )
-        
-        vars['BOOT_STATE']= 'dbg'
-        vars['STATE_CHANGE_NOTIFY']= 1
-        vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                          notify_messages.MSG_NO_DETECTED_NETWORK
-        UpdateBootStateWithPLC.Run( vars, log )
-        
-        return
 
     log.write( "Unloading modules and chain booting to new kernel.\n" )
 
@@ -242,7 +237,7 @@ def Run( vars, log ):
         log.write( "Couldn't read /proc/modules, continuing.\n" )
 
 
-    kargs = "root=/dev/mapper/planetlab-root ramdisk_size=8192"
+    kargs = "root=%s ramdisk_size=8192" % PARTITIONS["mapper-root"]
     if NODE_MODEL_OPTIONS & ModelOptions.SMP:
         kargs = kargs + " " + "acpi=off"
     try:

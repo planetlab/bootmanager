@@ -1,50 +1,17 @@
+#!/usr/bin/python2
+
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
-
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-
-#     * Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following
-#       disclaimer in the documentation and/or other materials provided
-#       with the distribution.
-
-#     * Neither the name of the Intel Corporation nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE INTEL OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-# EXPORT LAWS: THIS LICENSE ADDS NO RESTRICTIONS TO THE EXPORT LAWS OF
-# YOUR JURISDICTION. It is licensee's responsibility to comply with any
-# export regulations applicable in licensee's jurisdiction. Under
-# CURRENT (May 2000) U.S. export regulations this software is eligible
-# for export from the U.S. and can be downloaded by or otherwise
-# exported or reexported worldwide EXCEPT to U.S. embargoed destinations
-# which include Cuba, Iraq, Libya, North Korea, Iran, Syria, Sudan,
-# Afghanistan and any other country to which the U.S. has embargoed
-# goods and services.
-
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+# expected /proc/partitions format
 
 import os, string
 
 from Exceptions import *
 import utils
-from systeminfo import systeminfo
+import systeminfo
 import BootAPI
 import ModelOptions
 
@@ -53,11 +20,7 @@ def Run( vars, log ):
     """
     Writes out the following configuration files for the node:
     /etc/fstab
-    /etc/hosts
-    /etc/sysconfig/network-scripts/ifcfg-eth0
     /etc/resolv.conf (if applicable)
-    /etc/sysconfig/network
-    /etc/modprobe.conf
     /etc/ssh/ssh_host_key
     /etc/ssh/ssh_host_rsa_key
     /etc/ssh/ssh_host_dsa_key
@@ -111,24 +74,9 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    try:
-        # we need to keys in PARTITIONS, root and swap, make sure
-        # they exist
-        val= PARTITIONS["root"]
-        val= PARTITIONS["swap"]
-        val= PARTITIONS["vservers"]
-        val= PARTITIONS["mapper-root"]
-        val= PARTITIONS["mapper-swap"]
-        val= PARTITIONS["mapper-vservers"]
-    except KeyError, part:
-        log.write( "Missing partition in PARTITIONS: %s\n" % part )
-        return 0
-    
-
     log.write( "Setting local time to UTC\n" )
     utils.sysexec( "chroot %s ln -sf /usr/share/zoneinfo/UTC /etc/localtime" % \
                    SYSIMG_PATH, log )
-
 
     log.write( "Enabling ntp at boot\n" )
     utils.sysexec( "chroot %s chkconfig ntpd on" % SYSIMG_PATH, log )
@@ -137,32 +85,6 @@ def Run( vars, log ):
     if not utils.makedirs( "%s/%s" % (SYSIMG_PATH,PLCONF_DIR) ):
         log.write( "Unable to create directory\n" )
         return 0
-
-
-    log.write( "Writing network configuration\n" )
-    write_network_configuration( vars, log )
-
-    # write out the modprobe.conf file for the system. make sure
-    # the order of the ethernet devices are listed in the same order
-    # as the boot cd loaded the modules. this is found in /tmp/loadedmodules
-    # ultimately, the order will only match the boot cd order if
-    # the kernel modules have the same name - which should be true for the later
-    # version boot cds because they use the same kernel version.
-    # older boot cds use a 2.4.19 kernel, and its possible some of the network
-    # module names have changed, in which case the system might not boot
-    # if the network modules are activated in a different order that the
-    # boot cd.
-    log.write( "Writing /etc/modprobe.conf\n" )
-    write_modprobeconf_file( vars, log )
-    
-    # dump the modprobe.conf file to the log (not to screen)
-    log.write( "Contents of new modprobe.conf file:\n" )
-    modulesconf_file= file("%s/etc/modprobe.conf" % SYSIMG_PATH, "r" )
-    contents= modulesconf_file.read()
-    log.write( contents + "\n" )
-    modulesconf_file.close()
-    modulesconf_file= None
-    log.write( "End contents of new modprobe.conf file.\n" )
 
     log.write( "Writing system /etc/fstab\n" )
     fstab= file( "%s/etc/fstab" % SYSIMG_PATH, "w" )
@@ -227,7 +149,7 @@ def Run( vars, log ):
         rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
         rootdev.close()
 
-    initrd, kernel_version= getKernelVersion(vars,log)
+    initrd, kernel_version= systeminfo.getKernelVersion(vars,log)
     utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
     utils.sysexec( "chroot %s mkinitrd /boot/initrd-%s.img %s" % \
                    (SYSIMG_PATH, kernel_version, kernel_version), log )
@@ -266,209 +188,3 @@ def Run( vars, log ):
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
 
     return 1
-
-
-
-def write_network_configuration( vars, log ):
-    """
-    Write out the network configuration for this machine:
-    /etc/hosts
-    /etc/sysconfig/network-scripts/ifcfg-eth0
-    /etc/resolv.conf (if applicable)
-    /etc/sysconfig/network
-
-    It is assumed the caller mounted the root partition and the vserver partition
-    starting on SYSIMG_PATH - it is not checked here.
-
-    The values to be used for the network settings are to be set in vars
-    in the variable 'NETWORK_SETTINGS', which is a dictionary
-    with keys:
-
-     Key               Used by this function
-     -----------------------------------------------
-     node_id
-     node_key
-     method            x
-     ip                x
-     mac               x (optional)
-     gateway           x
-     network           x
-     broadcast         x
-     netmask           x
-     dns1              x
-     dns2              x (optional)
-     hostname          x
-     domainname        x
-    """
-
-    try:
-        SYSIMG_PATH= vars["SYSIMG_PATH"]
-        if SYSIMG_PATH == "":
-            raise ValueError, "SYSIMG_PATH"
-
-    except KeyError, var:
-        raise BootManagerException, "Missing variable in vars: %s\n" % var
-    except ValueError, var:
-        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
-
-
-    try:
-        network_settings= vars['NETWORK_SETTINGS']
-    except KeyError, e:
-        raise BootManagerException, "No network settings found in vars."
-
-    try:
-        hostname= network_settings['hostname']
-        domainname= network_settings['domainname']
-        method= network_settings['method']
-        ip= network_settings['ip']
-        gateway= network_settings['gateway']
-        network= network_settings['network']
-        netmask= network_settings['netmask']
-        dns1= network_settings['dns1']
-        mac= network_settings['mac']
-    except KeyError, e:
-        raise BootManagerException, "Missing value %s in network settings." % str(e)
-
-    try:
-        dns2= ''
-        dns2= network_settings['dns2']
-    except KeyError, e:
-        pass
-
-        
-    log.write( "Writing /etc/hosts\n" )
-    hosts_file= file("%s/etc/hosts" % SYSIMG_PATH, "w" )    
-    hosts_file.write( "127.0.0.1       localhost\n" )
-    if method == "static":
-        hosts_file.write( "%s %s.%s\n" % (ip, hostname, domainname) )
-    hosts_file.close()
-    hosts_file= None
-    
-
-    log.write( "Writing /etc/sysconfig/network-scripts/ifcfg-eth0\n" )
-    eth0_file= file("%s/etc/sysconfig/network-scripts/ifcfg-eth0" %
-                    SYSIMG_PATH, "w" )
-    eth0_file.write( "DEVICE=eth0\n" )
-    if method == "static":
-        eth0_file.write( "BOOTPROTO=static\n" )
-        eth0_file.write( "IPADDR=%s\n" % ip )
-        eth0_file.write( "NETMASK=%s\n" % netmask )
-        eth0_file.write( "GATEWAY=%s\n" % gateway )
-    else:
-        eth0_file.write( "BOOTPROTO=dhcp\n" )
-        eth0_file.write( "DHCP_HOSTNAME=%s\n" % hostname )
-    if mac != "":
-        eth0_file.write( "HWADDR=%s\n" % mac )
-    eth0_file.write( "ONBOOT=yes\n" )
-    eth0_file.write( "USERCTL=no\n" )
-    eth0_file.close()
-    eth0_file= None
-
-    if method == "static":
-        log.write( "Writing /etc/resolv.conf\n" )
-        resolv_file= file("%s/etc/resolv.conf" % SYSIMG_PATH, "w" )
-        if dns1 != "":
-            resolv_file.write( "nameserver %s\n" % dns1 )
-        if dns2 != "":
-            resolv_file.write( "nameserver %s\n" % dns2 )
-        resolv_file.write( "search %s\n" % domainname )
-        resolv_file.close()
-        resolv_file= None
-
-    log.write( "Writing /etc/sysconfig/network\n" )
-    network_file= file("%s/etc/sysconfig/network" % SYSIMG_PATH, "w" )
-    network_file.write( "NETWORKING=yes\n" )
-    network_file.write( "HOSTNAME=%s.%s\n" % (hostname, domainname) )
-    if method == "static":
-        network_file.write( "GATEWAY=%s\n" % gateway )
-    network_file.close()
-    network_file= None
-
-
-
-def write_modprobeconf_file( vars, log, filename = "/etc/modprobe.conf"):
-    """
-    write out the system file /etc/modprobe.conf with the current
-    set of modules.
-
-    returns a tuple of the number of network driver lines and storage
-    driver lines written as (networkcount,storagecount)
-    """
-
-    # make sure we have this class loaded
-    from systeminfo import systeminfo
-    
-    try:
-        SYSIMG_PATH= vars["SYSIMG_PATH"]
-        if SYSIMG_PATH == "":
-            raise ValueError, "SYSIMG_PATH"
-
-    except KeyError, var:
-        raise BootManagerException, "Missing variable in vars: %s\n" % var
-    except ValueError, var:
-        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
-
-    initrd, kernel_version= getKernelVersion(vars,log)
-    sysinfo= systeminfo()
-    sysmods= sysinfo.get_system_modules(SYSIMG_PATH, kernel_version)
-    if sysmods is None:
-        raise BootManagerException, "Unable to get list of system modules."
-        
-    eth_count= 0
-    scsi_count= 0
-
-    modulesconf_file= file("%s/%s" % (SYSIMG_PATH,filename), "w" )
-
-    for type in sysmods:
-        if type == sysinfo.MODULE_CLASS_SCSI:
-            for a_mod in sysmods[type]:
-                if scsi_count == 0:
-                    modulesconf_file.write( "alias scsi_hostadapter %s\n" %
-                                            a_mod )
-                else:
-                    modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
-                                            (scsi_count,a_mod) )
-                scsi_count= scsi_count + 1
-
-        elif type == sysinfo.MODULE_CLASS_NETWORK:
-            for a_mod in sysmods[type]:
-                modulesconf_file.write( "alias eth%d %s\n" %
-                                        (eth_count,a_mod) )
-                eth_count= eth_count + 1
-
-    modulesconf_file.close()
-    modulesconf_file= None
-
-    return (eth_count,scsi_count)
-
-def getKernelVersion( vars, log):
-    # make sure we have the variables we need
-    try:
-        SYSIMG_PATH= vars["SYSIMG_PATH"]
-        if SYSIMG_PATH == "":
-            raise ValueError, "SYSIMG_PATH"
-
-        NODE_MODEL_OPTIONS=vars["NODE_MODEL_OPTIONS"]
-    except KeyError, var:
-        raise BootManagerException, "Missing variable in vars: %s\n" % var
-    except ValueError, var:
-        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
-
-    option = ''
-    if NODE_MODEL_OPTIONS & ModelOptions.SMP:
-        option = 'smp'
-        try:
-            os.stat("%s/boot/kernel-boot%s" % (SYSIMG_PATH,option))
-            os.stat("%s/boot/initrd-boot%s" % (SYSIMG_PATH,option))
-        except OSError, e:
-            # smp kernel is not there; remove option from modeloptions
-            # such that the rest of the code base thinks we are just
-            # using the base kernel.
-            NODE_MODEL_OPTIONS = NODE_MODEL_OPTIONS & ~ModelOptions.SMP
-            vars["NODE_MODEL_OPTIONS"] = NODE_MODEL_OPTIONS
-            log.write( "WARNING: Couldn't locate smp kernel.\n")
-            option = ''
-    initrd= os.readlink( "%s/boot/initrd-boot%s" % (SYSIMG_PATH,option) )
-    kernel_version= initrd.replace("initrd-", "").replace(".img", "")    
-    return (initrd, kernel_version)

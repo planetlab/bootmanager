@@ -1,8 +1,16 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
 import string
 
 import InstallPartitionDisks
 from Exceptions import *
-from systeminfo import systeminfo
+import systeminfo
 import compatibility
 import utils
 import os
@@ -34,15 +42,17 @@ def Run( vars, log ):
             raise ValueError, "SYSIMG_PATH"
 
         MINIMUM_DISK_SIZE= int(vars["MINIMUM_DISK_SIZE"])
+
+        PARTITIONS= vars["PARTITIONS"]
+        if PARTITIONS == None:
+            raise ValueError, "PARTITIONS"
         
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    sysinfo= systeminfo()
-
-    all_devices= sysinfo.get_block_device_list()
+    all_devices= systeminfo.get_block_device_list(vars, log)
     
     # find out if there are unused disks in all_devices that are greater
     # than old cds need extra utilities to run lvm
@@ -77,8 +87,8 @@ def Run( vars, log ):
 
         # this is the lvm partition, if it exists on that device
         lvm_partition= "%s1" % device
-        already_added= utils.sysexec_noerr( "pvdisplay %s | grep -q 'planetlab'" %
-                                            lvm_partition )
+        cmd = "pvdisplay %s | grep -q 'planetlab'" % lvm_partition
+        already_added= utils.sysexec_noerr(cmd, log)
         
         if already_added:
             log.write( "It appears %s is part of the volume group, continuing.\n" %
@@ -88,14 +98,15 @@ def Run( vars, log ):
         # just to be extra paranoid, ignore the device if it already has
         # an lvm partition on it (new disks won't have this, and that is
         # what this code is for, so it should be ok).
-        has_lvm= utils.sysexec_noerr( "sfdisk -l %s | grep -q 'Linux LVM'" %
-                                      device )
+        cmd = "sfdisk -l %s | grep -q 'Linux LVM'" % device 
+        has_lvm= utils.sysexec_noerr(cmd, log)
         if has_lvm:
-            log.write( "It appears %s has/had lvm already setup on "\
-                       "it, continuing.\n" % device )
-            continue
+            log.write( "It appears %s has lvm already setup on it.\n" % device)
+            paranoid = False
+            if paranoid:
+                log.write("To paranoid to add %s to vservers lvm.\n" % device)
+                continue
         
-
         log.write( "Attempting to add %s to the volume group\n" % device )
 
         if not InstallPartitionDisks.single_partition_device( device, vars, log ):
@@ -139,46 +150,58 @@ def Run( vars, log ):
         
         vars['ROOT_MOUNTED']= 0
 
-        if not utils.sysexec_noerr( "vgextend planetlab %s" %
-                                    string.join(new_devices," "), log ):
-            log.write( "Failed to add physical volumes %s to " \
-                       "volume group, continuing.\n" % string.join(new_devices," "))
-            return 1
-
-        # now, get the number of unused extents, and extend the vserver
-        # logical volume by that much.
-        remaining_extents= \
+        while True:
+            cmd = "vgextend planetlab %s" % string.join(new_devices," ")
+            if not utils.sysexec_noerr( cmd, log ):
+                log.write( "Failed to add physical volumes %s to " \
+                           "volume group, continuing.\n" % string.join(new_devices," "))
+                res = 1
+                break
+            
+            # now, get the number of unused extents, and extend the vserver
+            # logical volume by that much.
+            remaining_extents= \
                InstallPartitionDisks.get_remaining_extents_on_vg( vars, log )
 
-        log.write( "Extending vservers logical volume.\n" )
-        
-        # make all LVMs known again for lvextend/resize2fs to work
-        utils.sysexec( "vgchange -ay", log )
+            log.write( "Extending vservers logical volume.\n" )
+            utils.sysexec( "vgchange -ay", log )
+            cmd = "lvextend -l +%s %s" % (remaining_extents, PARTITIONS["vservers"])
+            if not utils.sysexec_noerr(cmd, log):
+                log.write( "Failed to extend vservers logical volume, continuing\n" )
+                res = 1
+                break
 
-        if not utils.sysexec_noerr("lvextend -l +%s /dev/planetlab/vservers" %
-                                   remaining_extents, log):
-            log.write( "Failed to extend vservers logical volume, continuing\n" )
-            return 1
+            log.write( "making the ext3 filesystem match new logical volume size.\n" )
+            if BOOT_CD_VERSION[0] == 2:
+                cmd = "resize2fs %s" % PARTITIONS["vservers"]
+                resize = utils.sysexec_noerr(cmd,log)
+            elif BOOT_CD_VERSION[0] == 3:
+                vars['ROOT_MOUNTED']= 1
+                cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
+                utils.sysexec_noerr( cmd, log )
+                cmd = "mount %s %s/vservers" % \
+                      (PARTITIONS["vservers"],SYSIMG_PATH)
+                utils.sysexec_noerr( cmd, log )
+                cmd = "ext2online %s/vservers" % SYSIMG_PATH
+                resize = utils.sysexec_noerr(cmd,log)
+                utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
+                utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
+                vars['ROOT_MOUNTED']= 0
 
-        log.write( "making the ext3 filesystem match new logical volume size.\n" )
-        if BOOT_CD_VERSION[0] == 2:
-            resize = utils.sysexec_noerr("resize2fs /dev/planetlab/vservers",log)
-        elif BOOT_CD_VERSION[0] == 3:
-            vars['ROOT_MOUNTED']= 1
-            utils.sysexec_noerr( "mount /dev/planetlab/root %s" % SYSIMG_PATH, log )
-            utils.sysexec_noerr( "mount /dev/planetlab/vservers %s/vservers" % SYSIMG_PATH, log )
-            resize = utils.sysexec_noerr("ext2online /dev/planetlab/vservers",log)
-            utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
-            utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
-            vars['ROOT_MOUNTED']= 0
+            utils.sysexec( "vgchange -an", log )
 
-        if not resize:
-            log.write( "Failed to resize vservers partition, continuing\n" )
-            return 1
-        else:
-            log.write( "Succesfully extended vservers partition by %4.2f GB\n" %
-                       extended_gb_size )
-            return 1
+            if not resize:
+                log.write( "Failed to resize vservers partition, continuing.\n" )
+                res = 1
+                break
+            else:
+                log.write( "Extended vservers partition by %4.2f GB\n" %
+                           extended_gb_size )
+                res = 1
+                break
+
     else:
         log.write( "No new disk devices to add to volume group.\n" )
-        return 1
+        res = 1
+
+    return res

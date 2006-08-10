@@ -1,44 +1,11 @@
+#!/usr/bin/python2
+
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
-
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-
-#     * Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following
-#       disclaimer in the documentation and/or other materials provided
-#       with the distribution.
-
-#     * Neither the name of the Intel Corporation nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE INTEL OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-# EXPORT LAWS: THIS LICENSE ADDS NO RESTRICTIONS TO THE EXPORT LAWS OF
-# YOUR JURISDICTION. It is licensee's responsibility to comply with any
-# export regulations applicable in licensee's jurisdiction. Under
-# CURRENT (May 2000) U.S. export regulations this software is eligible
-# for export from the U.S. and can be downloaded by or otherwise
-# exported or reexported worldwide EXCEPT to U.S. embargoed destinations
-# which include Cuba, Iraq, Libya, North Korea, Iran, Syria, Sudan,
-# Afghanistan and any other country to which the U.S. has embargoed
-# goods and services.
-
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+# expected /proc/partitions format
 
 import os, sys
 import string
@@ -62,14 +29,6 @@ def Run( vars, log ):
     ROOT_SIZE                the size of the root logical volume
     SWAP_SIZE                the size of the swap partition
     BOOT_CD_VERSION          A tuple of the current bootcd version
-    
-    Sets the following variables:
-    PARTITIONS               diction of generic part. types (root/swap)
-                             and their associated devices.
-                             Current keys/values:
-                                 root    /dev/planetlab/root
-                                 swap    /dev/planetlab/swap
-    
     """
 
     log.write( "\n\nStep: Install: partitioning disks.\n" )
@@ -98,6 +57,10 @@ def Run( vars, log ):
 
         NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
+        PARTITIONS= vars["PARTITIONS"]
+        if PARTITIONS == None:
+            raise ValueError, "PARTITIONS"
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -110,29 +73,15 @@ def Run( vars, log ):
     if BOOT_CD_VERSION[0] == 2:
         compatibility.setup_partdisks_2x_cd( vars, log )
 
-    import parted
-        
-    # define the basic partition paths
-    PARTITIONS= {}
-    PARTITIONS["root"]= "/dev/planetlab/root"
-    PARTITIONS["swap"]= "/dev/planetlab/swap"
-    PARTITIONS["vservers"]= "/dev/planetlab/vservers"
-    # Linux 2.6 mounts LVM with device mapper
-    PARTITIONS["mapper-root"]= "/dev/mapper/planetlab-root"
-    PARTITIONS["mapper-swap"]= "/dev/mapper/planetlab-swap"
-    PARTITIONS["mapper-vservers"]= "/dev/mapper/planetlab-vservers"
-    vars["PARTITIONS"]= PARTITIONS
-
-    
     # disable swap if its on
     utils.sysexec_noerr( "swapoff %s" % PARTITIONS["swap"], log )
 
     # shutdown and remove any lvm groups/volumes
     utils.sysexec_noerr( "vgscan", log )
     utils.sysexec_noerr( "vgchange -ay", log )        
-    utils.sysexec_noerr( "lvremove -f /dev/planetlab/root", log )
-    utils.sysexec_noerr( "lvremove -f /dev/planetlab/swap", log )
-    utils.sysexec_noerr( "lvremove -f /dev/planetlab/vservers", log )
+    utils.sysexec_noerr( "lvremove -f %s" % PARTITIONS["root"], log )
+    utils.sysexec_noerr( "lvremove -f %s" % PARTITIONS["swap"], log )
+    utils.sysexec_noerr( "lvremove -f %s" % PARTITIONS["vservers"], log )
     utils.sysexec_noerr( "vgchange -an", log )
     utils.sysexec_noerr( "vgremove planetlab", log )
 
@@ -205,9 +154,7 @@ def Run( vars, log ):
         utils.sysexec( "mkfs.ext2 -q %s -m %d -j %s" % (option,rbp,devname), log )
 
     # save the list of block devices in the log
-    log.write( "Block devices used (in lvm):\n" )
-    log.write( repr(used_devices) + "\n" )
-    log.write( "End of block devices used (in lvm).\n" )
+    log.write( "Block devices used (in lvm): %s\n" % repr(used_devices))
 
     # list of block devices used may be updated
     vars["INSTALL_BLOCK_DEVICES"]= used_devices
