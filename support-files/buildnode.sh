@@ -6,7 +6,7 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005-2006 The Trustees of Princeton University
 #
-# $Id: buildnode.sh,v 1.10 2006/04/11 22:13:18 mlhuang Exp $
+# $Id: buildnode.sh,v 1.11 2006/05/18 18:42:33 mlhuang Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -73,7 +73,7 @@ export PL_BOOTCD=1
 # because groupinstall does not honor Requires(pre) dependencies
 # properly, most %pre scripts require coreutils to be installed first,
 # and some of our %post scripts require python.
-mkfedora -v -r $releasever -a $basearch -k -p dev -p coreutils -p python -g PlanetLab $VROOT
+mkfedora -v -r $releasever -a $basearch -k -p udev -p coreutils -p python -g PlanetLab $VROOT
 
 # Disable unnecessary services
 echo "* Disabling unnecessary services"
