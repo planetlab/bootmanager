@@ -1,3 +1,0 @@
-Contains vgscan, vgchange and the lvm library.
-Just enough to load the root partion for booting
-a node after its installed

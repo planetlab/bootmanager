@@ -1,8 +1,16 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
+
 import os
 
 from Exceptions import *
 import BootAPI
-import StartDebug
 
 
 AUTH_FAILURE_COUNT_FILE= "/tmp/authfailurecount"
@@ -70,8 +78,6 @@ def Run( vars, log ):
     if auth_failure_count >= NUM_AUTH_FAILURES_BEFORE_DEBUG:
         log.write( "Maximum number of authentication failures reached.\n" )
         log.write( "Canceling boot process and going into debug mode.\n" )
-
-        StartDebug.Run( vars, log )
 
     raise BootManagerException, "Unable to authenticate node."
     

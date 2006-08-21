@@ -47,8 +47,6 @@ find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
 install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
 for file in \
     uudecode.gz \
-    alpina-BootLVM.tar.gz \
-    alpina-PartDisks.tar.gz \
     PlanetLab-Bootstrap.tar.bz2 ; do
   install -D -m 644 support-files/$file $RPM_BUILD_ROOT/var/www/html/boot/$file
 done

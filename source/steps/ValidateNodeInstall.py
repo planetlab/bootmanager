@@ -1,8 +1,16 @@
+#!/usr/bin/python2 -u
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
 import os
 
 from Exceptions import *
 import utils
-from systeminfo import systeminfo
+import systeminfo
 import compatibility
 import ModelOptions
 
@@ -47,6 +55,10 @@ def Run( vars, log ):
         
         NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
+        PARTITIONS= vars["PARTITIONS"]
+        if PARTITIONS == None:
+            raise ValueError, "PARTITIONS"
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -68,7 +80,7 @@ def Run( vars, log ):
         # simply creating an instance of this class and listing the system
         # block devices will make them show up so vgscan can find the planetlab
         # volume group
-        systeminfo().get_block_device_list()
+        systeminfo.get_block_device_list(vars, log)
 
         try:
             utils.sysexec( "vgscan", log )
@@ -81,9 +93,9 @@ def Run( vars, log ):
         utils.makedirs( SYSIMG_PATH )
 
         try:
-            utils.sysexec( "mount /dev/planetlab/root %s" % SYSIMG_PATH, log )
-            utils.sysexec( "mount /dev/planetlab/vservers %s/vservers" %
-                           SYSIMG_PATH, log )
+            utils.sysexec("mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
+            utils.sysexec("mount %s %s/vservers" % \
+                          (PARTITIONS["vservers"], SYSIMG_PATH), log)
             utils.sysexec( "mount -t proc none %s/proc" % SYSIMG_PATH, log )
         except BootManagerException, e:
             log.write( "BootManagerException during vgscan/vgchange: %s\n" %

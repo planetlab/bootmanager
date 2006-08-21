@@ -1,3 +1,11 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
 import os
 import xmlrpclib
 import socket
@@ -24,12 +32,24 @@ def Run( vars, log ):
     hardware setup (to fix old cd problems)
 
     Sets the following variables:
-    BOOT_CD_VERSION           A two number tuple of the boot cd version
+    PARTITIONS        A dictionary of generic partition types and their
+                      associated devices.
+    BOOT_CD_VERSION   A two number tuple of the boot cd version
     """
 
     log.write( "\n\nStep: Initializing the BootManager.\n" )
 
-    
+    # define the basic partition paths
+    PARTITIONS= {}
+    PARTITIONS["root"]= "/dev/planetlab/root"
+    PARTITIONS["swap"]= "/dev/planetlab/swap"
+    PARTITIONS["vservers"]= "/dev/planetlab/vservers"
+    # Linux 2.6 mounts LVM with device mapper
+    PARTITIONS["mapper-root"]= "/dev/mapper/planetlab-root"
+    PARTITIONS["mapper-swap"]= "/dev/mapper/planetlab-swap"
+    PARTITIONS["mapper-vservers"]= "/dev/mapper/planetlab-vservers"
+    vars["PARTITIONS"]= PARTITIONS
+
     log.write( "Opening connection to API server\n" )
     try:
         api_inst= xmlrpclib.Server( vars['BOOT_API_SERVER'], verbose=0 )

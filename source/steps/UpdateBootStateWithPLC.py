@@ -1,3 +1,11 @@
+#!/usr/bin/python2 -u
+
+# Copyright (c) 2003 Intel Corporation
+# All rights reserved.
+#
+# Copyright (c) 2004-2006 The Trustees of Princeton University
+# All rights reserved.
+
 from Exceptions import *
 import BootAPI
 import notify_messages
@@ -27,24 +35,25 @@ def Run( vars, log ):
     log.write( "Successfully updated boot state for this node at PLC\n" )
 
 
-    if "STATE_CHANGE_NOTIFY" in vars.keys():
-        if vars["STATE_CHANGE_NOTIFY"] == 1:
-            message= vars['STATE_CHANGE_NOTIFY_MESSAGE']
-            include_pis= 0
-            include_techs= 1
-            include_support= 0
-            
-            sent= 0
-            try:
-                sent= BootAPI.call_api_function( vars, "BootNotifyOwners",
-                                                 (message,
-                                                  include_pis,
-                                                  include_techs,
-                                                  include_support) )
-            except BootManagerException, e:
-                log.write( "Call to BootNotifyOwners failed: %s.\n" % e )
-                
-            if sent == 0:
-                log.write( "Unable to notify site contacts of state change.\n" )
-    
+    notify = vars.get("STATE_CHANGE_NOTIFY",0)
+
+    if notify:
+        message= vars['STATE_CHANGE_NOTIFY_MESSAGE']
+        include_pis= 0
+        include_techs= 1
+        include_support= 0
+
+        sent= 0
+        try:
+            sent= BootAPI.call_api_function( vars, "BootNotifyOwners",
+                                             (message,
+                                              include_pis,
+                                              include_techs,
+                                              include_support) )
+        except BootManagerException, e:
+            log.write( "Call to BootNotifyOwners failed: %s.\n" % e )
+
+        if sent == 0:
+            log.write( "Unable to notify site contacts of state change.\n" )
+
     return 1
