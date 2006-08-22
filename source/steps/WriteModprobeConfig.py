@@ -13,6 +13,7 @@ import utils
 import systeminfo
 import BootAPI
 import ModelOptions
+import notify_messages
 
 def Run( vars, log, filename = "/etc/modprobe.conf"):
     """
