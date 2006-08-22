@@ -31,5 +31,6 @@ __all__ = ["ReadNodeConfiguration",
            "InstallPartitionDisks",
            "InstallUninitHardware",
            "InstallWriteConfig",
+           "MakeInitrd",
            "WriteNetworkConfig",
            "WriteModprobeConfig"]
