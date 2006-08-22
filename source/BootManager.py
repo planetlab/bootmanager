@@ -191,6 +191,7 @@ class BootManager:
             InstallInit.Run( self.VARS, self.LOG )                    
             if ValidateNodeInstall.Run( self.VARS, self.LOG ):
                 WriteModprobeConfig.Run( self.VARS, self.LOG )
+                MakeInitrd.Run( self.VARS, self.LOG )
                 WriteNetworkConfig.Run( self.VARS, self.LOG )
                 # the following step should be done by NM
                 UpdateNodeConfiguration.Run( self.VARS, self.LOG )

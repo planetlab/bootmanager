@@ -70,9 +70,6 @@ def Run( vars, log ):
     except OSError, e:
         pass
             
-    log.write( "Unmounting proc.\n" )
-    utils.sysexec( "umount %s/proc" % SYSIMG_PATH, log )
-
     log.write( "Shutting down swap\n" )
     utils.sysexec( "swapoff %s" % PARTITIONS["swap"], log )
 

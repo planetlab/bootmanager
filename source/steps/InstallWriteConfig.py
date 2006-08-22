@@ -130,33 +130,6 @@ def Run( vars, log ):
     if method == "dhcp":
         utils.sysexec( "cp /etc/resolv.conf %s/etc/" % SYSIMG_PATH, log )
 
-    # the kernel rpm should have already done this, so don't fail the
-    # install if it fails
-    log.write( "Mounting /proc in system image\n" )
-    utils.sysexec_noerr( "mount -t proc proc %s/proc" % SYSIMG_PATH, log )
-
-    # mkinitrd references both /etc/modprobe.conf and /etc/fstab
-    # as well as /proc/lvm/global. The kernel RPM installation
-    # likely created an improper initrd since these files did not
-    # yet exist. Re-create the initrd here.
-    log.write( "Making initrd\n" )
-
-    # trick mkinitrd in case the current environment does not have device mapper
-    fake_root_lvm= False
-    if not os.path.exists( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) ):
-        fake_root_lvm= True
-        utils.makedirs( "%s/dev/mapper" % SYSIMG_PATH )
-        rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
-        rootdev.close()
-
-    initrd, kernel_version= systeminfo.getKernelVersion(vars,log)
-    utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
-    utils.sysexec( "chroot %s mkinitrd /boot/initrd-%s.img %s" % \
-                   (SYSIMG_PATH, kernel_version, kernel_version), log )
-
-    if fake_root_lvm == True:
-        utils.removefile( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) )
-
     log.write( "Writing node install version\n" )
     utils.makedirs( "%s/etc/planetlab" % SYSIMG_PATH )
     ver= file( "%s/etc/planetlab/install_version" % SYSIMG_PATH, "w" )
