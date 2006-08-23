@@ -13,11 +13,11 @@ BOOT_API_SERVER=https://www.planet-lab.org:443/PLCAPI/
 
 # path to store temporary files during the install,
 # do not include trailing slashes
-TEMP_PATH=/mnt/tmp
+TEMP_PATH=/tmp/mnt
 
 
 # path to the system mount point
-SYSIMG_PATH=/mnt/tmp/sysimg
+SYSIMG_PATH=/tmp/mnt/sysimg
 
 
 # where the cacerts for the boot cd can be found
