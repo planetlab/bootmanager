@@ -129,6 +129,12 @@ def merge_files(modules_dep_path, modules_pcimap_path, pcitable_path):
         if module == "mptbase":
             module= "mptscsih"
 
+        # XXX ata_piix and ahci both claim the same chipsets, and it
+        # is usually a non-visible BIOS option that decides which is
+        # appropriate. Prefer ata_piix over ahci for now.
+        if module == "ahci":
+            module= "ata_piix"
+
         try:
             vendor_id= long(line_parts[1],16)
         except ValueError, e:
