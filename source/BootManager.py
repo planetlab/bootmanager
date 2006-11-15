@@ -216,7 +216,6 @@ class BootManager:
             InstallBootstrapRPM.Run( self.VARS, self.LOG )            
             InstallWriteConfig.Run( self.VARS, self.LOG )
             InstallBuildVServer.Run( self.VARS, self.LOG )
-            InstallNodeInit.Run( self.VARS, self.LOG )
             InstallUninitHardware.Run( self.VARS, self.LOG )
             self.VARS['BOOT_STATE']= 'boot'
             self.VARS['STATE_CHANGE_NOTIFY']= 1
