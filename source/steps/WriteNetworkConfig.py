@@ -11,8 +11,9 @@ import os, string
 
 from Exceptions import *
 import utils
-import BootAPI
+import BootServerRequest
 import ModelOptions
+import urlparse
 
 def Run( vars, log ):
     """
@@ -91,7 +92,31 @@ def Run( vars, log ):
     except KeyError, e:
         pass
 
-        
+
+    # Node Manager needs at least PLC_API_HOST and PLC_BOOT_HOST
+    log.write("Writing /etc/planetlab/plc_config\n")
+    utils.makedirs("%s/etc/planetlab" % SYSIMG_PATH)
+    plc_config = file("%s/etc/planetlab/plc_config" % SYSIMG_PATH, "w")
+
+    bs= BootServerRequest.BootServerRequest()
+    if bs.BOOTSERVER_CERTS:
+        print >> plc_config, "PLC_BOOT_HOST='%s'" % bs.BOOTSERVER_CERTS.keys()[0]
+
+    api_url = vars['BOOT_API_SERVER']
+    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(api_url)
+    parts = netloc.split(':')
+    host = parts[0]
+    if len(parts) > 1:
+        port = parts[1]
+    else:
+        port = '80'
+    print >> plc_config, "PLC_API_HOST='%s'" % host
+    print >> plc_config, "PLC_API_PORT='%s'" % port
+    print >> plc_config, "PLC_API_PATH='%s'" % path
+
+    plc_config.close()
+
+
     log.write( "Writing /etc/hosts\n" )
     hosts_file= file("%s/etc/hosts" % SYSIMG_PATH, "w" )    
     hosts_file.write( "127.0.0.1       localhost\n" )
