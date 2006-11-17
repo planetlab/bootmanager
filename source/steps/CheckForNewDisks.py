@@ -87,10 +87,13 @@ def Run( vars, log ):
 
         # this is the lvm partition, if it exists on that device
         lvm_partition= "%s1" % device
-        cmd = "pvdisplay %s | grep -q 'planetlab'" % lvm_partition
-        already_added= utils.sysexec_noerr(cmd, log)
-        
-        if already_added:
+        cciss_lvm_partition= "%sp1" % device
+        cmd = "pvdisplay %s | grep -q 'planetlab'"
+
+        already_added= utils.sysexec_noerr(cmd % lvm_partition, log)
+        cciss_already_added= utils.sysexec_noerr(cmd % cciss_lvm_partition, log)
+
+         if already_added or cciss_already_added:
             log.write( "It appears %s is part of the volume group, continuing.\n" %
                        device )
             continue
