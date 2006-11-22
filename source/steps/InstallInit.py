@@ -7,11 +7,10 @@
 # All rights reserved.
 # expected /proc/partitions format
 
-import os, sys, shutil
-import string
+import os, sys, string
 
 import utils
-
+from Exceptions import *
 
 def Run( vars, log ):
     """
@@ -75,7 +74,12 @@ def Run( vars, log ):
     utils.removedir( TEMP_PATH )
     
     log.write( "Cleaning up any existing PlanetLab config files\n" )
-    utils.removedir( PLCONF_DIR )
+    try:
+        flist = os.listdir( PLCONF_DIR)
+        for file in flist:
+            utils.removedir( file )
+    except OSError:
+        pass
     
     # create the temp path and sysimg path. since sysimg
     # path is in temp path, both are created here
