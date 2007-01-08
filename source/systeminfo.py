@@ -55,6 +55,7 @@ MODULE_CLASS_SCSI= "scsi"
 
 PCI_CLASS_NETWORK_ETHERNET=0x0200L
 PCI_CLASS_STORAGE_SCSI=0x0100L
+PCI_CLASS_STORAGE_SATA=0x0106L
 PCI_CLASS_STORAGE_IDE=0x0101L
 PCI_CLASS_STORAGE_FLOPPY=0x0102L
 PCI_CLASS_STORAGE_IPI=0x0103L
@@ -334,6 +335,7 @@ def get_system_modules( vars = {}, log = sys.stderr):
 
         if classid not in (PCI_CLASS_NETWORK_ETHERNET,
                            PCI_CLASS_STORAGE_SCSI,
+                           PCI_CLASS_STORAGE_SATA,
                            PCI_CLASS_STORAGE_RAID,
                            PCI_CLASS_STORAGE_OTHER,
                            PCI_CLASS_STORAGE_IDE):
@@ -360,6 +362,7 @@ def get_system_modules( vars = {}, log = sys.stderr):
                 if classid == PCI_CLASS_NETWORK_ETHERNET:
                     network_mods.append(module[0])
                 elif classid in (PCI_CLASS_STORAGE_SCSI,
+                                 PCI_CLASS_STORAGE_SATA,
                                  PCI_CLASS_STORAGE_RAID,
                                  PCI_CLASS_STORAGE_OTHER,
                                  PCI_CLASS_STORAGE_IDE):
