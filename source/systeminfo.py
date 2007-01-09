@@ -367,6 +367,15 @@ def get_system_modules( vars = {}, log = sys.stderr):
                                  PCI_CLASS_STORAGE_OTHER,
                                  PCI_CLASS_STORAGE_IDE):
                     scsi_mods.append(module[0])
+
+                    # XXX ata_piix and ahci both claim 8086:2652 and 8086:2653,
+                    # and it is usually a non-visible BIOS option that decides
+                    # which is appropriate. Just load both.
+                    if vendorid == 0x8086 and (deviceid == 0x2652 or deviceid == 0x2653):
+                        if module[0] == "ahci":
+                            scsi_mods.append("ata_piix")
+                        elif module[0] == "ata_piix":
+                            scsi_mods.append("ahci")
                 else:
                     print "not network or scsi: 0x%x" % classid
                 break
