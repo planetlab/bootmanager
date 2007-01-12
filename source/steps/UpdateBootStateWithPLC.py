@@ -30,10 +30,11 @@ def Run( vars, log ):
 
     update_vals= {}
     update_vals['boot_state']= vars['BOOT_STATE']
-    BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
-
-    log.write( "Successfully updated boot state for this node at PLC\n" )
-
+    try:
+        BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
+        log.write( "Successfully updated boot state for this node at PLC\n" )
+    except BootManagerException, e:
+        log.write( "Unable to update boot state for this node at PLC: %s.\n" % e )
 
     notify = vars.get("STATE_CHANGE_NOTIFY",0)
 
