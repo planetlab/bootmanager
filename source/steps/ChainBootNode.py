@@ -103,6 +103,26 @@ def Run( vars, log ):
         vars['ROOT_MOUNTED']= 1
         
 
+    # write out the session value /etc/planetlab/session
+    try:
+        session_file_path= "%s/%s/session" % (SYSIMG_PATH,PLCONF_DIR)
+        session_file= file( session_file_path, "w" )
+        session_file.write( str(NODE_SESSION) )
+        session_file.close()
+        session_file= None
+        log.write( "Updated /etc/planetlab/session\n" )
+    except IOError, e:
+        log.write( "Unable to write out /etc/planetlab/session, continuing anyway\n" )
+
+    # update configuration files
+    log.write( "Updating configuration files.\n" )
+    if os.path.exists( SYSIMG_PATH + "/etc/init.d/conf_files" ):
+        cmd = "/etc/init.d/conf_files start --noscripts"
+    else:
+        cmd = "/usr/local/planetlab/bin/PlanetLabConf.py noscripts"
+    utils.sysexec( "chroot %s %s" % (SYSIMG_PATH, cmd), log )
+
+    # update node packages
     log.write( "Running node update.\n" )
     cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" \
           % SYSIMG_PATH
@@ -117,17 +137,6 @@ def Run( vars, log ):
         ssh_host_key_file= None
     except IOError, e:
         pass
-
-    # write out the session value /etc/planetlab/session
-    try:
-        session_file_path= "%s/%s/session" % (SYSIMG_PATH,PLCONF_DIR)
-        session_file= file( session_file_path, "w" )
-        session_file.write( str(NODE_SESSION) )
-        session_file.close()
-        session_file= None
-        log.write( "Updated /etc/planetlab/session\n" )
-    except IOError, e:
-        log.write( "Unable to write out /etc/planetlab/session, continuing anyway\n" )
 
     update_vals= {}
     update_vals['ssh_host_key']= ssh_host_key
