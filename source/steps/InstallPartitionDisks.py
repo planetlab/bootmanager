@@ -293,11 +293,14 @@ def get_partition_path_from_device( device, vars, log ):
         else:
             part_path= device + "1"
     else:
-        # since device ends in /disc, we need to make it end in
+        # if device ends in /disc, we need to make it end in
         # /part1 to indicate the first partition (for devfs based 2.x cds)
         dev_parts= string.split(device,"/")
-        dev_parts[len(dev_parts)-1]= "part1"
-        part_path= string.join(dev_parts,"/")
+        if dev_parts[-1] == "disc":
+            dev_parts[-1]= "part1"
+            part_path= string.join(dev_parts,"/")
+        else:
+            part_path= device + "1"
 
     return part_path
 
