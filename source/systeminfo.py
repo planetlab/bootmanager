@@ -140,6 +140,16 @@ def get_block_device_list(vars = {}, log = sys.stderr):
             devicename = "cciss/c%dd%d" % (M,N)
             valid_blk_names[devicename]=None
 
+    for devicename in valid_blk_names.keys():
+        # devfs under 2.4 (old boot cds) used to list partitions
+        # in a format such as scsi/host0/bus0/target0/lun0/disc
+        # and /dev/sda, etc. were just symlinks
+        try:
+            devfsname= os.readlink( "/dev/%s" % devicename )
+            valid_blk_names[devfsname]= devicename
+        except OSError:
+            pass
+
     # only do this once every system boot
     if not os.access(DEVICES_SCANNED_FLAG, os.R_OK):
 
@@ -180,6 +190,8 @@ def get_block_device_list(vars = {}, log = sys.stderr):
         # skip and ignore any partitions
         if not valid_blk_names.has_key(device):
             continue
+        elif valid_blk_names[device] is not None:
+            device= valid_blk_names[device]
 
         try:
             major= int(parts[0])
