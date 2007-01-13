@@ -146,7 +146,7 @@ def get_block_device_list(vars = {}, log = sys.stderr):
         # and /dev/sda, etc. were just symlinks
         try:
             devfsname= os.readlink( "/dev/%s" % devicename )
-            valid_blk_names[devfsname]= devicename
+            valid_blk_names[devfsname]=None
         except OSError:
             pass
 
@@ -190,8 +190,6 @@ def get_block_device_list(vars = {}, log = sys.stderr):
         # skip and ignore any partitions
         if not valid_blk_names.has_key(device):
             continue
-        elif valid_blk_names[device] is not None:
-            device= valid_blk_names[device]
 
         try:
             major= int(parts[0])
