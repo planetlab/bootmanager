@@ -59,12 +59,12 @@ rm -rf $RPM_BUILD_ROOT
 # If run under sudo
 if [ -n "$SUDO_USER" ] ; then
     # Allow user to delete the build directory
-    chown -R $SUDO_USER .
+    chown -h -R $SUDO_USER .
     # Some temporary cdroot files like /var/empty/sshd and
     # /usr/bin/sudo get created with non-readable permissions.
     find . -not -perm +0600 -exec chmod u+rw {} \;
     # Allow user to delete the built RPM(s)
-    chown -R $SUDO_USER %{_rpmdir}/%{_arch}
+    chown -h -R $SUDO_USER %{_rpmdir}/%{_arch}
 fi
 
 %post
