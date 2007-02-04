@@ -37,8 +37,10 @@ def create_auth_structure( vars, call_params ):
     except KeyError, e:
         return None
 
-    msg= serialize_params(call_params)
-    node_hmac= hmac.new(node_key,msg,sha).hexdigest()
+    params= serialize_params(call_params)
+    params.sort()
+    msg= "[" + "".join(params) + "]"
+    node_hmac= hmac.new(node_key,msg.encode('utf-8'),sha).hexdigest()
     auth['value']= node_hmac
 
     return auth
@@ -55,48 +57,18 @@ def serialize_params( call_params ):
     them into one long string encased in a set of braces.
     """
 
-    # if there are no parameters, just return empty paren set
-    if len(call_params) == 0:
-        return "[]"
-
     values= []
     
     for param in call_params:
         if isinstance(param,list) or isinstance(param,tuple):
-            values= values + map(str,param)
+            values += serialize_params(param)
         elif isinstance(param,dict):
-            values= values + collapse_dict(param)        
+            values += serialize_params(param.values())
         else:
-            values.append( str(param) )
+            values.append(unicode(param))
                 
-    values.sort()
-    values= "[" + string.join(values,"") + "]"
     return values
 
-    
-def collapse_dict( value ):
-    """
-    given a dictionary, return a list of all the keys and values as strings,
-    in no particular order
-    """
-
-    item_list= []
-    
-    if not isinstance(value,dict):
-        return item_list
-    
-    for key in value.keys():
-        key_value= value[key]
-        if isinstance(key_value,list) or isinstance(key_value,tuple):
-            item_list= item_list + map(str,key_value)
-        elif isinstance(key_value,dict):
-            item_list= item_list + collapse_dict(key_value)
-        else:
-            item_list.append( str(key_value) )
-
-    return item_list
-            
-    
     
 def call_api_function( vars, function, user_params ):
     """
