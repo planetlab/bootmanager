@@ -14,6 +14,7 @@ import shutil
 from Exceptions import *
 import utils
 import BootServerRequest
+import BootAPI
 
 
 def Run( vars, log ):
@@ -88,13 +89,23 @@ def Run( vars, log ):
                                                      SYSIMG_PATH), log )
 
     vars['ROOT_MOUNTED']= 1
-    
+
+    # check which nodegroups we are part of (>=4.0)
+    tarballs = []
+    try:
+        nodes = BootAPI.call_api_function(vars, "GetNodes", ([NODE_ID], ['nodegroup_ids']))
+        node = nodes[0]
+        nodegroups = BootAPI.call_api_function(vars, "GetNodeGroups", (node['nodegroup_ids'], ['name']))
+        for nodegroup in nodegroups:
+            tarballs.append("PlanetLab-Bootstrap-%s.tar.bz2" % nodegroup['name'].lower())
+    except:
+        pass
+    tarballs += ["PlanetLab-Bootstrap.tar.bz2", "alpina-BootstrapRPM.tar.bz2"]
 
     # download and extract support tarball for
     # this step, which has everything
     # we need to successfully run
-    for step_support_file in [ "PlanetLab-Bootstrap.tar.bz2",
-                               "alpina-BootstrapRPM.tar.bz2" ]: 
+    for step_support_file in tarballs:
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
         dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
 
