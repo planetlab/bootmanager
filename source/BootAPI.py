@@ -64,6 +64,14 @@ def serialize_params( call_params ):
             values += serialize_params(param)
         elif isinstance(param,dict):
             values += serialize_params(param.values())
+        elif isinstance(param,xmlrpclib.Boolean):
+            # bool was not a real type in Python <2.3 and had to be
+            # marshalled as a custom type in xmlrpclib. Make sure that
+            # bools serialize consistently.
+            if param:
+                values.append("True")
+            else:
+                values.append("False")
         else:
             values.append(unicode(param))
                 
