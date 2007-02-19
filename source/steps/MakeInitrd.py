@@ -11,6 +11,7 @@ import os, string
 from Exceptions import *
 import utils
 import systeminfo
+import shutil
 
 def Run( vars, log ):
     """
@@ -50,8 +51,22 @@ def Run( vars, log ):
 
     initrd, kernel_version= systeminfo.getKernelVersion(vars,log)
     utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
-    utils.sysexec( "chroot %s mkinitrd -v /boot/initrd-%s.img %s" % \
+    if checkKern() == True:
+        utils.sysexec( "chroot %s mkinitrd -v /boot/initrd-%s.img %s" % \
                    (SYSIMG_PATH, kernel_version, kernel_version), log )
+    else:
+        shutil.copy("./mkinitrd.sh","%s/tmp/mkinitrd.sh" % SYSIMG_PATH)
+        os.chmod("%s/tmp/mkinitrd.sh" % SYSIMG_PATH, 755)
+        utils.sysexec( "chroot %s /tmp/mkinitrd.sh %s" % (SYSIMG_PATH, kernel_version))
 
     if fake_root_lvm == True:
         utils.removefile( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) )
+
+def checkKern():
+    #  Older bootcds only support LinuxThreads.  This hack is to get mkinitrd
+    #  to run without segfaulting by using /lib/obsolete/linuxthreads
+    kver = os.popen("/bin/uname -r", "r").readlines()[0].rstrip().split(".")
+    if int(kver[1]) > 4:
+        return True
+    elif int(kver[1]) <=4:
+        return False
