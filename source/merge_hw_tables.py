@@ -50,6 +50,7 @@ cciss 0e11:b060 0e11:b178
 
 import os, sys
 import string
+import StringIO
 
 PCI_ANY = 0xffffffffL
 
@@ -79,7 +80,7 @@ def merge_files(modules_dep_path, modules_pcimap_path, pcitable_path):
     except IOError:
         sys.stderr.write( "Unable to open pcitable: %s\n" %
                           pcitable_path )
-        return
+	pcitable_file=StringIO.StringIO()
 
     # associative array to store all matches of module -> ['vendor:device',..]
     # entries
