@@ -7,13 +7,13 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2005 The Trustees of Princeton University
 #
-# $Id: Makefile,v 1.3 2005/09/02 20:24:58 mlhuang Exp $
+# $Id: Makefile,v 1.4 2006/08/20 21:21:13 thierry Exp $
 # 
 
 all:	PlanetLab-Bootstrap.tar.bz2
 
 PlanetLab-Bootstrap.tar.bz2:
-	./buildnode.sh
+ 	./buildnode.sh -r $$([ -f "/etc/fedora-release" ] && awk ' { print $4 } ' /etc/fedora-release || echo "4")
 
 clean:
 	rm -f PlanetLab-Bootstrap.tar.bz2

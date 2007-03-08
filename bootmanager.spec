@@ -32,7 +32,9 @@ nodes.
 pushd bootmanager
 
 ./build.sh
-make -C support-files
+pushd support-files
+./buildnode.sh -r $([ -f "/etc/fedora-release" ] && awk ' { print $4 } ' /etc/fedora-release || echo "4")
+popd
 
 popd
 
