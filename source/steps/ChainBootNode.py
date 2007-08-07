@@ -119,12 +119,12 @@ def Run( vars, log ):
     if os.path.exists( SYSIMG_PATH + "/etc/init.d/conf_files" ):
         cmd = "/etc/init.d/conf_files start --noscripts"
     else:
-        cmd = "/usr/local/planetlab/bin/PlanetLabConf.py noscripts"
+        cmd = "/usr/bin/PlanetLabConf.py noscripts"
     utils.sysexec( "chroot %s %s" % (SYSIMG_PATH, cmd), log )
 
     # update node packages
     log.write( "Running node update.\n" )
-    cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" \
+    cmd = "chroot %s /usr/bin/NodeUpdate.py start noreboot" \
           % SYSIMG_PATH
     utils.sysexec( cmd, log )
 
