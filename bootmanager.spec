@@ -1,10 +1,10 @@
 %define name bootmanager
 %define version 3.1.15
-%define release 2%{?pldistro:.%{pldistro}}%{?date:.%{date}}
+%define release 3%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
 Vendor: PlanetLab
 Packager: PlanetLab Central <support@planet-lab.org>
-Distribution: PlanetLab 3.0
+Distribution: PlanetLab 4.1
 URL: http://cvs.planet-lab.org/cvs/bootmanager
 
 Summary: The PlanetLab Boot Manager
