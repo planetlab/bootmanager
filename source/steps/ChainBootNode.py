@@ -124,8 +124,11 @@ def Run( vars, log ):
 
     # update node packages
     log.write( "Running node update.\n" )
-    cmd = "chroot %s /usr/bin/NodeUpdate.py start noreboot" \
-          % SYSIMG_PATH
+    if os.path.exists( SYSIMG_PATH + "/usr/bin/NodeUpdate.py" ):
+        cmd = "chroot %s /usr/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
+    else:
+        # for backwards compatibility
+        cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
     utils.sysexec( cmd, log )
 
     log.write( "Updating ssh public host key with PLC.\n" )
