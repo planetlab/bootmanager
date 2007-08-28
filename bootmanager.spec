@@ -33,7 +33,7 @@ pushd bootmanager
 
 ./build.sh
 pushd support-files
-./buildnode.sh -r $([ -f "/etc/fedora-release" ] && awk ' { if ($3=="Core") print $4; else print $3 } ' /etc/fedora-release || echo 4)
+./buildnode.sh -r $([ -f "/etc/fedora-release" ] && awk ' { if ($2=="Core") print $4; else print $3 } ' /etc/fedora-release || echo 4)
 popd
 
 popd
