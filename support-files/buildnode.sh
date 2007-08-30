@@ -24,11 +24,33 @@ fi
 
 export PATH
 
-. build.common
+# Release and architecture to install
+releasever=4
+basearch=i386
 
-pl_process_fedora_options $@
-shiftcount=$?
-shift $shiftcount
+usage()
+{
+    echo "Usage: build.sh [OPTION]..."
+    echo "	-r release	Fedora release number (default: $releasever)"
+    echo "	-a arch		Fedora architecture (default: $basearch)"
+    echo "	-h		This message"
+    exit 1
+}
+
+# Get options
+while getopts "r:a:h" opt ; do
+    case $opt in
+	r)
+	    releasever=$OPTARG
+	    ;;
+	a)
+	    basearch=$OPTARG
+	    ;;
+	h|*)
+	    usage
+	    ;;
+    esac
+done
 
 # Do not tolerate errors
 set -e
@@ -51,21 +73,9 @@ export PL_BOOTCD=1
 # because groupinstall does not honor Requires(pre) dependencies
 # properly, most %pre scripts require coreutils to be installed first,
 # and some of our %post scripts require python.
+mkfedora -v -r $releasever -a $basearch -k -p udev -p coreutils -p python -g PlanetLab $VROOT
 
-packagelist=(
-udev
-coreutils
-python
-)
-# vserver-reference packages used for reference image
-for package in "${packagelist[@]}" ; do
-    packages="$packages -p $package"
-done
-
-# Populate VROOT with the files for the PlanetLab-Bootstrap content
-pl_setup_chroot $VROOT -k $packages -g PlanetLab
-
-# Disable additional unnecessary services
+# Disable unnecessary services
 echo "* Disabling unnecessary services"
 for service in netfs rawdevices cpuspeed smartd ; do
     if [ -x $VROOT/etc/init.d/$service ] ; then
