@@ -29,7 +29,7 @@ nodes.
 %setup -q
 
 %build
-pushd bootmanager
+pushd BootManager
 
 ./build.sh
 pushd support-files
@@ -41,7 +41,7 @@ popd
 %install
 rm -rf $RPM_BUILD_ROOT
 
-pushd bootmanager
+pushd BootManager
 
 # Install source so that it can be rebuilt
 find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
