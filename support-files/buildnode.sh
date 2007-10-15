@@ -53,6 +53,7 @@ export PL_BOOTCD=1
 # and some of our %post scripts require python.
 
 packagelist=(
+filesystem
 udev
 coreutils
 python
