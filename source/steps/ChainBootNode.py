@@ -18,6 +18,7 @@ import compatibility
 import systeminfo
 import BootAPI
 import notify_messages
+import time
 
 import ModelOptions
 
