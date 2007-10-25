@@ -203,6 +203,9 @@ def Run( vars, log ):
             if module != "":
                 log.write( "Unloading %s\n" % module )
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
+            if module == "e1000":
+                log.write("Unloading e1000 driver; sleeping 4 seconds...\n")
+                time.sleep(4)
 
         modules.close()
     except IOError:
