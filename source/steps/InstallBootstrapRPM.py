@@ -3,7 +3,7 @@
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
-# Copyright (c) 2004-2006 The Trustees of Princeton University
+# Copyright (c) 2004-2007 The Trustees of Princeton University
 # All rights reserved.
 # expected /proc/partitions format
 
@@ -91,7 +91,7 @@ def Run( vars, log ):
     vars['ROOT_MOUNTED']= 1
 
     # check which nodegroups we are part of (>=4.0)
-    tarballs = []
+    tarballs = ["PlanetLab-Bootstrap.tar.bz2"]
     try:
         nodes = BootAPI.call_api_function(vars, "GetNodes", ([NODE_ID], ['nodegroup_ids']))
         node = nodes[0]
@@ -100,34 +100,26 @@ def Run( vars, log ):
             tarballs.append("PlanetLab-Bootstrap-%s.tar.bz2" % nodegroup['name'].lower())
     except:
         pass
-    tarballs += ["PlanetLab-Bootstrap.tar.bz2", "alpina-BootstrapRPM.tar.bz2"]
 
-    # download and extract support tarball for
-    # this step, which has everything
-    # we need to successfully run
+    # download and extract support tarball for this step, which has
+    # everything we need to successfully run
     for step_support_file in tarballs:
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
         dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
 
-        # 30 is the connect timeout, 7200 is the max transfer time
-        # in seconds (2 hours)
+        # 30 is the connect timeout, 14400 is the max transfer time in
+        # seconds (4 hours)
         log.write( "downloading %s\n" % step_support_file )
         result= bs_request.DownloadFile( source_file, None, None,
                                          1, 1, dest_file,
-                                         30, 7200)
+                                         30, 14400)
         if result:
-            # New bootstrap tarball contains everything necessary to
-            # boot, no need to bootstrap further.
-            vars['SKIP_INSTALL_BASE']= (step_support_file == "PlanetLab-Bootstrap.tar.bz2")
-            break
-
-    if not result:
-        raise BootManagerException, "Unable to download %s from server." % \
-              source_file
-
-    log.write( "extracting %s in %s\n" % (dest_file,SYSIMG_PATH) )
-    result= utils.sysexec( "tar -C %s -xpjf %s" % (SYSIMG_PATH,dest_file), log )
-    utils.removefile( dest_file )
+            log.write( "extracting %s in %s\n" % (dest_file,SYSIMG_PATH) )
+            result= utils.sysexec( "tar -C %s -xpjf %s" % (SYSIMG_PATH,dest_file), log )
+            utils.removefile( dest_file )
+        else:
+            raise BootManagerException, "Unable to download %s from server." % \
+                  source_file
 
     # copy resolv.conf from the base system into our temp dir
     # so DNS lookups work correctly while we are chrooted

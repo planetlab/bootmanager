@@ -30,12 +30,7 @@ nodes.
 
 %build
 pushd BootManager
-
 ./build.sh
-pushd support-files
-./buildnode.sh -r $([ -f "/etc/fedora-release" ] && awk ' { if ($2=="Core") print $4; else print $3 } ' /etc/fedora-release || echo 4)
-popd
-
 popd
 
 %install
@@ -47,11 +42,9 @@ pushd BootManager
 find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
 
 install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
-for file in \
-    uudecode.gz \
-    PlanetLab-Bootstrap.tar.bz2 ; do
-  install -D -m 644 support-files/$file $RPM_BUILD_ROOT/var/www/html/boot/$file
-done
+
+# This is only required for 2.x bootcds.
+install -D -m 644 support-files/uudecode.gz $RPM_BUILD_ROOT/var/www/html/boot/uudecode.gz
 
 popd
 
@@ -83,4 +76,3 @@ EOF
 %changelog
 * Fri Sep  2 2005 Mark Huang <mlhuang@cotton.CS.Princeton.EDU> - 
 - Initial build.
-

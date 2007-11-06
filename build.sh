@@ -1,17 +1,14 @@
 #!/bin/bash
 #
-# Builds bootmanager.sh[.sgn], the PlanetLab Boot Manager script, and
-# PlanetLab-Bootstrap.tar.bz2, the initial root filesystem of a new
-# PlanetLab node. For backward compatibility with old version 2.0 Boot
-# CDs, additional utilities are also built and packaged as
-# alpina-BootLVM.tar.gz and alpina-PartDisks.tar.gz.
+# Builds bootmanager.sh[.sgn], which is the PlanetLab Boot Manager script.
 #
 # The bootmanager.sh script contains in it a uuencoded tarball of the
 # Boot Manager, customized for this PLC installation.
 #
 # Aaron Klingaman <alk@absarokasoft.com>
 # Mark Huang <mlhuang@cs.princeton.edu>
-# Copyright (C) 2004-2006 The Trustees of Princeton University
+# Marc E. Fiuczynski <mef@cs.princeton.edu>
+# Copyright (C) 2004-2007 The Trustees of Princeton University
 #
 # $Id: build.sh,v 1.5 2006/04/03 19:40:55 mlhuang Exp $
 #

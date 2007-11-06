@@ -23,9 +23,6 @@ def Run( vars, log ):
     /etc/resolv.conf (if applicable)
     /etc/sysconfig/network
 
-    It is assumed the caller mounted the root partition and the vserver partition
-    starting on SYSIMG_PATH - it is not checked here.
-
     The values to be used for the network settings are to be set in vars
     in the variable 'NETWORK_SETTINGS', which is a dictionary
     with keys:
