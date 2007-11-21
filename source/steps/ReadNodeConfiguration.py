@@ -116,6 +116,8 @@ def Run( vars, log ):
     vars['WAS_NODE_ID_IN_CONF']= 0
     vars['WAS_NODE_KEY_IN_CONF']= 0
 
+    vars['DISCONNECTED_OPERATION']= ''
+
     # for any devices that need to be mounted to get the configuration
     # file, mount them here.
     mount_point= "/tmp/conffilemount"
@@ -439,7 +441,10 @@ def __parse_configuration_file( vars, log, file_contents ):
 
             if name == "NET_DEVICE":
                 NETWORK_SETTINGS['mac']= string.upper(value)
-                
+
+            if name == "DISCONNECTED_OPERATION":
+                vars['DISCONNECTED_OPERATION']= value.strip()
+
 
     except IndexError, e:
         log.write( "Unable to parse configuration file\n" )
@@ -622,7 +627,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         
     vars["NETWORK_SETTINGS"]= NETWORK_SETTINGS
 
-    if not hostname_resolve_ok:
+    if not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION']:
         log.write( "Hostname does not resolve correctly, will not continue.\n" )
 
         if can_make_api_call:

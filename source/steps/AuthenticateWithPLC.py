@@ -56,6 +56,13 @@ def Run( vars, log ):
             return 1
     except BootManagerException, e:
         log.write( "Authentication failed: %s.\n" % e )
+    except:
+        # This is ugly.
+        if vars['DISCONNECTED_OPERATION']:
+            vars['API_SERVER_INST']= None
+            return 1
+        else:
+            raise
 
     # increment auth failure
     auth_failure_count= 0

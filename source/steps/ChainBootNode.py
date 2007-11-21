@@ -155,6 +155,8 @@ def Run( vars, log ):
     utils.sysexec( "cp %s/boot/kernel-boot%s /tmp/kernel" % (SYSIMG_PATH,option), log )
     utils.sysexec( "cp %s/boot/initrd-boot%s /tmp/initrd" % (SYSIMG_PATH,option), log )
 
+    BootAPI.save(vars)
+
     log.write( "Unmounting disks.\n" )
     try:
         # backwards compat, though, we should never hit this case post PL 3.2
@@ -241,7 +243,7 @@ def Run( vars, log ):
                 # problems during chain boot, such as USB host
                 # controller drivers (HCDs) (PL6577).
                 # if int(parts[2]) == 0:
-                if re.search('_hcd$', parts[0]):
+                if False and re.search('_hcd$', parts[0]):
                     if usb_usage > 0:
                         log.write( "NOT unloading %s since USB may be in use\n" % parts[0] )
                     else:

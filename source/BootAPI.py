@@ -12,9 +12,12 @@ import xml.parsers.expat
 import hmac
 import string
 import sha
+import cPickle
+import utils
 
 from Exceptions import *
 
+stash = None
 
 def create_auth_structure( vars, call_params ):
     """
@@ -86,11 +89,21 @@ def call_api_function( vars, function, user_params ):
 
     If the call fails, a BootManagerException is raised.
     """
-    
+    global stash
+
     try:
         api_server= vars['API_SERVER_INST']
     except KeyError, e:
         raise BootManagerException, "No connection to the API server exists."
+
+    if api_server is None:
+        if not stash:
+            load(vars)
+        for i in stash:
+            if i[0] == function and i[1] == user_params:
+               return i[2]
+        raise BootManagerException, \
+              "Disconnected operation failed, insufficient stash."
 
     auth= create_auth_structure(vars,user_params)
     if auth is None:
@@ -102,6 +115,9 @@ def call_api_function( vars, function, user_params ):
 
     try:
         exec( "rc= api_server.%s(*params)" % function )
+        if stash is None:
+            stash = []
+        stash += [ [ function, user_params, rc ] ]
         return rc
     except xmlrpclib.Fault, fault:
         raise BootManagerException, "API Fault: %s" % fault
@@ -109,3 +125,35 @@ def call_api_function( vars, function, user_params ):
         raise BootManagerException,"XML RPC protocol error: %s" % err
     except xml.parsers.expat.ExpatError, err:
         raise BootManagerException,"XML parsing error: %s" % err
+
+
+class Stash(file):
+    mntpnt = '/tmp/stash'
+    def __init__(self, vars, mode):
+        utils.makedirs(self.mntpnt)
+        try:
+            utils.sysexec('mount -t auto -U %s %s' % (vars['DISCONNECTED_OPERATION'], self.mntpnt))
+            # make sure it's not read-only
+            f = file('%s/api.cache' % self.mntpnt, 'a')
+            f.close()
+            file.__init__(self, '%s/api.cache' % self.mntpnt, mode)
+        except:
+            utils.sysexec_noerr('umount %s' % self.mntpnt)
+            raise BootManagerException, "Couldn't find API-cache for disconnected operation"
+
+    def close(self):
+        file.close(self)
+        utils.sysexec_noerr('umount %s' % self.mntpnt)
+
+def load(vars):
+    global stash
+    s = Stash(vars, 'r')
+    stash = cPickle.load(s)
+    s.close()
+
+def save(vars):
+    global stash
+    if vars['DISCONNECTED_OPERATION']:
+        s = Stash(vars, 'w')
+        cPickle.dump(stash, s)
+        s.close()
