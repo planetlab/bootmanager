@@ -283,7 +283,7 @@ def get_system_modules( vars = {}, log = sys.stderr):
     pcidevs = pypciscan.get_devices()
 
     for (slot, dev) in pcidevs.iteritems():
-        base = (dev[4] & 0xff00) >> 8
+        base = (dev[4] & 0xff0000) >> 16
         if base not in (PCI_BASE_CLASS_STORAGE,
                         PCI_BASE_CLASS_NETWORK):
             continue
