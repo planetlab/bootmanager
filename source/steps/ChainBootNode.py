@@ -192,7 +192,7 @@ def Run( vars, log ):
 
     if BOOT_CD_VERSION[0] == 2:
         utils.sysexec_noerr( "killall dhcpcd", log )
-    elif BOOT_CD_VERSION[0] == 3:
+    elif BOOT_CD_VERSION[0] >= 3:
         utils.sysexec_noerr( "killall dhclient", log )
         
     utils.sysexec_noerr( "umount -a -r -t ext2,ext3", log )
@@ -270,6 +270,7 @@ def Run( vars, log ):
         # kargs, which is ramdisk_size=8192
         pass 
 
+    utils.breakpoint ("Before kexec");
     try:
         utils.sysexec( 'kexec --force --initrd=/tmp/initrd ' \
                        '--append="%s" /tmp/kernel' % kargs)

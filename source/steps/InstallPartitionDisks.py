@@ -188,7 +188,7 @@ def single_partition_device( device, vars, log ):
 
         # 2.x cds have different libparted that 3.x cds, and they have
         # different interfaces
-        if BOOT_CD_VERSION[0] == 3:
+        if BOOT_CD_VERSION[0] >= 3:
 
             # create a new partition table
             disk= dev.disk_new_fresh(parted.disk_type_get("msdos"))
@@ -286,7 +286,7 @@ def get_partition_path_from_device( device, vars, log ):
     BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
         
     # those who wrote the cciss driver just had to make it difficult
-    if BOOT_CD_VERSION[0] == 3:
+    if BOOT_CD_VERSION[0] >= 3:
         cciss_test= "/dev/cciss"
         if device[:len(cciss_test)] == cciss_test:
             part_path= device + "p1"

@@ -175,7 +175,7 @@ def Run( vars, log ):
             if BOOT_CD_VERSION[0] == 2:
                 cmd = "resize2fs %s" % PARTITIONS["vservers"]
                 resize = utils.sysexec_noerr(cmd,log)
-            elif BOOT_CD_VERSION[0] == 3:
+            elif BOOT_CD_VERSION[0] >= 3:
                 vars['ROOT_MOUNTED']= 1
                 cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
                 utils.sysexec_noerr( cmd, log )

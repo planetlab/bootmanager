@@ -70,10 +70,12 @@ def sysexec( cmd, log= None ):
     0 if failed. A BootManagerException is raised if the command
     was unable to execute or was interrupted by the user with Ctrl+C
     """
+    if BREAKPOINT_MODE:
+        print ("sysexec >>> %s" % cmd)
     prog= popen2.Popen4( cmd, 0 )
     if prog is None:
         raise BootManagerException, \
-              "Unable to create instance of popen2.Popen3 " \
+              "Unable to create instance of popen2.Popen4 " \
               "for command: %s" % cmd
 
     if log is not None:
@@ -158,3 +160,46 @@ def get_mac_from_interface(ifname):
         
     return ret
 
+### handling breakpoints in the startup process
+import select, sys, string
+
+### global debug settings
+# NOTE. when BREAKPOINT_MODE turns out enabled,
+# you have to attend the boot phase, that would hang otherwise 
+
+# enabling this will cause the node to ask for breakpoint-mode at startup
+# production code should read False/False
+PROMPT_MODE=False
+# if promt mode enabled, this default is taken
+BREAKPOINT_MODE=False
+# in seconds : if no input, proceed
+PROMPT_TIMEOUT=5
+
+def prompt_for_breakpoint_mode ():
+
+    global BREAKPOINT_MODE
+    if PROMPT_MODE:
+        answer = "n"
+        sys.stdout.write ("Want to run in breakpoint mode ? y/[n] ")
+        sys.stdout.flush()
+        r,w,e = select.select ([sys.stdin],[],[],PROMPT_TIMEOUT)
+        if r:
+            answer = string.strip(sys.stdin.readline())
+        else:
+            sys.stdout.write("Timed-out is %ds\n"%PROMPT_TIMEOUT)
+        BREAKPOINT_MODE = ( answer == "y" or answer == "Y")
+    label="Off"
+    if BREAKPOINT_MODE:
+        label="On"
+    sys.stdout.write("Current BREAKPOINT_MODE is %s\n"%label)
+
+def breakpoint (message, cmd = None):
+
+    if BREAKPOINT_MODE:
+
+        if cmd is None:
+            cmd="/bin/sh"
+            message=message+" -- Entering bash - type ^D to proceed"
+
+        print message
+        os.system(cmd)

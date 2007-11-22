@@ -85,7 +85,7 @@ def Run( vars, log ):
         utils.sysexec( "ssh-keygen -d -f %s/ssh_host_dsa_key -N ''" %
                        ssh_dir, log )
 
-        if BOOT_CD_VERSION[0] == 3:
+        if BOOT_CD_VERSION[0] >= 3:
             utils.sysexec( "cp -f %s/sshd_config_v3 %s/sshd_config" %
                            (ssh_source_files,ssh_dir), log )
         else:

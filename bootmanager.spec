@@ -1,6 +1,11 @@
+#
+# $Id: bootmanager.spec 856 2007-09-21 13:54:58Z thierry $
+#
 %define name bootmanager
-%define version 3.1.16
-%define release 1%{?pldistro:.%{pldistro}}%{?date:.%{date}}
+%define version 3.1
+%define subversion 16
+
+%define release %{subversion}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
 Vendor: PlanetLab
 Packager: PlanetLab Central <support@planet-lab.org>
@@ -8,7 +13,7 @@ Distribution: PlanetLab 4.1
 URL: http://cvs.planet-lab.org/cvs/bootmanager
 
 Summary: The PlanetLab Boot Manager
-Name: bootmanager
+Name: %{name}
 Version: %{version}
 Release: %{release}
 License: BSD

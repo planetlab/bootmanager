@@ -294,6 +294,12 @@ class BootManager:
             
             
 def main(argv):
+
+    import utils
+    utils.prompt_for_breakpoint_mode()
+
+    utils.breakpoint ("Entering BootManager::main")
+    
     global NodeRunStates
     NodeRunStates = {'new':None,
                      'inst':None,

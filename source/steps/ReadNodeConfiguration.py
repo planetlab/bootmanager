@@ -61,17 +61,17 @@ def Run( vars, log ):
     NODE_KEY                    The key for this node
     NETWORK_SETTINGS            A dictionary of the values from the network
                                 configuration file. keys set:
-                                   method
-                                   ip        
-                                   mac       
-                                   gateway   
-                                   network   
-                                   broadcast 
-                                   netmask   
-                                   dns1      
-                                   dns2      
-                                   hostname  
-                                   domainname
+                                   method               IP_METHOD
+                                   ip                   IP_ADDRESS
+                                   mac                  NET_DEVICE       
+                                   gateway              IP_GATEWAY
+                                   network              IP_NETADDR
+                                   broadcast            IP_BROADCASTADDR
+                                   netmask              IP_NETMASK
+                                   dns1                 IP_DNS1
+                                   dns2                 IP_DNS2
+                                   hostname             HOST_NAME
+                                   domainname           DOMAIN_NAME
 
     the mac address is read from the machine unless it exists in the
     configuration file.
@@ -175,7 +175,7 @@ def Run( vars, log ):
 
 
 
-    if BOOT_CD_VERSION[0] == 3:
+    if BOOT_CD_VERSION[0] >= 3:
         # 2. check flash devices on 3.0 based cds
         log.write( "Checking flash devices for plnode.txt file.\n" )
 
