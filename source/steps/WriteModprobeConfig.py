@@ -55,16 +55,13 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     scsi_count= 0
 
     modulesconf_file= file("%s/%s" % (SYSIMG_PATH,filename), "w" )
+    modulesconf_file.write("options ata_generic all_generic_ide=1\n")
 
     for type in sysmods:
         if type == systeminfo.MODULE_CLASS_SCSI:
             for a_mod in sysmods[type]:
-                if scsi_count == 0:
-                    modulesconf_file.write( "alias scsi_hostadapter %s\n" %
-                                            a_mod )
-                else:
-                    modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
-                                            (scsi_count,a_mod) )
+                modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
+                                        (scsi_count,a_mod) )
                 scsi_count= scsi_count + 1
 
         elif type == systeminfo.MODULE_CLASS_NETWORK:
