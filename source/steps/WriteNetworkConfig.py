@@ -48,6 +48,7 @@ def Run( vars, log ):
                             (always starts with TEMP_PATH)
     NETWORK_SETTINGS  A dictionary of the values from the network
                                 configuration file
+    NODE_NETWORKS           All the network associated with this node
     Sets the following variables:
     None
     """
@@ -161,3 +162,28 @@ def Run( vars, log ):
         network_file.write( "GATEWAY=%s\n" % gateway )
     network_file.close()
     network_file= None
+
+    interface = 1
+    for network in vars['NODE_NETWORKS']:
+        if network['is_primary'] == 1:
+            continue
+        if method == "static" or method == "dhcp":
+            f = file("%s/etc/sysconfig/network-scripts/ifcfg-eth%d" %
+                     (SYSIMG_PATH, interface), "w")
+            f.write("DEVICE=eth%d\n" % interface)
+            f.write("HWADDR=%s\n" % mac)
+            f.write("ONBOOT=yes\n")
+            f.write("USERCTL=no\n")
+            if method == "static":
+                f.write("BOOTPROTO=static\n")
+                f.write("IPADDR=%s\n" % network['ip'])
+                f.write("NETMASK=%s\n" % network['netmask'])
+            elif method == "dhcp":
+                f.write("BOOTPROTO=dhcp\n")
+                if network['hostname']:
+                    f.write("DHCP_HOSTNAME=%s\n" % network['hostname'])
+                else:
+                    f.write("DHCP_HOSTNAME=%s\n" % hostname)
+                f.write("DHCLIENTARGS='-R subnet-mask'\n")
+            f.close()
+

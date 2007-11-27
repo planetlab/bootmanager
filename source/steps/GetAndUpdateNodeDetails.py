@@ -38,6 +38,7 @@ def Run( vars, log ):
     SKIP_HARDWARE_REQUIREMENT_CHECK     Whether or not we should skip hardware
                                         requirement checks
     NODE_SESSION             The session value returned from BootGetNodeDetails
+    NODE_NETWORKS            The networks associated with this node
     
     Return 1 if able to contact PLC and get node info.
     Raise a BootManagerException if anything fails.
@@ -103,6 +104,8 @@ def Run( vars, log ):
 
     if not got_primary:
         raise BootManagerException, "Node did not have a primary network."
+
+    vars['NODE_NETWORKS']= node_networks
     
     log.write( "Primary network as returned from PLC: %s\n" % str(network) )
 
