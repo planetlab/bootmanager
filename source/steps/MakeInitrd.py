@@ -36,18 +36,10 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    # mkinitrd attempts to determine if the root fs is on a logical
-    # volume by checking if the root device contains /dev/mapper in
-    # its path. The device node must exist for the check to succeed,
-    # but since it's usually managed by devfs or udev, so is probably
-    # not present, we just create a dummy file.
-    
-    fake_root_lvm= False
-    if not os.path.exists( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) ):
-        fake_root_lvm= True
-        utils.makedirs( "%s/dev/mapper" % SYSIMG_PATH )
-        rootdev= file( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]), "w" )
-        rootdev.close()
+    # mkinitrd needs /dev and /proc to do the right thing.
+    # /proc is already mounted, so bind-mount /dev here
+    utils.sysexec("mount -o bind /dev %s/dev" % SYSIMG_PATH)
+    utils.sysexec("mount -t sysfs none %s/sys" % SYSIMG_PATH)
 
     initrd, kernel_version= systeminfo.getKernelVersion(vars,log)
     utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
@@ -59,8 +51,8 @@ def Run( vars, log ):
         os.chmod("%s/tmp/mkinitrd.sh" % SYSIMG_PATH, 755)
         utils.sysexec( "chroot %s /tmp/mkinitrd.sh %s" % (SYSIMG_PATH, kernel_version))
 
-    if fake_root_lvm == True:
-        utils.removefile( "%s/%s" % (SYSIMG_PATH,PARTITIONS["mapper-root"]) )
+    utils.sysexec_noerr("umount %s/sys" % SYSIMG_PATH)
+    utils.sysexec_noerr("umount %s/dev" % SYSIMG_PATH)
 
 def checkKern():
     #  Older bootcds only support LinuxThreads.  This hack is to get mkinitrd
