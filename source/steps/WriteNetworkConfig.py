@@ -171,7 +171,7 @@ def Run( vars, log ):
             f = file("%s/etc/sysconfig/network-scripts/ifcfg-eth%d" %
                      (SYSIMG_PATH, interface), "w")
             f.write("DEVICE=eth%d\n" % interface)
-            f.write("HWADDR=%s\n" % mac)
+            f.write("HWADDR=%s\n" % network['mac'])
             f.write("ONBOOT=yes\n")
             f.write("USERCTL=no\n")
             if method == "static":
