@@ -186,8 +186,10 @@ def Run( vars, log ):
                         continue
                     if setting['name'].upper() == "SSID":
                         f.write("ESSID=%s\n" % setting['value'])
-                    elif sett['name'].upper() == "IWCONFIG":
+                    elif setting['name'].upper() == "IWCONFIG":
                         f.write("IWCONFIG=%s\n" % setting['value'])
+                    elif setting['name'].upper() == "MODE":
+                        f.write("MODE=%s\n" % setting['value'])
 
             f.close()
 

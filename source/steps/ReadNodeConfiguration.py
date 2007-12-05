@@ -448,13 +448,6 @@ def __parse_configuration_file( vars, log, file_contents ):
             if name == "DISCONNECTED_OPERATION":
                 vars['DISCONNECTED_OPERATION']= value.strip()
 
-            if name == "WLAN_SSID":
-                vars['ssid']= value.strip()
-
-            if name == "WLAN_IWCONFIG":
-                vars['iwconfig']= value.strip()
-
-
     except IndexError, e:
         log.write( "Unable to parse configuration file\n" )
         return 0
