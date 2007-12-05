@@ -93,7 +93,7 @@ def Run( vars, log ):
                  PARTITIONS["mapper-swap"] )
     fstab.write( "%s           /           ext3      defaults  0 0\n" % \
                  PARTITIONS["mapper-root"] )
-    fstab.write( "%s           /vservers   ext3      tag,defaults  0 0\n" % \
+    fstab.write( "%s           /vservers   ext3      tagxid,defaults  0 0\n" % \
                  PARTITIONS["mapper-vservers"] )
     fstab.write( "none         /proc       proc      defaults  0 0\n" )
     fstab.write( "none         /dev/shm    tmpfs     defaults  0 0\n" )
