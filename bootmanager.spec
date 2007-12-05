@@ -3,7 +3,7 @@
 #
 %define name bootmanager
 %define version 3.2
-%define subversion 1
+%define subversion 2
 
 %define release %{subversion}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -38,8 +38,6 @@ nodes.
 %install
 rm -rf $RPM_BUILD_ROOT
 
-pushd BootManager
-
 # Install source so that it can be rebuilt
 find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
 
@@ -48,8 +46,6 @@ install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.s
 
 # This is only required for 2.x bootcds.
 install -D -m 644 support-files/uudecode.gz $RPM_BUILD_ROOT/var/www/html/boot/uudecode.gz
-
-popd
 
 %clean
 rm -rf $RPM_BUILD_ROOT
