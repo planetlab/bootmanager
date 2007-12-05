@@ -2,14 +2,14 @@
 # $Id: bootmanager.spec 856 2007-09-21 13:54:58Z thierry $
 #
 %define name bootmanager
-%define version 3.1
-%define subversion 16
+%define version 3.2
+%define subversion 1
 
 %define release %{subversion}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
 Vendor: PlanetLab
 Packager: PlanetLab Central <support@planet-lab.org>
-Distribution: PlanetLab 4.1
+Distribution: PlanetLab 4.2
 URL: http://cvs.planet-lab.org/cvs/bootmanager
 
 Summary: The PlanetLab Boot Manager
@@ -21,7 +21,7 @@ Group: System Environment/Base
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-Requires: tar, gnupg, sharutils, bzip2
+Requires: tar, gnupg, sharutils, bzip2, pypcilib
 
 AutoReqProv: no
 %define debug_package %{nil}
