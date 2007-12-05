@@ -14,6 +14,7 @@ import utils
 import BootServerRequest
 import ModelOptions
 import urlparse
+import BootAPI
 
 def Run( vars, log ):
     """
@@ -124,25 +125,6 @@ def Run( vars, log ):
     hosts_file= None
     
 
-    log.write( "Writing /etc/sysconfig/network-scripts/ifcfg-eth0\n" )
-    eth0_file= file("%s/etc/sysconfig/network-scripts/ifcfg-eth0" %
-                    SYSIMG_PATH, "w" )
-    eth0_file.write( "DEVICE=eth0\n" )
-    if method == "static":
-        eth0_file.write( "BOOTPROTO=static\n" )
-        eth0_file.write( "IPADDR=%s\n" % ip )
-        eth0_file.write( "NETMASK=%s\n" % netmask )
-        eth0_file.write( "GATEWAY=%s\n" % gateway )
-    else:
-        eth0_file.write( "BOOTPROTO=dhcp\n" )
-        eth0_file.write( "DHCP_HOSTNAME=%s\n" % hostname )
-    if mac != "":
-        eth0_file.write( "HWADDR=%s\n" % mac )
-    eth0_file.write( "ONBOOT=yes\n" )
-    eth0_file.write( "USERCTL=no\n" )
-    eth0_file.close()
-    eth0_file= None
-
     if method == "static":
         log.write( "Writing /etc/resolv.conf\n" )
         resolv_file= file("%s/etc/resolv.conf" % SYSIMG_PATH, "w" )
@@ -165,25 +147,47 @@ def Run( vars, log ):
 
     interface = 1
     for network in vars['NODE_NETWORKS']:
-        if network['is_primary'] == 1:
-            continue
         if method == "static" or method == "dhcp":
-            f = file("%s/etc/sysconfig/network-scripts/ifcfg-eth%d" %
-                     (SYSIMG_PATH, interface), "w")
-            f.write("DEVICE=eth%d\n" % interface)
+            if network['is_primary'] == 1:
+                ifnum = 0
+            else:
+                ifnum = interface
+                interface += 1
+
+            path = "%s/etc/sysconfig/network-scripts/ifcfg-eth%d" % (
+                   SYSIMG_PATH, ifnum)
+            f = file(path, "w")
+            log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
+
+            f.write("DEVICE=eth%d\n" % ifnum)
             f.write("HWADDR=%s\n" % network['mac'])
             f.write("ONBOOT=yes\n")
             f.write("USERCTL=no\n")
-            if method == "static":
+
+            if network['method'] == "static":
                 f.write("BOOTPROTO=static\n")
                 f.write("IPADDR=%s\n" % network['ip'])
                 f.write("NETMASK=%s\n" % network['netmask'])
-            elif method == "dhcp":
+
+            elif network['method'] == "dhcp":
                 f.write("BOOTPROTO=dhcp\n")
                 if network['hostname']:
                     f.write("DHCP_HOSTNAME=%s\n" % network['hostname'])
                 else:
                     f.write("DHCP_HOSTNAME=%s\n" % hostname)
-                f.write("DHCLIENTARGS='-R subnet-mask'\n")
+                if network['is_primary'] != 1:
+                    f.write("DHCLIENTARGS='-R subnet-mask'\n")
+
+            if len(network['nodenetwork_setting_ids']) > 0:
+                settings = BootAPI.call_api_function(vars, "GetNodeNetworkSettings",
+                    ({'nodenetwork_setting_id': network['nodenetwork_setting_ids']},))
+                for setting in settings:
+                    if setting['category'].upper() != "WLAN":
+                        continue
+                    if setting['name'].upper() == "SSID":
+                        f.write("ESSID=%s\n" % setting['value'])
+                    elif sett['name'].upper() == "IWCONFIG":
+                        f.write("IWCONFIG=%s\n" % setting['value'])
+
             f.close()
 

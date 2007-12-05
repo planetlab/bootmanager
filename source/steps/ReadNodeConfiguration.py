@@ -72,6 +72,9 @@ def Run( vars, log ):
                                    dns2                 IP_DNS2
                                    hostname             HOST_NAME
                                    domainname           DOMAIN_NAME
+                                -- wlan oriented --
+                                   ssid                 WLAN_SSID
+                                   iwconfig             WLAN_IWCONFIG
 
     the mac address is read from the machine unless it exists in the
     configuration file.
@@ -444,6 +447,12 @@ def __parse_configuration_file( vars, log, file_contents ):
 
             if name == "DISCONNECTED_OPERATION":
                 vars['DISCONNECTED_OPERATION']= value.strip()
+
+            if name == "WLAN_SSID":
+                vars['ssid']= value.strip()
+
+            if name == "WLAN_IWCONFIG":
+                vars['iwconfig']= value.strip()
 
 
     except IndexError, e:
