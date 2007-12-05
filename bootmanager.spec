@@ -34,9 +34,6 @@ nodes.
 %setup -q
 
 %build
-pushd BootManager
-./build.sh
-popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -46,6 +43,7 @@ pushd BootManager
 # Install source so that it can be rebuilt
 find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
 
+touch bootmanager.sh
 install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
 
 # This is only required for 2.x bootcds.
@@ -76,7 +74,8 @@ EOF
 %files
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
-/var/www/html/boot/*
+%ghost /var/www/html/boot/bootmanager.sh
+/var/www/html/boot/uudecode.gz
 
 %changelog
 * Fri Sep  2 2005 Mark Huang <mlhuang@cotton.CS.Princeton.EDU> - 
