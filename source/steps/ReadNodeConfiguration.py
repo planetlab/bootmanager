@@ -375,11 +375,7 @@ def __parse_configuration_file( vars, log, file_contents ):
                 continue
 
             # file is setup as name="value" pairs
-            parts= string.split(line,"=")
-            if len(parts) != 2:
-                log.write( "Invalid line %d in configuration file:\n" % line_num )
-                log.write( line + "\n" )
-                return 0
+            parts= string.split(line, "=", 1)
 
             name= string.strip(parts[0])
             value= string.strip(parts[1])
