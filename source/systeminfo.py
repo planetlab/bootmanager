@@ -291,18 +291,9 @@ def get_system_modules( vars = {}, log = sys.stderr):
         modules = pcimap.get(dev)
         if len(modules) > 0:
             if base == PCI_BASE_CLASS_NETWORK:
-                network_mods.append(modules[0])
+                network_mods += modules
             elif base == PCI_BASE_CLASS_STORAGE:
-                scsi_mods.append(modules[0])
-
-                # XXX ata_piix and ahci both claim 8086:2652 and 8086:2653,
-                # and it is usually a non-visible BIOS option that decides
-                # which is appropriate. Just load both.
-                if dev[0] == 0x8086 and (dev[1] == 0x2652 or dev[1] == 0x2653):
-                    if modules[0] == "ahci":
-                        scsi_mods.append("ata_piix")
-                    elif modules[0] == "ata_piix":
-                        scsi_mods.append("ahci")
+                scsi_mods += modules
 
     system_mods[MODULE_CLASS_SCSI]= scsi_mods
     system_mods[MODULE_CLASS_NETWORK]= network_mods
