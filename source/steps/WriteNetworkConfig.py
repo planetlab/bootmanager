@@ -145,6 +145,7 @@ def Run( vars, log ):
     network_file.close()
     network_file= None
 
+    interfaces = {}
     interface = 1
     for network in vars['NODE_NETWORKS']:
         if method == "static" or method == "dhcp":
@@ -154,42 +155,61 @@ def Run( vars, log ):
                 ifnum = interface
                 interface += 1
 
-            path = "%s/etc/sysconfig/network-scripts/ifcfg-eth%d" % (
-                   SYSIMG_PATH, ifnum)
-            f = file(path, "w")
-            log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
-
-            f.write("DEVICE=eth%d\n" % ifnum)
-            f.write("HWADDR=%s\n" % network['mac'])
-            f.write("ONBOOT=yes\n")
-            f.write("USERCTL=no\n")
+            int = {}
+            if network['mac']:
+                int['HWADDR'] = network['mac']
 
             if network['method'] == "static":
-                f.write("BOOTPROTO=static\n")
-                f.write("IPADDR=%s\n" % network['ip'])
-                f.write("NETMASK=%s\n" % network['netmask'])
+                int['BOOTPROTO'] = "static"
+                int['IPADDR'] = network['ip']
+                int['NETMASK'] = network['netmask']
 
             elif network['method'] == "dhcp":
-                f.write("BOOTPROTO=dhcp\n")
+                int['BOOTPROTO'] = "dhcp"
                 if network['hostname']:
-                    f.write("DHCP_HOSTNAME=%s\n" % network['hostname'])
+                    int['DHCP_HOSTNAME'] = network['hostname']
                 else:
-                    f.write("DHCP_HOSTNAME=%s\n" % hostname)
-                if network['is_primary'] != 1:
-                    f.write("DHCLIENTARGS='-R subnet-mask'\n")
+                    int['DHCP_HOSTNAME'] = hostname
+                if not network['is_primary']:
+                    int['DHCLIENTARGS'] = "-R subnet-mask"
 
+            alias = ""
             if len(network['nodenetwork_setting_ids']) > 0:
                 settings = BootAPI.call_api_function(vars, "GetNodeNetworkSettings",
                     ({'nodenetwork_setting_id': network['nodenetwork_setting_ids']},))
                 for setting in settings:
-                    if setting['category'].upper() != "WLAN":
-                        continue
-                    if setting['name'].upper() == "SSID":
-                        f.write("ESSID=%s\n" % setting['value'])
-                    elif setting['name'].upper() == "IWCONFIG":
-                        f.write("IWCONFIG=%s\n" % setting['value'])
-                    elif setting['name'].upper() == "MODE":
-                        f.write("MODE=%s\n" % setting['value'])
+                    if setting['category'].upper() == "WLAN":
+                        if setting['name'].upper() == "SSID":
+                            int['ESSID'] = setting['value']
+                        elif setting['name'].upper() == "IWCONFIG":
+                            int['IWCONFIG'] = setting['value']
+                        elif setting['name'].upper() == "MODE":
+                            int['MODE'] = setting['value']
+                    elif setting['category'].upper() == "MULTIHOME":
+                        if setting['name'].upper() == "ALIAS":
+                            alias = ":" + setting['value']
+
+            if alias and 'HWADDR' in int:
+                for (dev, i) in interfaces.iteritems():
+                    if i['HWADDR'] == int['HWADDR']:
+                        break
+                del int['HWADDR']
+                interfaces[dev + alias] = int
+                interface -= 1
+            else:
+                interfaces["eth%d" % ifnum] = int
+
+    for (dev, int) in interfaces.iteritems():
+            path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
+                   SYSIMG_PATH, dev)
+            f = file(path, "w")
+            log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
+
+            f.write("DEVICE=%s\n" % dev)
+            f.write("ONBOOT=yes\n")
+            f.write("USERCTL=no\n")
+            for (key, val) in int.iteritems():
+                f.write('%s="%s"\n' % (key, val))
 
             f.close()
 
