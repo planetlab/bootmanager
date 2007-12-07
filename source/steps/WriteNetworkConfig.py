@@ -200,16 +200,16 @@ def Run( vars, log ):
                 interfaces["eth%d" % ifnum] = int
 
     for (dev, int) in interfaces.iteritems():
-            path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
-                   SYSIMG_PATH, dev)
-            f = file(path, "w")
-            log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
+        path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
+               SYSIMG_PATH, dev)
+        f = file(path, "w")
+        log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
 
-            f.write("DEVICE=%s\n" % dev)
-            f.write("ONBOOT=yes\n")
-            f.write("USERCTL=no\n")
-            for (key, val) in int.iteritems():
-                f.write('%s="%s"\n' % (key, val))
+        f.write("DEVICE=%s\n" % dev)
+        f.write("ONBOOT=yes\n")
+        f.write("USERCTL=no\n")
+        for (key, val) in int.iteritems():
+            f.write('%s="%s"\n' % (key, val))
 
-            f.close()
+        f.close()
 
