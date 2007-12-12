@@ -169,9 +169,9 @@ import select, sys, string
 
 # enabling this will cause the node to ask for breakpoint-mode at startup
 # production code should read False/False
-PROMPT_MODE=True
+PROMPT_MODE=False
 # default for when prompt is turned off, or it's on but the timeout triggers
-BREAKPOINT_MODE=True
+BREAKPOINT_MODE=False
 # in seconds : if no input, proceed
 PROMPT_TIMEOUT=5
 
