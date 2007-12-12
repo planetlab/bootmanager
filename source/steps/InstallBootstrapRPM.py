@@ -37,7 +37,7 @@ def Run( vars, log ):
                          are mounted.
     """
 
-    log.write( "\n\nStep: Install: Bootstrapping RPM.\n" )
+    log.write( "\n\nStep: Install: bootstrapfs tarball.\n" )
 
     # make sure we have the variables we need
     try:
