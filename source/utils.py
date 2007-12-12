@@ -169,9 +169,9 @@ import select, sys, string
 
 # enabling this will cause the node to ask for breakpoint-mode at startup
 # production code should read False/False
-PROMPT_MODE=False
-# if promt mode enabled, this default is taken
-BREAKPOINT_MODE=False
+PROMPT_MODE=True
+# default for when prompt is turned off, or it's on but the timeout triggers
+BREAKPOINT_MODE=True
 # in seconds : if no input, proceed
 PROMPT_TIMEOUT=5
 
@@ -179,19 +179,27 @@ def prompt_for_breakpoint_mode ():
 
     global BREAKPOINT_MODE
     if PROMPT_MODE:
-        answer = "n"
-        sys.stdout.write ("Want to run in breakpoint mode ? y/[n] ")
+        default_answer=BREAKPOINT_MODE
+        answer=''
+        if BREAKPOINT_MODE:
+            display="[y]/n"
+        else:
+            display="y/[n]"
+        sys.stdout.write ("Want to run in breakpoint mode ? %s "%display)
         sys.stdout.flush()
         r,w,e = select.select ([sys.stdin],[],[],PROMPT_TIMEOUT)
         if r:
             answer = string.strip(sys.stdin.readline())
         else:
-            sys.stdout.write("Timed-out is %ds\n"%PROMPT_TIMEOUT)
-        BREAKPOINT_MODE = ( answer == "y" or answer == "Y")
+            sys.stdout.write("\nTimed-out (%d s)"%PROMPT_TIMEOUT)
+        if answer:
+            BREAKPOINT_MODE = ( answer == "y" or answer == "Y")
+        else:
+            BREAKPOINT_MODE = default_answer
     label="Off"
     if BREAKPOINT_MODE:
         label="On"
-    sys.stdout.write("Current BREAKPOINT_MODE is %s\n"%label)
+    sys.stdout.write("\nCurrent BREAKPOINT_MODE is %s\n"%label)
 
 def breakpoint (message, cmd = None):
 
