@@ -235,10 +235,10 @@ class BootManager:
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             _rinsRun()
 
-        def _debugRun():
+        def _debugRun(state='dbg'):
             # implements debug logic, which just starts the sshd
             # and just waits around
-            self.VARS['BOOT_STATE']='dbg'
+            self.VARS['BOOT_STATE']=state
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )
 
@@ -254,6 +254,8 @@ class BootManager:
         NodeRunStates['rins'] = _rinsRun
         NodeRunStates['boot'] = _bootRun
         NodeRunStates['dbg']  = _debugRun
+        NodeRunStates['diag']  = lambda : _debugRun('diag')
+        NodeRunStates['disable']  = lambda : _debugRun('disable')
 
         success = 0
         try:
@@ -305,6 +307,8 @@ def main(argv):
                      'inst':None,
                      'rins':None,
                      'boot':None,
+					 'diag':None,
+					 'disable':None,
                      'dbg':None}
 
     # set to 1 if error occurred
