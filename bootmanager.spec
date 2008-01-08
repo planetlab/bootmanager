@@ -1,16 +1,18 @@
 #
-# $Id: bootmanager.spec 856 2007-09-21 13:54:58Z thierry $
+# $Id$
 #
+%define url $URL$
+
 %define name bootmanager
 %define version 3.2
-%define subversion 2
+%define taglevel 2
 
-%define release %{subversion}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
+%define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
 Vendor: PlanetLab
 Packager: PlanetLab Central <support@planet-lab.org>
-Distribution: PlanetLab 4.2
-URL: http://cvs.planet-lab.org/cvs/bootmanager
+Distribution: PlanetLab %{plrelease}
+URL: %(echo %{url} | cut -d ' ' -f 2)
 
 Summary: The PlanetLab Boot Manager
 Name: %{name}
