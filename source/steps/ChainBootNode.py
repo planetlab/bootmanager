@@ -117,11 +117,11 @@ def Run( vars, log ):
 
     # update configuration files
     log.write( "Updating configuration files.\n" )
-    if os.path.exists( SYSIMG_PATH + "/etc/init.d/conf_files" ):
+    try:
         cmd = "/etc/init.d/conf_files start --noscripts"
-    else:
-        cmd = "/usr/bin/PlanetLabConf.py noscripts"
-    utils.sysexec( "chroot %s %s" % (SYSIMG_PATH, cmd), log )
+        utils.sysexec( "chroot %s %s" % (SYSIMG_PATH, cmd), log )
+    except IOError, e:
+        log.write("conf_files failed with \n %s" % e)
 
     # update node packages
     log.write( "Running node update.\n" )
