@@ -91,35 +91,55 @@ def Run( vars, log ):
     vars['ROOT_MOUNTED']= 1
 
     # check which nodegroups we are part of (>=4.0)
-    tarballs = ["PlanetLab-Bootstrap.tar.bz2"]
+    extensions = [ "__main__" ]
+    utils.breakpoint("querying nodegroups")
     try:
+#        for (k,v) in vars.iteritems():
+#            print "vars['%s']='%s'"%(k,v)
+#        print 'NODE_ID=%d'%NODE_ID
         nodes = BootAPI.call_api_function(vars, "GetNodes", ([NODE_ID], ['nodegroup_ids']))
         node = nodes[0]
         nodegroups = BootAPI.call_api_function(vars, "GetNodeGroups", (node['nodegroup_ids'], ['name']))
-        for nodegroup in nodegroups:
-            tarballs.append("PlanetLab-Bootstrap-%s.tar.bz2" % nodegroup['name'].lower())
+        extensions += [ nodegroup['name'].lower() for nodegroup in nodegroups]
+
     except:
+        log.write("WARNING : Failed to query nodegroups - installing only core software\n")
+        utils.breakpoint('query failure')
         pass
 
     # download and extract support tarball for this step, which has
     # everything we need to successfully run
-    for step_support_file in tarballs:
-        source_file= "%s/%s" % (SUPPORT_FILE_DIR,step_support_file)
-        dest_file= "%s/%s" % (SYSIMG_PATH, step_support_file)
+
+    # we first try to find a tarball, if it is not found we use yum instead
+    yum_extensions = []
+    # download and extract support tarball for this step, which has 
+    for extension in extensions:
+        if extension == "__main__":
+            tarball = "PlanetLab-Bootstrap.tar.bz2"
+        else:
+            tarball = "PlanetLab-Bootstrap-%s.tar.bz2"%extension
+        source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
+        dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
         # 30 is the connect timeout, 14400 is the max transfer time in
         # seconds (4 hours)
-        log.write( "downloading %s\n" % step_support_file )
+        log.write( "downloading %s\n" % tarball )
         result= bs_request.DownloadFile( source_file, None, None,
                                          1, 1, dest_file,
                                          30, 14400)
         if result:
             log.write( "extracting %s in %s\n" % (dest_file,SYSIMG_PATH) )
             result= utils.sysexec( "tar -C %s -xpjf %s" % (SYSIMG_PATH,dest_file), log )
+            log.write( "Done\n")
             utils.removefile( dest_file )
         else:
-            raise BootManagerException, "Unable to download %s from server." % \
-                  source_file
+            # the main tarball is required
+            if extension == "__main__":
+                raise BootManagerException, "Unable to download %s from server." % \
+                    source_file
+            else:
+                log.write("tarball for %s not found, scheduling a yum attempt\n"%extension)
+                yum_extensions.append(extension)
 
     # copy resolv.conf from the base system into our temp dir
     # so DNS lookups work correctly while we are chrooted
@@ -153,5 +173,10 @@ def Run( vars, log ):
                   " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH))
     utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
                   SYSIMG_PATH)
+
+    for extension in yum_extensions:
+        yum_command="yum groupinstall extension%s"%extension
+        log.write("Attempting to install extension %s through yum\n"%extension)
+        utils.sysexec("chroot %s %s" % (SYSIMG_PATH,yum_command))
 
     return 1
