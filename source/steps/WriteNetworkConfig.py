@@ -174,20 +174,34 @@ def Run( vars, log ):
                     int['DHCLIENTARGS'] = "-R subnet-mask"
 
             alias = ""
+            ifname=None
             if len(network['nodenetwork_setting_ids']) > 0:
                 settings = BootAPI.call_api_function(vars, "GetNodeNetworkSettings",
                     ({'nodenetwork_setting_id': network['nodenetwork_setting_ids']},))
                 for setting in settings:
-                    if setting['category'].upper() == "WLAN":
-                        if setting['name'].upper() == "SSID":
-                            int['ESSID'] = setting['value']
-                        elif setting['name'].upper() == "IWCONFIG":
-                            int['IWCONFIG'] = setting['value']
-                        elif setting['name'].upper() == "MODE":
-                            int['MODE'] = setting['value']
-                    elif setting['category'].upper() == "MULTIHOME":
-                        if setting['name'].upper() == "ALIAS":
-                            alias = ":" + setting['value']
+                    # to explicitly set interface name
+                    if   setting['name'].upper() == "IFNAME":
+                        ifname=setting['value']
+                    elif setting['name'].upper() == "DRIVER":
+                        # xxx not sure how to do that yet - probably add a line in modprobe.conf
+                        pass
+                    elif setting['name'].upper() == "ALIAS":
+                        alias = ":" + setting['value']
+
+                    # a hack for testing before a new setting is hardcoded here
+                    # use the backdoor setting and put as a value 'var=value'
+                    elif setting['name'].upper() == "BACKDOOR":
+                        [var,value]=setting['value'].split('=',1)
+                        int[var]=value
+
+                    elif setting['name'].upper() in \
+                            [  "mode", "essid", "nw", "freq", "channel", "sens", "rate",
+                               "key", "key1", "key2", "key3", "key4", "securitymode", 
+                               "iwconfig", "iwpriv" ] :
+                        int [setting['name'].upper()] = setting['value']
+                        int ['TYPE']=Wireless
+                    else:
+                        log.write("Warning - ignored setting named %s"%setting['name'])
 
             if alias and 'HWADDR' in int:
                 for (dev, i) in interfaces.iteritems():
@@ -197,7 +211,11 @@ def Run( vars, log ):
                 interfaces[dev + alias] = int
                 interface -= 1
             else:
-                interfaces["eth%d" % ifnum] = int
+                if not ifname:
+                    ifname="eth%d" % ifnum
+                else:
+                    interface -= 1
+                interfaces[ifname] = int
 
     for (dev, int) in interfaces.iteritems():
         path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
