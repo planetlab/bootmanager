@@ -177,6 +177,6 @@ def Run( vars, log ):
     for extension in yum_extensions:
         yum_command="yum groupinstall extension%s"%extension
         log.write("Attempting to install extension %s through yum\n"%extension)
-        utils.sysexec("chroot %s %s" % (SYSIMG_PATH,yum_command))
+        utils.sysexec_noerr("chroot %s %s" % (SYSIMG_PATH,yum_command))
 
     return 1
