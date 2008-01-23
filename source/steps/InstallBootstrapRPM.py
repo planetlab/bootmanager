@@ -174,9 +174,36 @@ def Run( vars, log ):
     utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
                   SYSIMG_PATH)
 
-    for extension in yum_extensions:
-        yum_command="yum groupinstall extension%s"%extension
-        log.write("Attempting to install extension %s through yum\n"%extension)
-        utils.sysexec_noerr("chroot %s %s" % (SYSIMG_PATH,yum_command))
+    # yum-based extensions:
+    # before we can use yum, yum.conf needs to get installed
+    # xxx this should probably depend on the node's nodegroup, at least among alpha, beta ..
+    # however there does not seem to be a clear interface for that in yum.conf.php
+    # so let's keep it simple for the bootstrap phase, as yum.conf will get overwritten anyway
+    if yum_extensions:
+        getDict = {'gpgcheck':1}
+        url="PlanetLabConf/yum.conf.php"
+        dest="%s/etc/yum.conf"%SYSIMG_PATH
+        log.write("downloading bootstrap yum.conf\n")
+        utils.breakpoint ("before getting yum.conf")
+        yumconf=bs_request.DownloadFile (url,getDict,None,
+                                         1, 1, dest)
+        if not yumconf:
+            log.write("Cannot fetch %s from %s - aborting yum extensions"%(dest,url))
+            # failures here should not stop the install process
+            return 1
+
+        # yum also needs /proc to be mounted 
+        # do it here so as to not break the tarballs-only case
+        cmd = "mount -t proc none %s/proc" % SYSIMG_PATH
+        utils.sysexec( cmd, log )
+        # we now just need to yum groupinstall everything
+        for extension in yum_extensions:
+            yum_command="yum groupinstall extension%s"%extension
+            utils.breakpoint ("before chroot %s %s"%(SYSIMG_PATH,yum_command))
+            log.write("Attempting to install extension %s through yum\n"%extension)
+            utils.sysexec_noerr("chroot %s %s" % (SYSIMG_PATH,yum_command))
+            # xxx how to check that this completed correctly ?
+        # let's cleanup
+        utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
 
     return 1
