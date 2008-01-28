@@ -203,7 +203,10 @@ def Run( vars, log ):
         
         for line in modules:
             module= string.strip(line)
-            if module != "":
+            if module == "floppy":
+                log.write("Skipping unload of floppy module for dc7800.\n")
+                log.write("--!! Unknown effect on other platforms !!--\n")
+            elif module != "":
                 log.write( "Unloading %s\n" % module )
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
             if module == "e1000":
