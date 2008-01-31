@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 2
+%define taglevel 3
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -76,5 +76,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Thu Jan 31 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-3.2-2 bootmanager-3.2-3
+- network config : support the full set of settings from ifup-wireless - see also http://svn.planet-lab.org/svn/MyPLC/tags/myplc-4.2-1/db-config
+- removes legacy calls to PlanetLabConf.py 
+- refrains from unloading floppy 
+- first draft of the dual-method for implementing extensions (bootstrapfs-like images or yum install)
+
 * Fri Sep  2 2005 Mark Huang <mlhuang@cotton.CS.Princeton.EDU> - 
 - Initial build.
