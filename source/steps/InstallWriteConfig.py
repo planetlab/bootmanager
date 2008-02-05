@@ -86,7 +86,6 @@ def Run( vars, log ):
         log.write( "Unable to create directory\n" )
         return 0
 
-    utils.breakpoint("Before fstab");
     log.write( "Writing system /etc/fstab\n" )
     fstab= file( "%s/etc/fstab" % SYSIMG_PATH, "w" )
     fstab.write( "%s           none        swap      sw        0 0\n" % \
@@ -101,8 +100,6 @@ def Run( vars, log ):
     # no longer needed
     # fstab.write( "none         /rcfs       rcfs      defaults  0 0\n" )
     fstab.close()
-
-    utils.breakpoint("after fstab");
 
     log.write( "Writing system /etc/issue\n" )
     issue= file( "%s/etc/issue" % SYSIMG_PATH, "w" )

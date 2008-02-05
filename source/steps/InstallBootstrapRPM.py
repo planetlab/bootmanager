@@ -92,7 +92,7 @@ def Run( vars, log ):
 
     # check which nodegroups we are part of (>=4.0)
     extensions = [ "__main__" ]
-    utils.breakpoint("querying nodegroups")
+    utils.breakpoint("querying nodegroups for loading extensions")
     try:
 #        for (k,v) in vars.iteritems():
 #            print "vars['%s']='%s'"%(k,v)
@@ -104,7 +104,6 @@ def Run( vars, log ):
 
     except:
         log.write("WARNING : Failed to query nodegroups - installing only core software\n")
-        utils.breakpoint('query failure')
         pass
 
     # download and extract support tarball for this step, which has
@@ -184,7 +183,6 @@ def Run( vars, log ):
         url="PlanetLabConf/yum.conf.php"
         dest="%s/etc/yum.conf"%SYSIMG_PATH
         log.write("downloading bootstrap yum.conf\n")
-        utils.breakpoint ("before getting yum.conf")
         yumconf=bs_request.DownloadFile (url,getDict,None,
                                          1, 1, dest)
         if not yumconf:
@@ -205,5 +203,6 @@ def Run( vars, log ):
             # xxx how to check that this completed correctly ?
         # let's cleanup
         utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
+        utils.breakpoint ("Done with yum extensions")
 
     return 1
