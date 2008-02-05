@@ -194,14 +194,14 @@ def Run( vars, log ):
                         [var,value]=setting['value'].split('=',1)
                         int[var]=value
 
-                    elif setting['name'].upper() in \
+                    elif setting['name'].lower() in \
                             [  "mode", "essid", "nw", "freq", "channel", "sens", "rate",
                                "key", "key1", "key2", "key3", "key4", "securitymode", 
                                "iwconfig", "iwpriv" ] :
                         int [setting['name'].upper()] = setting['value']
-                        int ['TYPE']=Wireless
+                        int ['TYPE']='Wireless'
                     else:
-                        log.write("Warning - ignored setting named %s"%setting['name'])
+                        log.write("Warning - ignored setting named %s\n"%setting['name'])
 
             if alias and 'HWADDR' in int:
                 for (dev, i) in interfaces.iteritems():
