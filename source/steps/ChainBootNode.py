@@ -204,14 +204,13 @@ def Run( vars, log ):
         for line in modules:
             module= string.strip(line)
             if module == "floppy":
-                log.write("Skipping unload of floppy module for dc7800.\n")
-                log.write("--!! Unknown effect on other platforms !!--\n")
+                log.write("Skipping unload of floppy kernel module.\n")
             elif module != "":
                 log.write( "Unloading %s\n" % module )
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
-            if module == "e1000":
-                log.write("Unloading e1000 driver; sleeping 4 seconds...\n")
-                time.sleep(4)
+                if module == "e1000":
+                    log.write("Unloading e1000 driver; sleeping 4 seconds...\n")
+                    time.sleep(4)
 
         modules.close()
     except IOError:
