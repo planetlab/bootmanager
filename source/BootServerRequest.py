@@ -178,12 +178,11 @@ class BootServerRequest:
                      MaxTransferTime= DEFAULT_CURL_MAX_TRANSFER_TIME,
                      FormData= None):
 
-        if hasattr(tempfile, "NamedTemporaryFile"):
-            buffer = tempfile.NamedTemporaryFile()
-            buffer_name = buffer.name
-        else:
-            buffer_name = tempfile.mktemp("MakeRequest")
-            buffer = open(buffer_name, "w+")
+        (fd, buffer_name) = tempfile.mkstemp("MakeRequest-XXXXXX")
+        os.close(fd)
+        buffer = open(buffer_name, "w+b")
+
+        # the file "buffer_name" will be deleted by DownloadFile()
 
         ok = self.DownloadFile(PartialPath, GetVars, PostVars,
                                DoSSL, DoCertCheck, buffer_name,
@@ -191,12 +190,21 @@ class BootServerRequest:
                                MaxTransferTime,
                                FormData)
 
-        # check the code, return the string only if it was successfull
+        # check the ok code, return the string only if it was successfull
         if ok:
             buffer.seek(0)
-            return buffer.read()
+            ret = buffer.read()
         else:
-            return None
+            ret = None
+
+        buffer.close()
+        try:
+            # just in case it is not deleted by DownloadFile()
+            os.unlink(buffer_name)
+        except OSError:
+            pass
+            
+        return ret
 
     def DownloadFile(self, PartialPath, GetVars, PostVars,
                      DoSSL, DoCertCheck, DestFilePath,
