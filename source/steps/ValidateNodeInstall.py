@@ -93,12 +93,17 @@ def Run( vars, log ):
         utils.makedirs( SYSIMG_PATH )
 
         try:
-            utils.sysexec("mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
-            utils.sysexec("mount %s %s/vservers" % \
+            log.write( "mounting root file system\n" )
+            utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
+
+            log.write( "mounting vserver partition in root file system\n" )
+            utils.sysexec("mount -t ext3 %s %s/vservers" % \
                           (PARTITIONS["vservers"], SYSIMG_PATH), log)
+
+            log.write( "mounting /proc\n" )
             utils.sysexec( "mount -t proc none %s/proc" % SYSIMG_PATH, log )
         except BootManagerException, e:
-            log.write( "BootManagerException during vgscan/vgchange: %s\n" %
+            log.write( "BootManagerException during mount of /root, /vservers and /proc: %s\n" %
                        str(e) )
             return 0
 
