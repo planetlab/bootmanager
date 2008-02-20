@@ -75,6 +75,9 @@ def Run( vars, log ):
         pass
 
     if not sshd_started:
+        # NOTE: these commands hang if ssh_host_*_key files exist, b/c 
+        #     ssh-keygen asks for user input to confirm the overwrite.  
+		#     could fix this with "echo 'y' | "
         log.write( "Creating ssh host keys\n" )
         
         utils.makedirs( ssh_dir )
