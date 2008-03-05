@@ -14,6 +14,7 @@ import utils
 import BootServerRequest
 import ModelOptions
 import urlparse
+import httplib
 import BootAPI
 
 def Run( vars, log ):
@@ -97,10 +98,6 @@ def Run( vars, log ):
     utils.makedirs("%s/etc/planetlab" % SYSIMG_PATH)
     plc_config = file("%s/etc/planetlab/plc_config" % SYSIMG_PATH, "w")
 
-    bs= BootServerRequest.BootServerRequest()
-    if bs.BOOTSERVER_CERTS:
-        print >> plc_config, "PLC_BOOT_HOST='%s'" % bs.BOOTSERVER_CERTS.keys()[0]
-
     api_url = vars['BOOT_API_SERVER']
     (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(api_url)
     parts = netloc.split(':')
@@ -109,9 +106,21 @@ def Run( vars, log ):
         port = parts[1]
     else:
         port = '80'
-    print >> plc_config, "PLC_API_HOST='%s'" % host
-    print >> plc_config, "PLC_API_PORT='%s'" % port
-    print >> plc_config, "PLC_API_PATH='%s'" % path
+    try:
+        log.write("getting via https://%s/PlanetLabConf/get_plc_config.php" % host)
+        bootserver = httplib.HTTPSConnection(host, port)
+        bootserver.connect()
+        bootserver.request("GET","https://%s/PlanetLabConf/get_plc_config.php" % host)
+        plc_config.write("%s" % bootserver.getresponse().read())
+        bootserver.close()
+    except:
+        log.write("Failed.  Using old method.")
+        bs= BootServerRequest.BootServerRequest()
+        if bs.BOOTSERVER_CERTS:
+            print >> plc_config, "PLC_BOOT_HOST='%s'" % bs.BOOTSERVER_CERTS.keys()[0]
+        print >> plc_config, "PLC_API_HOST='%s'" % host
+        print >> plc_config, "PLC_API_PORT='%s'" % port
+        print >> plc_config, "PLC_API_PATH='%s'" % path
 
     plc_config.close()
 
