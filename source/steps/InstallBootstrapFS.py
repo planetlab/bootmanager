@@ -105,7 +105,7 @@ def Run( vars, log ):
 
     # fetch the distribution our myplc was built upon
     try:
-        plc_release = BootAPI.call_api_function (var, "GetPlcRelease",())
+        plc_release = BootAPI.call_api_function (vars, "GetPlcRelease",())
         distribution = plc_release ['build']['planetlab-distro']
     except:
         distribution = 'planetlab'
@@ -138,7 +138,7 @@ def Run( vars, log ):
     yum_extensions = []
     # download and extract support tarball for this step, which has 
     for bootstrapfs_name in bootstrapfs_names:
-        tarball = "bootstrapfs-%s-%s.bz2"%(bootstrapfs_name,arch)
+        tarball = "bootstrapfs-%s-%s.tar.bz2"%(bootstrapfs_name,arch)
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
