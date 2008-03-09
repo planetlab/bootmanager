@@ -213,7 +213,7 @@ class BootManager:
             # runinstaller
             InstallInit.Run( self.VARS, self.LOG )                    
             InstallPartitionDisks.Run( self.VARS, self.LOG )            
-            InstallBootstrapRPM.Run( self.VARS, self.LOG )            
+            InstallBootstrapFS.Run( self.VARS, self.LOG )            
             InstallWriteConfig.Run( self.VARS, self.LOG )
             InstallUninitHardware.Run( self.VARS, self.LOG )
             self.VARS['BOOT_STATE']= 'boot'
