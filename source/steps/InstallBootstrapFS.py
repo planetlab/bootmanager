@@ -91,20 +91,45 @@ def Run( vars, log ):
     vars['ROOT_MOUNTED']= 1
 
     # check which nodegroups we are part of (>=4.0)
-    extensions = [ "__main__" ]
     utils.breakpoint("querying nodegroups for loading extensions")
     try:
-#        for (k,v) in vars.iteritems():
-#            print "vars['%s']='%s'"%(k,v)
-#        print 'NODE_ID=%d'%NODE_ID
         nodes = BootAPI.call_api_function(vars, "GetNodes", ([NODE_ID], ['nodegroup_ids']))
         node = nodes[0]
         nodegroups = BootAPI.call_api_function(vars, "GetNodeGroups", (node['nodegroup_ids'], ['name']))
-        extensions += [ nodegroup['name'].lower() for nodegroup in nodegroups]
+        nodegroupnames = [ nodegroup['name'].lower() for nodegroup in nodegroups ]
 
     except:
         log.write("WARNING : Failed to query nodegroups - installing only core software\n")
+        nodegroupnames = []
         pass
+
+    # fetch the distribution our myplc was built upon
+    try:
+        plc_release = BootAPI.call_api_function (var, "GetPlcRelease",())
+        distribution = plc_release ['build']['planetlab-distro']
+    except:
+        distribution = 'planetlab'
+
+    # fetch the distribution our myplc was built upon
+    try:
+# done that already
+#        plc_release = BootAPI.call_api_function (var, "GetPlcRelease",())
+        arch = plc_release ['build']['target-arch']
+    except:
+        arch = 'i386'
+
+    # scan nodegroupnames - temporary, as most of this nodegroup-based info 
+    # should be more adequately defined in the nodes data model
+    extensions = []
+    for nodegroupname in nodegroupnames:
+        if nodegroupname in [ 'x86_64','i386' ] :
+            arch = nodegroupname
+        elif nodegroupname in [ 'planetlab', 'onelab', 'vini' ] :
+            distribution = nodegroupname
+        else : 
+            extensions.append(nodegroupname)
+            
+    bootstrapfs_names = [ distribution ] + extensions
 
     # download and extract support tarball for this step, which has
     # everything we need to successfully run
@@ -112,11 +137,8 @@ def Run( vars, log ):
     # we first try to find a tarball, if it is not found we use yum instead
     yum_extensions = []
     # download and extract support tarball for this step, which has 
-    for extension in extensions:
-        if extension == "__main__":
-            tarball = "PlanetLab-Bootstrap.tar.bz2"
-        else:
-            tarball = "PlanetLab-Bootstrap-%s.tar.bz2"%extension
+    for bootstrapfs_name in bootstrapfs_names:
+        tarball = "bootstrapfs-%s-%s.bz2"%(bootstrapfs_name,arch)
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
@@ -133,12 +155,12 @@ def Run( vars, log ):
             utils.removefile( dest_file )
         else:
             # the main tarball is required
-            if extension == "__main__":
-                raise BootManagerException, "Unable to download %s from server." % \
+            if bootstrapfs_name == distribution:
+                raise BootManagerException, "Unable to download main tarball %s from server." % \
                     source_file
             else:
-                log.write("tarball for %s not found, scheduling a yum attempt\n"%extension)
-                yum_extensions.append(extension)
+                log.write("tarball for %s-%s not found, scheduling a yum attempt\n"%(bootstrapfs_name,arch))
+                yum_extensions.append(bootstrapfs_name)
 
     # copy resolv.conf from the base system into our temp dir
     # so DNS lookups work correctly while we are chrooted
@@ -179,7 +201,7 @@ def Run( vars, log ):
     # however there does not seem to be a clear interface for that in yum.conf.php
     # so let's keep it simple for the bootstrap phase, as yum.conf will get overwritten anyway
     if yum_extensions:
-        getDict = {'gpgcheck':1}
+        getDict = {'gpgcheck':1,'arch':arch}
         url="PlanetLabConf/yum.conf.php"
         dest="%s/etc/yum.conf"%SYSIMG_PATH
         log.write("downloading bootstrap yum.conf\n")
