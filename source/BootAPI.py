@@ -32,22 +32,26 @@ def create_auth_structure( vars, call_params ):
     auth['AuthMethod']= 'hmac'
 
     try:
-        network= vars['NETWORK_SETTINGS']
-        
-        auth['node_id']= vars['NODE_ID']
-        auth['node_ip']= network['ip']
-        node_key= vars['NODE_KEY']
+        auth['node_id'] = vars['NODE_ID']
+        auth['node_ip'] = vars['NETWORK_SETTINGS']['ip']
     except KeyError, e:
         return None
 
-    params= serialize_params(call_params)
-    params.sort()
-    msg= "[" + "".join(params) + "]"
-    node_hmac= hmac.new(node_key,msg.encode('utf-8'),sha).hexdigest()
+    #params= serialize_params(call_params)
+    #params.sort()
+    #msg= "[" + "".join(params) + "]"
+    #node_hmac= hmac.new(vars['NODE_KEY'], msg.encode('utf-8'), sha).hexdigest()
+    node_hmac= hmac.new(vars['NODE_KEY'], "[]".encode('utf-8'), sha).hexdigest()
     auth['value']= node_hmac
-
+    try:
+        auth_session = {}
+        auth_session['session'] = vars['API_SERVER_INST'].GetSession(auth)
+        auth_session['AuthMethod'] = 'session'
+        auth = auth_session
+    except Exception, e:
+        print e
+        pass
     return auth
-
 
 
 def serialize_params( call_params ):
