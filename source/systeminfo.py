@@ -26,27 +26,7 @@ import popen2
 import re
 import errno
 import ModelOptions
-try:
-    from pypciscan import get_devices
-except:
-    def get_devices():
-        """ This is a replacement to the version in pypciscan library for 3.3 and lower bootcds 
-        that will help maintain backward compatibility.  This version has limitations wrt accuracy
-        that the library does not.  In particular it is limited to the output of
-        lspci and 'forces' all devices to appear on the '0000' domain, rather than
-        where they actually are."""
-
-        ret = {}
-        #pci = os.popen("lspci -nm | sed -e 's/\"//g'", 'r')
-        pci = os.popen("lspci -nm | sed -e 's/\"//g' -e 's/Class //g'", 'r')
-        for line in pci:
-            l = line[:-1]
-            f = l.split(" ")
-            key = "0000:%s" % f[0]
-            ret[key] = (int(f[2],16), int(f[3],16), 0xffff, 0xffff, int(f[1],16) << 8)
-        return ret
-
-import pypcimap
+from pypci import *
 from Exceptions import *
 
 """
