@@ -73,11 +73,10 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    details= BootAPI.call_api_function( vars, "BootGetNodeDetails", () )
+    details= BootAPI.call_api_function( vars, "GetNodes", (vars['NODE_ID'], ['boot_state', 'nodegroup_ids', 'nodenetwork_ids', 'model']))[0]
 
     vars['BOOT_STATE']= details['boot_state']
     vars['NODE_MODEL']= string.strip(details['model'])
-    vars['NODE_SESSION']= details['session']
     
     log.write( "Successfully retrieved node record.\n" )
     log.write( "Current boot state: %s\n" % vars['BOOT_STATE'] )
@@ -95,10 +94,11 @@ def Run( vars, log ):
 
     # this contains all the node networks, for now, we are only concerned
     # in the primary network
-    node_networks= details['networks']
+    node_networks= BootAPI.call_api_function( vars, "GetNodeNetworks", (details['nodenetwork_ids'],))
     got_primary= 0
     for network in node_networks:
         if network['is_primary'] == 1:
+            log.write( "Primary network as returned from PLC: %s\n" % str(network) )
             got_primary= 1
             break
 
@@ -106,29 +106,5 @@ def Run( vars, log ):
         raise BootManagerException, "Node did not have a primary network."
 
     vars['NODE_NETWORKS']= node_networks
-    
-    log.write( "Primary network as returned from PLC: %s\n" % str(network) )
-
-    # if we got this far, the ip on the floppy and the ip in plc match,
-    # make the rest of the PLC information match whats on the floppy
-    network['method']= NETWORK_SETTINGS['method']
-
-    # only nodes that have the node_id specified directly in the configuration
-    # file can change their mac address
-    if WAS_NODE_ID_IN_CONF == 1:
-        network['mac']= NETWORK_SETTINGS['mac']
-        
-    network['gateway']= NETWORK_SETTINGS['gateway']
-    network['network']= NETWORK_SETTINGS['network']
-    network['broadcast']= NETWORK_SETTINGS['broadcast']
-    network['netmask']= NETWORK_SETTINGS['netmask']
-    network['dns1']= NETWORK_SETTINGS['dns1']
-    network['dns2']= NETWORK_SETTINGS['dns2']
-    
-    log.write( "Updating network settings at PLC to match floppy " \
-               "(except for node ip).\n" )
-    update_vals= {}
-    update_vals['primary_network']= network
-    BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
     
     return 1
