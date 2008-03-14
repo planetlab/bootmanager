@@ -73,11 +73,11 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    details= BootAPI.call_api_function( vars, "GetNodes", (vars['NODE_ID'], ['boot_state', 'nodegroup_ids', 'nodenetwork_ids', 'model']))[0]
+    details= BootAPI.call_api_function( vars, "GetNodes", (vars['NODE_ID'], ['boot_state', 'nodegroup_ids', 'nodenetwork_ids', 'model', 'site_id']))[0]
 
     vars['BOOT_STATE']= details['boot_state']
     vars['NODE_MODEL']= string.strip(details['model'])
-    
+    vars['SITE_ID'] = details['site_id'} 
     log.write( "Successfully retrieved node record.\n" )
     log.write( "Current boot state: %s\n" % vars['BOOT_STATE'] )
     log.write( "Node make/model: %s\n" % vars['NODE_MODEL'] )

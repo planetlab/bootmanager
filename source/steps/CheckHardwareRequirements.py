@@ -93,13 +93,20 @@ def Run( vars, log ):
             
             sent= 0
             try:
-                sent= BootAPI.call_api_function( vars, "BootNotifyOwners",
+                #sent= BootAPI.call_api_function( vars, "BootNotifyOwners",
+                #                         (notify_messages.MSG_INSUFFICIENT_MEMORY,
+                #                          include_pis,
+                #                          include_techs,
+                #                          include_support) )
+                person_ids = BootAPI.call_api_function( vars, "GetSites", 
+                sent= BootAPI.call_api_function( vars, "NotifyPersons",
                                          (notify_messages.MSG_INSUFFICIENT_MEMORY,
                                           include_pis,
                                           include_techs,
                                           include_support) )
+ 
             except BootManagerException, e:
-                log.write( "Call to BootNotifyOwners failed: %s.\n" % e )
+                log.write( "Call to NotifyPersons failed: %s.\n" % e )
                 
             if sent == 0:
                 log.write( "Unable to notify site contacts of problem.\n" )
