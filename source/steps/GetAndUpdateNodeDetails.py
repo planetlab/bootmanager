@@ -77,7 +77,7 @@ def Run( vars, log ):
 
     vars['BOOT_STATE']= details['boot_state']
     vars['NODE_MODEL']= string.strip(details['model'])
-    vars['SITE_ID'] = details['site_id'} 
+    vars['SITE_ID'] = details['site_id'] 
     log.write( "Successfully retrieved node record.\n" )
     log.write( "Current boot state: %s\n" % vars['BOOT_STATE'] )
     log.write( "Node make/model: %s\n" % vars['NODE_MODEL'] )
