@@ -87,9 +87,7 @@ def Run( vars, log ):
             log.write( "Insufficient memory to run node: %s kb\n" % total_mem )
             log.write( "Required memory: %s kb\n" % MINIMUM_MEMORY )
 
-            include_pis= 0
-            include_techs= 1
-            include_support= 0
+            techs=[]
             
             sent= 0
             try:
@@ -98,12 +96,17 @@ def Run( vars, log ):
                 #                          include_pis,
                 #                          include_techs,
                 #                          include_support) )
+                params = {"hostname" : vars['hostname'] + vars['domainname']}
                 person_ids = BootAPI.call_api_function( vars, "GetSites", 
+                                            (vars['SITE_ID'], ['person_ids']))[0]
+                persons = BootAPI.call_api_function( vars, "GetPersons", 
+                                            (person_ids, ['person_id', 'roles']))
+                for person in persons:
+                    if "tech" in person['roles']: techs.append(person['person_id'])
+                msg = BootAPI.call_api_function( vars, "GetMessages", 
+                                   ({"message_id": notify_messages.MSG_INSUFFICIENT_MEMORY}),)[0]
                 sent= BootAPI.call_api_function( vars, "NotifyPersons",
-                                         (notify_messages.MSG_INSUFFICIENT_MEMORY,
-                                          include_pis,
-                                          include_techs,
-                                          include_support) )
+                                         (techs, msg['subject'] % params, msg['body'] % params))
  
             except BootManagerException, e:
                 log.write( "Call to NotifyPersons failed: %s.\n" % e )
