@@ -87,29 +87,19 @@ def Run( vars, log ):
             log.write( "Insufficient memory to run node: %s kb\n" % total_mem )
             log.write( "Required memory: %s kb\n" % MINIMUM_MEMORY )
 
-            techs=[]
+            include_pis= 0
+            include_techs= 1
+            include_support= 0
             
             sent= 0
             try:
-                #sent= BootAPI.call_api_function( vars, "BootNotifyOwners",
-                #                         (notify_messages.MSG_INSUFFICIENT_MEMORY,
-                #                          include_pis,
-                #                          include_techs,
-                #                          include_support) )
-                params = {"hostname" : vars['hostname'] + vars['domainname']}
-                person_ids = BootAPI.call_api_function( vars, "GetSites", 
-                                            (vars['SITE_ID'], ['person_ids']))[0]
-                persons = BootAPI.call_api_function( vars, "GetPersons", 
-                                            (person_ids, ['person_id', 'roles']))
-                for person in persons:
-                    if "tech" in person['roles']: techs.append(person['person_id'])
-                msg = BootAPI.call_api_function( vars, "GetMessages", 
-                                   ({"message_id": notify_messages.MSG_INSUFFICIENT_MEMORY}),)[0]
-                sent= BootAPI.call_api_function( vars, "NotifyPersons",
-                                         (techs, msg['subject'] % params, msg['body'] % params))
- 
+                sent= BootAPI.call_api_function( vars, "BootNotifyOwners",
+                                         (notify_messages.MSG_INSUFFICIENT_MEMORY,
+                                          include_pis,
+                                          include_techs,
+                                          include_support) )
             except BootManagerException, e:
-                log.write( "Call to NotifyPersons failed: %s.\n" % e )
+                log.write( "Call to BootNotifyOwners failed: %s.\n" % e )
                 
             if sent == 0:
                 log.write( "Unable to notify site contacts of problem.\n" )
