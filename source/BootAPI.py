@@ -56,7 +56,6 @@ def create_auth_structure( vars, call_params ):
     except Exception, e:
         print e
         pass
-    print auth
     return auth
 
 
