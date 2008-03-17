@@ -45,12 +45,12 @@ def create_auth_structure( vars, call_params ):
     auth['value']= node_hmac
     try:
         auth_session = {}
-        if not vars.has_key('SESSION'):
+        if not vars.has_key('NODE_SESSION'):
             session = vars['API_SERVER_INST'].GetSession(auth)
             auth_session['session'] = session
             vars['SESSION'] = session
         else:
-            auth_session['session'] = vars['SESSION']
+            auth_session['session'] = vars['NODE_SESSION']
         auth_session['AuthMethod'] = 'session'
         auth = auth_session
     except Exception, e:
