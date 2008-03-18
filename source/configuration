@@ -8,7 +8,7 @@ VERSION=3.1.15
 
 
 # full url to which api server to contact
-BOOT_API_SERVER=https://www.planet-lab.org:443/PLCAPI/
+BOOT_API_SERVER=https://boot.planet-lab.org:443/PLCAPI/
 
 
 # path to store temporary files during the install,
