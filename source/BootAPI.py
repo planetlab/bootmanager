@@ -48,7 +48,7 @@ def create_auth_structure( vars, call_params ):
         if not vars.has_key('NODE_SESSION'):
             session = vars['API_SERVER_INST'].GetSession(auth)
             auth_session['session'] = session
-            vars['SESSION'] = session
+            vars['NODE_SESSION'] = session
         else:
             auth_session['session'] = vars['NODE_SESSION']
         auth_session['AuthMethod'] = 'session'
