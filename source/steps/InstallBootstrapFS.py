@@ -144,7 +144,7 @@ def Run( vars, log ):
 
         # 30 is the connect timeout, 14400 is the max transfer time in
         # seconds (4 hours)
-        log.write( "downloading %s\n" % tarball )
+        log.write( "downloading %s\n" % source_file )
         result= bs_request.DownloadFile( source_file, None, None,
                                          1, 1, dest_file,
                                          30, 14400)
