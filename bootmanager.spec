@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 4
+%define taglevel 5
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -76,6 +76,15 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Mar 26 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-4 BootManager-3.2-5
+- renamed step InstallBootstrapRPM into InstallBootstrapFS
+- reviewed selection of bootstrapfs, based on nodegroups, for multi-arch deployment
+- import pypcimap rather than pypciscan
+- initial downlaoding of plc_config made more robust
+- root and /vservers file systems mounted ext3
+- calls to BootGetNodeDetails replaced with GetNodes/GetNodeNetworks
+- also seems to be using session-based authentication rather than former hmac-based one
+
 * Fri Feb 08 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-3.2-3 bootmanager-3.2-4
 - usage of wireless attributes fixed and tested
 - breakpoints cleaned up (no change for production)
