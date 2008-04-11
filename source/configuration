@@ -61,7 +61,7 @@ MINIMUM_MEMORY=511000
 
 # minimum block disk size in GB to be added to lvm.
 # if any block devices are smaller than this, they are ignored.
-MINIMUM_DISK_SIZE=5
+MINIMUM_DISK_SIZE=17
 
 
 # total minimum disk size in GB if all usable disks are below this
