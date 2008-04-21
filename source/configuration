@@ -44,7 +44,7 @@ SUPPORT_FILE_DIR=/boot
 # this sets the size of the root logical volume,
 # after the root and swap has been created, remaining
 # goes to the vserver partition
-ROOT_SIZE=3G
+ROOT_SIZE=7G
 
 
 # override the swap size
