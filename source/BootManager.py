@@ -253,7 +253,7 @@ class BootManager:
         NodeRunStates['inst'] = _newRun
         NodeRunStates['rins'] = _rinsRun
         NodeRunStates['boot'] = _bootRun
-        NodeRunStates['dbg']  = _debugRun
+        NodeRunStates['dbg']  = _bootRun   # should always try to boot.
         NodeRunStates['diag']  = lambda : _debugRun('diag')
         NodeRunStates['disable']  = lambda : _debugRun('disable')
 
@@ -307,8 +307,8 @@ def main(argv):
                      'inst':None,
                      'rins':None,
                      'boot':None,
-					 'diag':None,
-					 'disable':None,
+                     'diag':None,
+                     'disable':None,
                      'dbg':None}
 
     # set to 1 if error occurred
