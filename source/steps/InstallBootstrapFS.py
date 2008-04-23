@@ -103,40 +103,55 @@ def Run( vars, log ):
         nodegroupnames = []
         pass
 
-    # fetch the distribution our myplc was built upon
+    # see also GetBootMedium in PLCAPI that does similar things
+    # figuring the default node family:
+    # (1) look at /etc/planetlab/nodefamily on the bootcd
+    # (2) otherwise use GetPlcRelease()
+    # (3) if everything else fails, set to planetlab-i386
     try:
-        plc_release = BootAPI.call_api_function (vars, "GetPlcRelease",())
-        distribution = plc_release ['build']['planetlab-distro']
+        (pldistro,arch) = file("/etc/planetlab/nodefamily").read().split("-")
     except:
-        distribution = 'planetlab'
-
-    # fetch the distribution our myplc was built upon
-    try:
-# done that already
-#        plc_release = BootAPI.call_api_function (var, "GetPlcRelease",())
-        arch = plc_release ['build']['target-arch']
-    except:
-        arch = 'i386'
+        # fetch the pldistro our myplc was built upon
+        try:
+            plc_release = BootAPI.call_api_function (vars, "GetPlcRelease",())
+            pldistro = plc_release ['build']['planetlab-distro']
+            arch = plc_release ['build']['target-arch']
+        except:
+            (pldistro,arch) = ("planetlab","i386")
 
     # scan nodegroupnames - temporary, as most of this nodegroup-based info 
     # should be more adequately defined in the nodes data model
+    known_archs = [ 'i386', 'x86_64' ]
     extensions = []
+    # (1) if groupname == arch, nodefamily becomes pldistro-groupname
+    # (2) else if groupname looks like pldistro-arch, it is taken as a nodefamily
+    # (3) otherwise groupname is taken as an extension
     for nodegroupname in nodegroupnames:
-        if nodegroupname in [ 'x86_64','i386' ] :
+        if nodegroupname in known_archs:
             arch = nodegroupname
-        elif nodegroupname in [ 'planetlab', 'onelab', 'vini' ] :
-            distribution = nodegroupname
-        else : 
-            extensions.append(nodegroupname)
+        else:
+            is_nodefamily = False
+            for known_arch in known_archs:
+                try:
+                    (api_pldistro,api_arch)=nodegroupname.split("-")
+                    # sanity check
+                    if api_arch != known_arch: raise Exception,"mismatch"
+                    (pldistro,arch) = (api_pldistro, api_arch)
+                    is_nodefamily = True
+                    break
+                except:
+                    pass
+            if not is_nodefamily:
+                extensions.append(nodegroupname)
             
-    bootstrapfs_names = [ distribution ] + extensions
+    bootstrapfs_names = [ pldistro ] + extensions
 
     # download and extract support tarball for this step, which has
     # everything we need to successfully run
 
     # we first try to find a tarball, if it is not found we use yum instead
     yum_extensions = []
-    # download and extract support tarball for this step, which has 
+    # download and extract support tarball for this step, 
     for bootstrapfs_name in bootstrapfs_names:
         tarball = "bootstrapfs-%s-%s.tar.bz2"%(bootstrapfs_name,arch)
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
@@ -155,7 +170,7 @@ def Run( vars, log ):
             utils.removefile( dest_file )
         else:
             # the main tarball is required
-            if bootstrapfs_name == distribution:
+            if bootstrapfs_name == pldistro:
                 raise BootManagerException, "Unable to download main tarball %s from server." % \
                     source_file
             else:
