@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 5
+%define taglevel 6
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -76,6 +76,12 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Thu Apr 24 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-6
+- changes in the state automaton logic 
+- root+swap = 7G
+- usb-key threshhold increased to 17 G
+- bootstrafs selection logic altered - uses /etc/planetlab/nodefamily instead of GetPlcRelease
+
 * Wed Mar 26 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-4 BootManager-3.2-5
 - renamed step InstallBootstrapRPM into InstallBootstrapFS
 - reviewed selection of bootstrapfs, based on nodegroups, for multi-arch deployment
