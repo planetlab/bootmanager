@@ -106,18 +106,11 @@ def Run( vars, log ):
     # see also GetBootMedium in PLCAPI that does similar things
     # figuring the default node family:
     # (1) look at /etc/planetlab/nodefamily on the bootcd
-    # (2) otherwise use GetPlcRelease()
-    # (3) if everything else fails, set to planetlab-i386
+    # (2) if that fails, set to planetlab-i386
     try:
-        (pldistro,arch) = file("/etc/planetlab/nodefamily").read().split("-")
+        (pldistro,arch) = file("/etc/planetlab/nodefamily").read().strip().split("-")
     except:
-        # fetch the pldistro our myplc was built upon
-        try:
-            plc_release = BootAPI.call_api_function (vars, "GetPlcRelease",())
-            pldistro = plc_release ['build']['planetlab-distro']
-            arch = plc_release ['build']['target-arch']
-        except:
-            (pldistro,arch) = ("planetlab","i386")
+        (pldistro,arch) = ("planetlab","i386")
 
     # scan nodegroupnames - temporary, as most of this nodegroup-based info 
     # should be more adequately defined in the nodes data model
