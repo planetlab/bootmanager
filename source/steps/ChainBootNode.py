@@ -198,13 +198,16 @@ def Run( vars, log ):
     utils.sysexec_noerr( "umount -a -r -t ext2,ext3", log )
     utils.sysexec_noerr( "modprobe -r lvm-mod", log )
     
+    # modules that should not get unloaded
+    # unloading cpqphp causes a kernel panic
+    blacklist = [ "floppy", "cpqphp" ]
     try:
         modules= file("/tmp/loadedmodules","r")
         
         for line in modules:
             module= string.strip(line)
-            if module == "floppy":
-                log.write("Skipping unload of floppy kernel module.\n")
+            if module in blacklist :
+                log.write("Skipping unload of kernel module '%s'.\n"%module)
             elif module != "":
                 log.write( "Unloading %s\n" % module )
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
