@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 6
+%define taglevel 7
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -76,6 +76,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Sat May 24 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-7
+- dont unload cpqphp
+
 * Thu Apr 24 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-6
 - changes in the state automaton logic 
 - root+swap = 7G
