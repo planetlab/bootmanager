@@ -73,7 +73,7 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    details= BootAPI.call_api_function( vars, "GetNodes", (vars['NODE_ID'], ['boot_state', 'nodegroup_ids', 'nodenetwork_ids', 'model', 'site_id']))[0]
+    details= BootAPI.call_api_function( vars, "GetNodes", (vars['NODE_ID'], ['boot_state', 'nodegroup_ids', 'interface_ids', 'model', 'site_id']))[0]
 
     vars['BOOT_STATE']= details['boot_state']
     vars['NODE_MODEL']= string.strip(details['model'])
@@ -94,7 +94,7 @@ def Run( vars, log ):
 
     # this contains all the node networks, for now, we are only concerned
     # in the primary network
-    node_networks= BootAPI.call_api_function( vars, "GetNodeNetworks", (details['nodenetwork_ids'],))
+    node_networks= BootAPI.call_api_function( vars, "GetInterfaces", (details['interface_ids'],))
     got_primary= 0
     for network in node_networks:
         if network['is_primary'] == 1:

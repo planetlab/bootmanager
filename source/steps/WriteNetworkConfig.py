@@ -184,9 +184,9 @@ def Run( vars, log ):
 
             alias = ""
             ifname=None
-            if len(network['nodenetwork_setting_ids']) > 0:
-                settings = BootAPI.call_api_function(vars, "GetNodeNetworkSettings",
-                    ({'nodenetwork_setting_id': network['nodenetwork_setting_ids']},))
+            if len(network['interface_setting_ids']) > 0:
+                settings = BootAPI.call_api_function(vars, "GetInterfaceSettings",
+                    ({'interface_setting_id': network['interface_setting_ids']},))
                 for setting in settings:
                     # to explicitly set interface name
                     if   setting['name'].upper() == "IFNAME":
