@@ -34,7 +34,7 @@ def Run( vars, log ):
     SYSIMG_PATH              the path where the system image will be mounted
                              (always starts with TEMP_PATH)
     ROOT_MOUNTED             the node root file system is mounted
-    NETWORK_SETTINGS  A dictionary of the values from the network
+    INTERFACE_SETTINGS  A dictionary of the values from the network
                                 configuration file
     """
     
@@ -42,9 +42,9 @@ def Run( vars, log ):
 
     # make sure we have the variables we need
     try:
-        NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
-        if NETWORK_SETTINGS == "":
-            raise ValueError, "NETWORK_SETTINGS"
+        INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
+        if INTERFACE_SETTINGS == "":
+            raise ValueError, "INTERFACE_SETTINGS"
 
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":
@@ -60,13 +60,13 @@ def Run( vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
     try:
-        ip= NETWORK_SETTINGS['ip']
-        method= NETWORK_SETTINGS['method']
-        hostname= NETWORK_SETTINGS['hostname']
-        domainname= NETWORK_SETTINGS['domainname']
+        ip= INTERFACE_SETTINGS['ip']
+        method= INTERFACE_SETTINGS['method']
+        hostname= INTERFACE_SETTINGS['hostname']
+        domainname= INTERFACE_SETTINGS['domainname']
     except KeyError, var:
         raise BootManagerException, \
-              "Missing network value %s in var NETWORK_SETTINGS\n" % var
+              "Missing network value %s in var INTERFACE_SETTINGS\n" % var
 
     
     if not ROOT_MOUNTED:
@@ -126,7 +126,7 @@ def update_vserver_network_files( vserver_dir, vars, log ):
     Expect the following variables from the store:
     SYSIMG_PATH        the path where the system image will be mounted
                        (always starts with TEMP_PATH)
-    NETWORK_SETTINGS   A dictionary of the values from the network
+    INTERFACE_SETTINGS   A dictionary of the values from the network
                        configuration file
     """
 
@@ -135,9 +135,9 @@ def update_vserver_network_files( vserver_dir, vars, log ):
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
 
-        NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
-        if NETWORK_SETTINGS == "":
-            raise ValueError, "NETWORK_SETTINGS"
+        INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
+        if INTERFACE_SETTINGS == "":
+            raise ValueError, "INTERFACE_SETTINGS"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -145,13 +145,13 @@ def update_vserver_network_files( vserver_dir, vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
     try:
-        ip= NETWORK_SETTINGS['ip']
-        method= NETWORK_SETTINGS['method']
-        hostname= NETWORK_SETTINGS['hostname']
-        domainname= NETWORK_SETTINGS['domainname']
+        ip= INTERFACE_SETTINGS['ip']
+        method= INTERFACE_SETTINGS['method']
+        hostname= INTERFACE_SETTINGS['hostname']
+        domainname= INTERFACE_SETTINGS['domainname']
     except KeyError, var:
         raise BootManagerException, \
-              "Missing network value %s in var NETWORK_SETTINGS\n" % var
+              "Missing network value %s in var INTERFACE_SETTINGS\n" % var
 
     try:
         os.listdir(vserver_dir)

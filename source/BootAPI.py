@@ -33,7 +33,7 @@ def create_auth_structure( vars, call_params ):
 
     try:
         auth['node_id'] = vars['NODE_ID']
-        auth['node_ip'] = vars['NETWORK_SETTINGS']['ip']
+        auth['node_ip'] = vars['INTERFACE_SETTINGS']['ip']
     except KeyError, e:
         return None
 

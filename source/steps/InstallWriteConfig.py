@@ -32,7 +32,7 @@ def Run( vars, log ):
     PARTITIONS              dictionary of generic part. types (root/swap)
                             and their associated devices.
     PLCONF_DIR              The directory to store the configuration file in
-    NETWORK_SETTINGS  A dictionary of the values from the network
+    INTERFACE_SETTINGS  A dictionary of the values from the network
                                 configuration file
     BOOT_CD_VERSION          A tuple of the current bootcd version
     
@@ -61,9 +61,9 @@ def Run( vars, log ):
         if PLCONF_DIR == "":
             raise ValueError, "PLCONF_DIR"
 
-        NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
-        if NETWORK_SETTINGS == "":
-            raise ValueError, "NETWORK_SETTINGS"
+        INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
+        if INTERFACE_SETTINGS == "":
+            raise ValueError, "INTERFACE_SETTINGS"
 
         BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
         if BOOT_CD_VERSION == "":
@@ -122,7 +122,7 @@ def Run( vars, log ):
     # the system image so we can run programs inside that need network access
     method= ""
     try:
-        method= vars['NETWORK_SETTINGS']['method']
+        method= vars['INTERFACE_SETTINGS']['method']
     except:
         pass
     

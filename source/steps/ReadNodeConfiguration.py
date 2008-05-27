@@ -59,7 +59,7 @@ def Run( vars, log ):
     WAS_NODE_KEY_IN_CONF         Set to 1 if the node key was in the conf file
     NONE_ID                     The db node_id for this machine
     NODE_KEY                    The key for this node
-    NETWORK_SETTINGS            A dictionary of the values from the network
+    INTERFACE_SETTINGS            A dictionary of the values from the network
                                 configuration file. keys set:
                                    method               IP_METHOD
                                    ip                   IP_ADDRESS
@@ -99,19 +99,19 @@ def Run( vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
 
-    NETWORK_SETTINGS= {}
-    NETWORK_SETTINGS['method']= "dhcp"
-    NETWORK_SETTINGS['ip']= ""
-    NETWORK_SETTINGS['mac']= ""
-    NETWORK_SETTINGS['gateway']= ""
-    NETWORK_SETTINGS['network']= ""
-    NETWORK_SETTINGS['broadcast']= ""
-    NETWORK_SETTINGS['netmask']= ""
-    NETWORK_SETTINGS['dns1']= ""
-    NETWORK_SETTINGS['dns2']= ""
-    NETWORK_SETTINGS['hostname']= "localhost"
-    NETWORK_SETTINGS['domainname']= "localdomain"
-    vars['NETWORK_SETTINGS']= NETWORK_SETTINGS
+    INTERFACE_SETTINGS= {}
+    INTERFACE_SETTINGS['method']= "dhcp"
+    INTERFACE_SETTINGS['ip']= ""
+    INTERFACE_SETTINGS['mac']= ""
+    INTERFACE_SETTINGS['gateway']= ""
+    INTERFACE_SETTINGS['network']= ""
+    INTERFACE_SETTINGS['broadcast']= ""
+    INTERFACE_SETTINGS['netmask']= ""
+    INTERFACE_SETTINGS['dns1']= ""
+    INTERFACE_SETTINGS['dns2']= ""
+    INTERFACE_SETTINGS['hostname']= "localhost"
+    INTERFACE_SETTINGS['domainname']= "localdomain"
+    vars['INTERFACE_SETTINGS']= INTERFACE_SETTINGS
 
     vars['NODE_ID']= 0
     vars['NODE_KEY']= ""
@@ -350,7 +350,7 @@ def Run( vars, log ):
 
 def __parse_configuration_file( vars, log, file_contents ):
     """
-    parse a configuration file, set keys in var NETWORK_SETTINGS
+    parse a configuration file, set keys in var INTERFACE_SETTINGS
     in vars (see comment for function ReadNodeConfiguration). this
     also reads the mac address from the machine if successful parsing
     of the configuration file is completed.
@@ -358,7 +358,7 @@ def __parse_configuration_file( vars, log, file_contents ):
 
     BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
     SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-    NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
+    INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
     
     if file_contents is None:
         log.write( "__parse_configuration_file called with no file contents\n" )
@@ -409,37 +409,37 @@ def __parse_configuration_file( vars, log, file_contents ):
                     log.write( "Invalid IP_METHOD in configuration file:\n" )
                     log.write( line + "\n" )
                     return 0
-                NETWORK_SETTINGS['method']= value.strip()
+                INTERFACE_SETTINGS['method']= value.strip()
 
             if name == "IP_ADDRESS":
-                NETWORK_SETTINGS['ip']= value.strip()
+                INTERFACE_SETTINGS['ip']= value.strip()
 
             if name == "IP_GATEWAY":
-                NETWORK_SETTINGS['gateway']= value.strip()
+                INTERFACE_SETTINGS['gateway']= value.strip()
 
             if name == "IP_NETMASK":
-                NETWORK_SETTINGS['netmask']= value.strip()
+                INTERFACE_SETTINGS['netmask']= value.strip()
 
             if name == "IP_NETADDR":
-                NETWORK_SETTINGS['network']= value.strip()
+                INTERFACE_SETTINGS['network']= value.strip()
 
             if name == "IP_BROADCASTADDR":
-                NETWORK_SETTINGS['broadcast']= value.strip()
+                INTERFACE_SETTINGS['broadcast']= value.strip()
 
             if name == "IP_DNS1":
-                NETWORK_SETTINGS['dns1']= value.strip()
+                INTERFACE_SETTINGS['dns1']= value.strip()
 
             if name == "IP_DNS2":
-                NETWORK_SETTINGS['dns2']= value.strip()
+                INTERFACE_SETTINGS['dns2']= value.strip()
 
             if name == "HOST_NAME":
-                NETWORK_SETTINGS['hostname']= string.lower(value)
+                INTERFACE_SETTINGS['hostname']= string.lower(value)
 
             if name == "DOMAIN_NAME":
-                NETWORK_SETTINGS['domainname']= string.lower(value)
+                INTERFACE_SETTINGS['domainname']= string.lower(value)
 
             if name == "NET_DEVICE":
-                NETWORK_SETTINGS['mac']= string.upper(value)
+                INTERFACE_SETTINGS['mac']= string.upper(value)
 
             if name == "DISCONNECTED_OPERATION":
                 vars['DISCONNECTED_OPERATION']= value.strip()
@@ -450,19 +450,19 @@ def __parse_configuration_file( vars, log, file_contents ):
 
     # now if we are set to dhcp, clear out any fields
     # that don't make sense
-    if NETWORK_SETTINGS["method"] == "dhcp":
-        NETWORK_SETTINGS["ip"]= ""
-        NETWORK_SETTINGS["gateway"]= ""     
-        NETWORK_SETTINGS["netmask"]= ""
-        NETWORK_SETTINGS["network"]= ""
-        NETWORK_SETTINGS["broadcast"]= ""
-        NETWORK_SETTINGS["dns1"]= ""
-        NETWORK_SETTINGS["dns2"]= ""
+    if INTERFACE_SETTINGS["method"] == "dhcp":
+        INTERFACE_SETTINGS["ip"]= ""
+        INTERFACE_SETTINGS["gateway"]= ""     
+        INTERFACE_SETTINGS["netmask"]= ""
+        INTERFACE_SETTINGS["network"]= ""
+        INTERFACE_SETTINGS["broadcast"]= ""
+        INTERFACE_SETTINGS["dns1"]= ""
+        INTERFACE_SETTINGS["dns2"]= ""
 
     log.write("Successfully read and parsed node configuration file.\n" )
 
     # if the mac wasn't specified, read it in from the system.
-    if NETWORK_SETTINGS["mac"] == "":
+    if INTERFACE_SETTINGS["mac"] == "":
         device= "eth0"
         mac_addr= utils.get_mac_from_interface(device)
 
@@ -470,10 +470,10 @@ def __parse_configuration_file( vars, log, file_contents ):
             log.write( "Could not get mac address for device eth0.\n" )
             return 0
 
-        NETWORK_SETTINGS["mac"]= string.upper(mac_addr)
+        INTERFACE_SETTINGS["mac"]= string.upper(mac_addr)
 
         log.write( "Got mac address %s for device %s\n" %
-                   (NETWORK_SETTINGS["mac"],device) )
+                   (INTERFACE_SETTINGS["mac"],device) )
         
 
     # now, if the conf file didn't contain a node id, post the mac address
@@ -484,7 +484,7 @@ def __parse_configuration_file( vars, log, file_contents ):
 
         bs_request= BootServerRequest.BootServerRequest()
         
-        postVars= {"mac_addr" : NETWORK_SETTINGS["mac"]}
+        postVars= {"mac_addr" : INTERFACE_SETTINGS["mac"]}
         result= bs_request.DownloadFile( "%s/getnodeid.php" %
                                          SUPPORT_FILE_DIR,
                                          None, postVars, 1, 1,
@@ -581,8 +581,8 @@ def __parse_configuration_file( vars, log, file_contents ):
     # in the configuration file matches the ip address. if it fails
     # notify the owners
 
-    hostname= NETWORK_SETTINGS['hostname'] + "." + \
-              NETWORK_SETTINGS['domainname']
+    hostname= INTERFACE_SETTINGS['hostname'] + "." + \
+              INTERFACE_SETTINGS['domainname']
 
     # set to 0 if any part of the hostname resolution check fails
     hostname_resolve_ok= 1
@@ -603,14 +603,14 @@ def __parse_configuration_file( vars, log, file_contents ):
         hostname_resolve_ok= 0
         
 
-    if NETWORK_SETTINGS['method'] == "dhcp":
+    if INTERFACE_SETTINGS['method'] == "dhcp":
         if hostname_resolve_ok:
-            NETWORK_SETTINGS['ip']= resolved_node_ip
+            INTERFACE_SETTINGS['ip']= resolved_node_ip
             node_ip= resolved_node_ip
         else:
             can_make_api_call= 0
     else:
-        node_ip= NETWORK_SETTINGS['ip']
+        node_ip= INTERFACE_SETTINGS['ip']
 
     # make sure the dns lookup matches what the configuration file says
     if hostname_resolve_ok:
@@ -623,7 +623,7 @@ def __parse_configuration_file( vars, log, file_contents ):
                        (hostname,node_ip) )
 
         
-    vars["NETWORK_SETTINGS"]= NETWORK_SETTINGS
+    vars["INTERFACE_SETTINGS"]= INTERFACE_SETTINGS
 
     if not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION']:
         log.write( "Hostname does not resolve correctly, will not continue.\n" )

@@ -8,25 +8,27 @@
 # expected /proc/partitions format
 
 import os, string
+import traceback
 
-from Exceptions import *
 import utils
-import BootServerRequest
-import ModelOptions
 import urlparse
 import httplib
+
+from Exceptions import *
+import BootServerRequest
+import ModelOptions
 import BootAPI
 
 def Run( vars, log ):
     """
     Write out the network configuration for this machine:
     /etc/hosts
-    /etc/sysconfig/network-scripts/ifcfg-eth0
+    /etc/sysconfig/network-scripts/ifcfg-<ifname>
     /etc/resolv.conf (if applicable)
     /etc/sysconfig/network
 
     The values to be used for the network settings are to be set in vars
-    in the variable 'NETWORK_SETTINGS', which is a dictionary
+    in the variable 'INTERFACE_SETTINGS', which is a dictionary
     with keys:
 
      Key               Used by this function
@@ -47,10 +49,9 @@ def Run( vars, log ):
 
     Expect the following variables from the store:
     SYSIMG_PATH             the path where the system image will be mounted
-                            (always starts with TEMP_PATH)
-    NETWORK_SETTINGS  A dictionary of the values from the network
-                                configuration file
-    NODE_NETWORKS           All the network associated with this node
+                                (always starts with TEMP_PATH)
+    INTERFACES              All the interfaces associated with this node
+    INTERFACE_SETTINGS      dictionary 
     Sets the following variables:
     None
     """
@@ -69,26 +70,26 @@ def Run( vars, log ):
 
 
     try:
-        network_settings= vars['NETWORK_SETTINGS']
+        interface_settings= vars['INTERFACE_SETTINGS']
     except KeyError, e:
-        raise BootManagerException, "No network settings found in vars."
+        raise BootManagerException, "No interface settings found in vars."
 
     try:
-        hostname= network_settings['hostname']
-        domainname= network_settings['domainname']
-        method= network_settings['method']
-        ip= network_settings['ip']
-        gateway= network_settings['gateway']
-        network= network_settings['network']
-        netmask= network_settings['netmask']
-        dns1= network_settings['dns1']
-        mac= network_settings['mac']
+        hostname= interface_settings['hostname']
+        domainname= interface_settings['domainname']
+        method= interface_settings['method']
+        ip= interface_settings['ip']
+        gateway= interface_settings['gateway']
+        network= interface_settings['network']
+        netmask= interface_settings['netmask']
+        dns1= interface_settings['dns1']
+        mac= interface_settings['mac']
     except KeyError, e:
-        raise BootManagerException, "Missing value %s in network settings." % str(e)
+        raise BootManagerException, "Missing value %s in interface settings." % str(e)
 
     try:
         dns2= ''
-        dns2= network_settings['dns2']
+        dns2= interface_settings['dns2']
     except KeyError, e:
         pass
 
@@ -107,14 +108,16 @@ def Run( vars, log ):
     else:
         port = '80'
     try:
-        log.write("getting via https://%s/PlanetLabConf/get_plc_config.php" % host)
+        log.write("getting via https://%s/PlanetLabConf/get_plc_config.php " % host)
         bootserver = httplib.HTTPSConnection(host, port)
         bootserver.connect()
         bootserver.request("GET","https://%s/PlanetLabConf/get_plc_config.php" % host)
         plc_config.write("%s" % bootserver.getresponse().read())
         bootserver.close()
-    except:
-        log.write("Failed.  Using old method.")
+        log.write("Done\n")
+    except :
+        log.write(" .. Failed.  Using old method. -- stack trace follows\n")
+        traceback.print_exc(file=log.OutputFile)
         bs= BootServerRequest.BootServerRequest()
         if bs.BOOTSERVER_CERTS:
             print >> plc_config, "PLC_BOOT_HOST='%s'" % bs.BOOTSERVER_CERTS.keys()[0]
@@ -156,37 +159,39 @@ def Run( vars, log ):
 
     interfaces = {}
     interface = 1
-    for network in vars['NODE_NETWORKS']:
+    for interface in vars['INTERFACES']:
         if method == "static" or method == "dhcp":
-            if network['is_primary'] == 1:
+            if interface['is_primary'] == 1:
                 ifnum = 0
             else:
                 ifnum = interface
                 interface += 1
 
             int = {}
-            if network['mac']:
-                int['HWADDR'] = network['mac']
+            if interface['mac']:
+                int['HWADDR'] = interface['mac']
 
-            if network['method'] == "static":
+            if interface['method'] == "static":
                 int['BOOTPROTO'] = "static"
-                int['IPADDR'] = network['ip']
-                int['NETMASK'] = network['netmask']
+                int['IPADDR'] = interface['ip']
+                int['NETMASK'] = interface['netmask']
 
-            elif network['method'] == "dhcp":
+            elif interface['method'] == "dhcp":
                 int['BOOTPROTO'] = "dhcp"
-                if network['hostname']:
-                    int['DHCP_HOSTNAME'] = network['hostname']
+                if interface['hostname']:
+                    int['DHCP_HOSTNAME'] = interface['hostname']
                 else:
                     int['DHCP_HOSTNAME'] = hostname
-                if not network['is_primary']:
+                if not interface['is_primary']:
                     int['DHCLIENTARGS'] = "-R subnet-mask"
 
             alias = ""
             ifname=None
-            if len(network['interface_setting_ids']) > 0:
-                settings = BootAPI.call_api_function(vars, "GetInterfaceSettings",
-                    ({'interface_setting_id': network['interface_setting_ids']},))
+            if len(interface['interface_setting_ids']) > 0:
+                settings = \
+                    BootAPI.call_api_function(vars, "GetInterfaceSettings",
+                                              ({'interface_setting_id': 
+                                                interface['interface_setting_ids']},))
                 for setting in settings:
                     # to explicitly set interface name
                     if   setting['name'].upper() == "IFNAME":
