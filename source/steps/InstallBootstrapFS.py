@@ -95,8 +95,8 @@ def Run( vars, log ):
     try:
         nodes = BootAPI.call_api_function(vars, "GetNodes", ([NODE_ID], ['nodegroup_ids']))
         node = nodes[0]
-        nodegroups = BootAPI.call_api_function(vars, "GetNodeGroups", (node['nodegroup_ids'], ['name']))
-        nodegroupnames = [ nodegroup['name'].lower() for nodegroup in nodegroups ]
+        nodegroups = BootAPI.call_api_function(vars, "GetNodeGroups", (node['nodegroup_ids'], ['groupname']))
+        nodegroupnames = [ nodegroup['groupname'].lower() for nodegroup in nodegroups ]
 
     except:
         log.write("WARNING : Failed to query nodegroups - installing only core software\n")
