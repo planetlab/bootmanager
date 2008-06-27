@@ -12,6 +12,7 @@ import re
 import os
 
 import UpdateBootStateWithPLC
+import UpdateNodeConfiguration
 from Exceptions import *
 import utils
 import compatibility
@@ -131,6 +132,9 @@ def Run( vars, log ):
         # for backwards compatibility
         cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
     utils.sysexec( cmd, log )
+
+    # the following step should be done by NM
+    UpdateNodeConfiguration.Run( vars, log )
 
     log.write( "Updating ssh public host key with PLC.\n" )
     ssh_host_key= ""
