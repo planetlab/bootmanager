@@ -193,8 +193,6 @@ class BootManager:
                 WriteModprobeConfig.Run( self.VARS, self.LOG )
                 MakeInitrd.Run( self.VARS, self.LOG )
                 WriteNetworkConfig.Run( self.VARS, self.LOG )
-                # the following step should be done by NM
-                UpdateNodeConfiguration.Run( self.VARS, self.LOG )
                 CheckForNewDisks.Run( self.VARS, self.LOG )
                 SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
                 ChainBootNode.Run( self.VARS, self.LOG )
