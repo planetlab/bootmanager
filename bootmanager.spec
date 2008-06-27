@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 7
+%define taglevel 8
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -76,6 +76,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri Jun 27 2008 Faiyaz Ahmed <faiyaza@cs.princeton.edu> - BootManager-3.2-8
+- move the UpdateNodeConfiguration step after the NodeUpdate step in ChainBoot
+
 * Sat May 24 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-7
 - dont unload cpqphp
 
