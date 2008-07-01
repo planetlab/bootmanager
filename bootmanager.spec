@@ -36,6 +36,7 @@ nodes.
 %setup -q
 
 %build
+gcc -shared -fPIC -Os -o source/libc-opendir-hack.so source/libc-opendir-hack.c
 
 %install
 rm -rf $RPM_BUILD_ROOT

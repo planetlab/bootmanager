@@ -200,8 +200,7 @@ def Run( vars, log ):
     utils.sysexec("gpg --homedir=/root --export --armor" \
                   " --no-default-keyring --keyring %s/usr/boot/pubring.gpg" \
                   " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH))
-    utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
-                  SYSIMG_PATH)
+    utils.sysexec_chroot(SYSIMG_PATH, "rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab")
 
     # yum-based extensions:
     # before we can use yum, yum.conf needs to get installed
@@ -229,7 +228,7 @@ def Run( vars, log ):
             yum_command="yum groupinstall extension%s"%extension
             utils.breakpoint ("before chroot %s %s"%(SYSIMG_PATH,yum_command))
             log.write("Attempting to install extension %s through yum\n"%extension)
-            utils.sysexec_noerr("chroot %s %s" % (SYSIMG_PATH,yum_command))
+            utils.sysexec_chroot_noerr(SYSIMG_PATH, "%s" % (yum_command))
             # xxx how to check that this completed correctly ?
         # let's cleanup
         utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
