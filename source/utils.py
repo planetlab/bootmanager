@@ -93,6 +93,7 @@ def sysexec( cmd, log= None ):
     return 1
 
 
+_chroot_lib_copied = False
 def sysexec_chroot( path, cmd, log= None ):
     """
     same as sysexec, but inside a chroot
@@ -101,10 +102,11 @@ def sysexec_chroot( path, cmd, log= None ):
     release = os.uname()[2]
     # 2.6.12 kernels need this
     if release[:5] == "2.6.1":
-        library = "%s/lib/libc-opendir-hack.so" % path
-        if not os.path.exists(library):
-            shutil.copy("./libc-opendir-hack.so", library)
-        preload = "/bin/env LD_PRELOAD=/lib/libc-opendir-hack.so"
+        library = "/lib/libc-opendir-hack.so"
+        if not _chroot_lib_copied:
+            shutil.copy("./libc-opendir-hack.so", "%s/%s" % (path, library))
+            _chroot_lib_copied = True
+        preload = "/bin/env LD_PRELOAD=%s" % library
     sysexec("chroot %s %s %s" % (path, preload, cmd), log)
 
 
