@@ -93,7 +93,7 @@ def sysexec( cmd, log= None ):
     return 1
 
 
-_chroot_lib_copied = False
+globals()['_chroot_lib_copied'] = False
 def sysexec_chroot( path, cmd, log= None ):
     """
     same as sysexec, but inside a chroot
@@ -103,11 +103,11 @@ def sysexec_chroot( path, cmd, log= None ):
     # 2.6.12 kernels need this
     if release[:5] == "2.6.1":
         library = "/lib/libc-opendir-hack.so"
-        if not _chroot_lib_copied:
-            shutil.copy("./libc-opendir-hack.so", "%s/%s" % (path, library))
-            _chroot_lib_copied = True
+        if not globals()['_chroot_lib_copied']:
+            shutil.copy("./libc-opendir-hack.so", "%s%s" % (path, library))
+            globals()['_chroot_lib_copied'] = True
         preload = "/bin/env LD_PRELOAD=%s" % library
-    sysexec("chroot %s %s %s" % (path, preload, cmd), log)
+    return sysexec("chroot %s %s %s" % (path, preload, cmd), log)
 
 
 def sysexec_chroot_noerr( path, cmd, log= None ):
@@ -116,7 +116,7 @@ def sysexec_chroot_noerr( path, cmd, log= None ):
     """
     try:
         rc= 0
-        rc= syexec_chroot( cmd, log )
+        rc= sysexec_chroot( cmd, log )
     except BootManagerException, e:
         pass
 
