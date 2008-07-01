@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 8
+%define taglevel 9
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Tue Jul 01 2008 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-3.2-9
+- Ugly hack stuff.
+
 * Fri Jun 27 2008 Faiyaz Ahmed <faiyaza@cs.princeton.edu> - BootManager-3.2-8
 - move the UpdateNodeConfiguration step after the NodeUpdate step in ChainBoot
 
