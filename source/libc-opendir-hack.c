@@ -7,10 +7,14 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <glob.h>
+#include <stdarg.h>
+#include <string.h>
 
-static int (*real_glob)(const char *pattern, int flags,
-         int (*errfunc) (const char *epath, int eerrno),
-         glob_t *pglob);
+#define INIT(x)	real_ ## x = dlsym(RTLD_NEXT, #x); \
+		if (!real_ ## x) { \
+		  fprintf(stderr, "Would the real " #x " please stand up? %s\n", dlerror()); \
+		  exit(1); \
+		}
 
 DIR *opendir(const char *name)
 {
@@ -25,6 +29,10 @@ DIR *__opendir(const char *name)
   return opendir(name);
 }
 
+static int (*real_glob)(const char *pattern, int flags,
+         int (*errfunc) (const char *epath, int eerrno),
+         glob_t *pglob);
+
 int glob(const char *pattern, int flags,
          int (*errfunc) (const char *epath, int eerrno),
          glob_t *pglob)
@@ -37,15 +45,94 @@ int glob(const char *pattern, int flags,
     pglob->gl_stat = stat;
     flags |= GLOB_ALTDIRFUNC;
   }
+  if (!real_glob) {
+    INIT(glob)
+  }
   return real_glob(pattern, flags, errfunc, pglob);
+}
+
+#define PWD_LOCKFILE "/etc/.pwd.lock"
+
+static int lock_fd = -1;
+
+/* FIXME: Ignores multi-thread issues.
+ *        Doesn't wait for the file to become lockable
+ */
+int lckpwdf(void)
+{
+  struct flock fl = { 0 };
+
+  /* This process already holds the lock */
+  if (lock_fd != -1)
+    return -1;
+
+  lock_fd = open(PWD_LOCKFILE, O_WRONLY|O_CREAT, 0600);
+  if (lock_fd == -1)
+    return -1;
+
+  if (fcntl(lock_fd, F_SETFD, fcntl(lock_fd, F_GETFD, 0) | FD_CLOEXEC) == -1) {
+    close(lock_fd);
+    return -1;
+  }
+
+  fl.l_type = F_WRLCK;
+  fl.l_whence = SEEK_SET;
+  return fcntl(lock_fd, F_SETLKW, &fl);
+}
+
+int ulckpwdf(void)
+{
+  int result;
+
+  if (lock_fd == -1)
+    return -1;
+
+  result = close(lock_fd);
+  lock_fd = -1;
+  return result;
+}
+
+static (*real_open)(const char *name, int flags, ...);
+int open(const char *name, int flags, ...)
+{
+  mode_t mode;
+  if (flags & O_CREAT) {
+    va_list va;
+    va_start(va, flags);
+    mode = va_arg(va, mode_t);
+    va_end(va);
+  }
+  if (!real_open) {
+    INIT(open)
+  }
+  return real_open(name, flags, mode);
+}
+
+static FILE *(*real_fopen)(const char *name, const char *flags);
+FILE *fopen(const char *name, const char *flags)
+{
+  char *str, *ptr = strchr(flags, 'e');
+  FILE *ret;
+  if (ptr) {
+    str = strdup(flags);
+    ptr = (str + (ptr - flags));
+    strcpy(ptr, ptr + 1);
+  }
+  else
+    str = flags;
+  if (!real_fopen) {
+    INIT(fopen)
+  }
+  ret = real_fopen(name, str);
+  if (ptr)
+    free(str);
+  return ret;
 }
 
 static void _init() __attribute__((constructor));
 static void _init()
 {
-  real_glob = dlsym(RTLD_NEXT, "glob");
-  if (!real_glob) {
-    fprintf(stderr, "Would the real glob please stand up? %s\n", dlerror());
-    exit(1);
-  }
+  INIT(glob)
+  INIT(open)
+  INIT(fopen)
 }
