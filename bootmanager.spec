@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 10
+%define taglevel 11
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Jul 02 2008 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-3.2-11
+- More hacks.
+
 * Tue Jul 01 2008 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-3.2-10
 - Make the hack work.
 
