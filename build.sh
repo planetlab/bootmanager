@@ -25,8 +25,19 @@ fi
 # Do not tolerate errors
 set -e
 
+NODEGROUP=$1
+
+BOOTSTRAPDIR="/boot"
+if [ -n "$NODEGROUP" ] ; then
+	BOOTSTRAPDIR="/boot/$NODEGROUP"
+fi
+
+
 # Change to our source directory
 srcdir=$(cd $(dirname $0) && pwd -P)
+
+# Translate configuration file
+sed -i -e "s|SUPPORT_FILE_DIR=.*|SUPPORT_FILE_DIR=$BOOTSTRAPDIR|" $srcdir/source/configuration
 
 # Source bootmanager configuration
 . $srcdir/source/configuration
@@ -35,6 +46,11 @@ srcdir=$(cd $(dirname $0) && pwd -P)
 # after a nonce check.
 
 DEST_SCRIPT=bootmanager.sh
+if [ -n "$NODEGROUP" ] ; then
+	DEST_SCRIPT="${NODEGROUP}_bootmanager.sh"
+	# Remove the old version or any sym links prior to re-writing
+	rm -f ${DEST_SCRIPT}
+fi
 
 cat > $DEST_SCRIPT <<EOF
 #!/bin/bash
