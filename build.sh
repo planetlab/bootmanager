@@ -50,6 +50,7 @@ if [ -n "$NODEGROUP" ] ; then
 	DEST_SCRIPT="${NODEGROUP}_bootmanager.sh"
 	# Remove the old version or any sym links prior to re-writing
 	rm -f ${DEST_SCRIPT}
+	rm -f ${DEST_SCRIPT}.sgn
 fi
 
 cat > $DEST_SCRIPT <<EOF
