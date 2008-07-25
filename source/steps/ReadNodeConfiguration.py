@@ -631,7 +631,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         if can_make_api_call:
             log.write( "Notifying contacts of problem.\n" )
 
-            vars['BOOT_STATE']= 'dbg'
+            vars['BOOT_STATE']= 'failboot'
             vars['STATE_CHANGE_NOTIFY']= 1
             vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
                                      notify_messages.MSG_HOSTNAME_NOT_RESOLVE

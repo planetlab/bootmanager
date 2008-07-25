@@ -175,7 +175,7 @@ class BootManager:
 
         def _nodeNotInstalled():
             # called by the _xxxState() functions below upon failure
-            self.VARS['BOOT_STATE']= 'dbg'
+            self.VARS['BOOT_STATE']= 'failboot'
             self.VARS['STATE_CHANGE_NOTIFY']= 1
             self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
                       notify_messages.MSG_NODE_NOT_INSTALLED
@@ -199,13 +199,13 @@ class BootManager:
             else:
                 _nodeNotInstalled()
 
-        def _rinsRun():
+        def _reinstallRun():
             # implements the reinstall logic, which will check whether
             # the min. hardware requirements are met, install the
             # software, and upon correct installation will switch too
             # 'boot' state and chainboot into the production system
             if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
-                self.VARS['BOOT_STATE']= 'dbg'
+                self.VARS['BOOT_STATE']= 'failboot'
                 raise BootManagerException, "Hardware requirements not met."
 
             # runinstaller
@@ -224,16 +224,16 @@ class BootManager:
         def _newRun():
             # implements the new install logic, which will first check
             # with the user whether it is ok to install on this
-            # machine, switch to 'rins' state and then invoke the rins
-            # logic.  See rinsState logic comments for further
+            # machine, switch to 'reinstall' state and then invoke the reinstall
+            # logic.  See reinstallState logic comments for further
             # details.
             if not ConfirmInstallWithUser.Run( self.VARS, self.LOG ):
                 return 0
-            self.VARS['BOOT_STATE']= 'rins'
+            self.VARS['BOOT_STATE']= 'reinstall'
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-            _rinsRun()
+            _reinstallRun()
 
-        def _debugRun(state='dbg'):
+        def _debugRun(state='failboot'):
             # implements debug logic, which just starts the sshd
             # and just waits around
             self.VARS['BOOT_STATE']=state
@@ -247,13 +247,12 @@ class BootManager:
 
         global NodeRunStates
         # setup state -> function hash table
-        NodeRunStates['new']  = _newRun
-        NodeRunStates['inst'] = _newRun
-        NodeRunStates['rins'] = _rinsRun
+        NodeRunStates['install'] = _newRun
+        NodeRunStates['reinstall'] = _reinstallRun
         NodeRunStates['boot'] = _bootRun
-        NodeRunStates['dbg']  = _bootRun   # should always try to boot.
-        NodeRunStates['diag']  = lambda : _debugRun('diag')
-        NodeRunStates['disable']  = lambda : _debugRun('disable')
+        NodeRunStates['failboot']  = _bootRun   # should always try to boot.
+        NodeRunStates['safeboot']  = lambda : _debugRun('safeboot')
+        NodeRunStates['disabled']  = lambda : _debugRun('disabled')
 
         success = 0
         try:
@@ -301,13 +300,12 @@ def main(argv):
     #utils.breakpoint ("Entering BootManager::main")
     
     global NodeRunStates
-    NodeRunStates = {'new':None,
-                     'inst':None,
-                     'rins':None,
+    NodeRunStates = {'install':None,
+                     'reinstall':None,
                      'boot':None,
-                     'diag':None,
-                     'disable':None,
-                     'dbg':None}
+                     'safeboot':None,
+                     'failboot':None
+                     'disabled':None, }
 
     # set to 1 if error occurred
     error= 0

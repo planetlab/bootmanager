@@ -24,6 +24,7 @@ Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 Requires: tar, gnupg, sharutils, bzip2, pypcilib
+Requires: PLCAPI >= 5.0
 
 AutoReqProv: no
 %define debug_package %{nil}
