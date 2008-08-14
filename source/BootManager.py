@@ -304,7 +304,7 @@ def main(argv):
                      'reinstall':None,
                      'boot':None,
                      'safeboot':None,
-                     'failboot':None
+                     'failboot':None,
                      'disabled':None, }
 
     # set to 1 if error occurred
