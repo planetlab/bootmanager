@@ -204,7 +204,7 @@ def Run( vars, log ):
     
     # modules that should not get unloaded
     # unloading cpqphp causes a kernel panic
-    blacklist = [ "floppy", "cpqphp" ]
+    blacklist = [ "floppy", "cpqphp", "i82875p_edac" ]
     try:
         modules= file("/tmp/loadedmodules","r")
         
@@ -215,7 +215,7 @@ def Run( vars, log ):
             elif module != "":
                 log.write( "Unloading %s\n" % module )
                 utils.sysexec_noerr( "modprobe -r %s" % module, log )
-                if module == "e1000":
+                if "e1000" in module:
                     log.write("Unloading e1000 driver; sleeping 4 seconds...\n")
                     time.sleep(4)
 
