@@ -1,5 +1,6 @@
 #!/usr/bin/python2
-
+# $Id$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -158,14 +159,14 @@ def Run( vars, log ):
     network_file= None
 
     interfaces = {}
-    interface = 1
+    interface_count = 1
     for interface in vars['INTERFACES']:
         if method == "static" or method == "dhcp":
             if interface['is_primary'] == 1:
                 ifnum = 0
             else:
-                ifnum = interface
-                interface += 1
+                ifnum = interface_count
+                interface_count += 1
 
             int = {}
             if interface['mac']:
@@ -223,12 +224,12 @@ def Run( vars, log ):
                         break
                 del int['HWADDR']
                 interfaces[dev + alias] = int
-                interface -= 1
+                interface_count -= 1
             else:
                 if not ifname:
                     ifname="eth%d" % ifnum
                 else:
-                    interface -= 1
+                    interface_count -= 1
                 interfaces[ifname] = int
 
     for (dev, int) in interfaces.iteritems():
