@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python -u
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -8,8 +8,8 @@
 
 import string
 import sys, os, traceback
-from time import gmtime, strftime
-from gzip import GzipFile
+import time
+import gzip
 
 from steps import *
 from Exceptions import *
@@ -41,7 +41,7 @@ class log:
         if OutputFilePath:
             try:
                 self.OutputFilePath= OutputFilePath
-                self.OutputFile= GzipFile( OutputFilePath, "w", 9 )
+                self.OutputFile= gzip.GzipFile( OutputFilePath, "w", 9 )
             except:
                 print( "Unable to open output file for log, continuing" )
                 self.OutputFile= None
@@ -318,7 +318,7 @@ def main(argv):
     LOG= log( LOG_FILE )
 
     LOG.LogEntry( "BootManager started at: %s" % \
-                  strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+                  time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
 
     try:
         forceState = None
@@ -335,7 +335,7 @@ def main(argv):
         
     if error:
         LOG.LogEntry( "BootManager finished at: %s" % \
-                      strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+                      time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
         LOG.Upload()
         return error
 
@@ -357,7 +357,7 @@ def main(argv):
         traceback.print_exc()
 
     LOG.LogEntry( "BootManager finished at: %s" % \
-                  strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+                  time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
     LOG.Upload()
 
     return error
