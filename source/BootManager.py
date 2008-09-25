@@ -35,6 +35,8 @@ NodeRunStates = {}
 
 class log:
 
+    format="%H:%M:%S(%Z) "
+
     def __init__( self, OutputFilePath= None ):
         if OutputFilePath:
             try:
@@ -46,10 +48,11 @@ class log:
 
     
     def LogEntry( self, str, inc_newline= 1, display_screen= 1 ):
+        now=time.strftime(log.format, time.localtime())
         if self.OutputFile:
-            self.OutputFile.write( str )
+            self.OutputFile.write( now+str )
         if display_screen:
-            sys.stdout.write( str )
+            sys.stdout.write( now+str )
             
         if inc_newline:
             if display_screen:
