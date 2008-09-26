@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 12
+%define taglevel 13
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri Sep 26 2008 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-13
+- include latest module tweaks in current production bootmanager.
+
 * Tue Jul 08 2008 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-12
 - correctly convert port number to int before creating HTTPSConnection() object,
 - plus other changes to file to accomodate this.
