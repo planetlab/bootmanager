@@ -120,14 +120,13 @@ def Run( vars, log ):
     else:
         log.write( "sshd already running\n" )
 
+    
+    # this will make the initial script stop requesting scripts from PLC
+    utils.sysexec( "touch %s" % cancel_boot_flag, log )
 
     # for ease of use, setup lvm on 2.x cds
     if BOOT_CD_VERSION[0] == 2:
         compatibility.setup_lvm_2x_cd(vars,log)
-
-    
-    # this will make the initial script stop requesting scripts from PLC
-    utils.sysexec( "touch %s" % cancel_boot_flag, log )
 
     print message
     
