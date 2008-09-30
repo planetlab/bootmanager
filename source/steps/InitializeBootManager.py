@@ -20,7 +20,7 @@ BOOT_VERSION_2X_FILE='/usr/bootme/ID'
 BOOT_VERSION_3X_FILE='/pl_version'
 
 # minimium version of the boot os we need to run, as a (major,minor) tuple
-MINIMUM_BOOT_VERSION= (2,0)
+MINIMUM_BOOT_VERSION= (3,0)
 
 # minimum version of python required to run the boot manager
 MINIMUM_PYTHON_VERSION= (2,2,0)
