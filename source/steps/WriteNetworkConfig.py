@@ -110,7 +110,7 @@ def Run( vars, log ):
         port = '80'
     try:
         log.write("getting via https://%s/PlanetLabConf/get_plc_config.php " % host)
-        bootserver = httplib.HTTPSConnection(host, port)
+        bootserver = httplib.HTTPSConnection(host, int(port))
         bootserver.connect()
         bootserver.request("GET","https://%s/PlanetLabConf/get_plc_config.php" % host)
         plc_config.write("%s" % bootserver.getresponse().read())
@@ -168,23 +168,23 @@ def Run( vars, log ):
                 ifnum = interface_count
                 interface_count += 1
 
-            int = {}
+            inter = {}
             if interface['mac']:
-                int['HWADDR'] = interface['mac']
+                inter['HWADDR'] = interface['mac']
 
             if interface['method'] == "static":
-                int['BOOTPROTO'] = "static"
-                int['IPADDR'] = interface['ip']
-                int['NETMASK'] = interface['netmask']
+                inter['BOOTPROTO'] = "static"
+                inter['IPADDR'] = interface['ip']
+                inter['NETMASK'] = interface['netmask']
 
             elif interface['method'] == "dhcp":
-                int['BOOTPROTO'] = "dhcp"
+                inter['BOOTPROTO'] = "dhcp"
                 if interface['hostname']:
-                    int['DHCP_HOSTNAME'] = interface['hostname']
+                    inter['DHCP_HOSTNAME'] = interface['hostname']
                 else:
-                    int['DHCP_HOSTNAME'] = hostname
+                    inter['DHCP_HOSTNAME'] = hostname
                 if not interface['is_primary']:
-                    int['DHCLIENTARGS'] = "-R subnet-mask"
+                    inter['DHCLIENTARGS'] = "-R subnet-mask"
 
             alias = ""
             ifname=None
@@ -207,32 +207,32 @@ def Run( vars, log ):
                     # use the backdoor setting and put as a value 'var=value'
                     elif setting['name'].upper() == "BACKDOOR":
                         [var,value]=setting['value'].split('=',1)
-                        int[var]=value
+                        inter[var]=value
 
                     elif setting['name'].lower() in \
                             [  "mode", "essid", "nw", "freq", "channel", "sens", "rate",
                                "key", "key1", "key2", "key3", "key4", "securitymode", 
                                "iwconfig", "iwpriv" ] :
-                        int [setting['name'].upper()] = setting['value']
-                        int ['TYPE']='Wireless'
+                        inter [setting['name'].upper()] = setting['value']
+                        inter ['TYPE']='Wireless'
                     else:
                         log.write("Warning - ignored setting named %s\n"%setting['name'])
 
-            if alias and 'HWADDR' in int:
+            if alias and 'HWADDR' in inter:
                 for (dev, i) in interfaces.iteritems():
-                    if i['HWADDR'] == int['HWADDR']:
+                    if i['HWADDR'] == inter['HWADDR']:
                         break
-                del int['HWADDR']
-                interfaces[dev + alias] = int
+                del inter['HWADDR']
+                interfaces[dev + alias] =inter 
                 interface_count -= 1
             else:
                 if not ifname:
                     ifname="eth%d" % ifnum
                 else:
                     interface_count -= 1
-                interfaces[ifname] = int
+                interfaces[ifname] =inter 
 
-    for (dev, int) in interfaces.iteritems():
+    for (dev, inter) in interfaces.iteritems():
         path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
                SYSIMG_PATH, dev)
         f = file(path, "w")
@@ -241,7 +241,7 @@ def Run( vars, log ):
         f.write("DEVICE=%s\n" % dev)
         f.write("ONBOOT=yes\n")
         f.write("USERCTL=no\n")
-        for (key, val) in int.iteritems():
+        for (key, val) in inter.iteritems():
             f.write('%s="%s"\n' % (key, val))
 
         f.close()
