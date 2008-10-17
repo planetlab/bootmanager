@@ -52,11 +52,6 @@ LSPCI_CMD= "/sbin/lspci -nm"
 MODULE_CLASS_NETWORK= "network"
 MODULE_CLASS_SCSI= "scsi"
 
-PCI_BASE_CLASS_NETWORK=0x02L
-PCI_BASE_CLASS_STORAGE=0x01L
-
-PCI_ANY=0xffffffffL
-
 def get_total_phsyical_mem(vars = {}, log = sys.stderr):
     """
     return the total physical memory of the machine, in kilobytes.
@@ -266,7 +261,7 @@ def get_system_modules( vars = {}, log = sys.stderr):
     modules_pcimap_path = "%s/lib/modules/%s/modules.pcimap" % \
                           (SYSIMG_PATH,kernel_version)
     if not os.access(modules_pcimap_path,os.R_OK):
-        print( "Unable to read %s" % path )
+        print( "WARNING: Unable to read %s" % modules_pcimap_path )
         return
 
     pcimap = pypcimap.PCIMap(modules_pcimap_path)
@@ -365,13 +360,10 @@ if __name__ == "__main__":
     if not modules:
         print "unable to list system modules"
     else:
-        for type in modules:
-            if type == MODULE_CLASS_SCSI:
-                print( "all scsi modules:" )
-                for a_mod in modules[type]:
-                    print a_mod
-            elif type == MODULE_CLASS_NETWORK:
-                print( "all network modules:" )
-                for a_mod in modules[type]:
-                    print a_mod
+        for module_class in (MODULE_CLASS_SCSI,MODULE_CLASS_NETWORK):
+            if len(modules[module_class]) > 0:
+                module_list = ""
+                for a_mod in modules[module_class]:
+                    module_list = module_list + "%s " % a_mod
+                print "all %s modules: %s" % (module_class, module_list)
                 
