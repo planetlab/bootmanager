@@ -51,24 +51,29 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     if sysmods is None:
         raise BootManagerException, "Unable to get list of system modules."
         
-    eth_count= 0
-    scsi_count= 0
-
     modulesconf_file= file("%s/%s" % (SYSIMG_PATH,filename), "w" )
     modulesconf_file.write("options ata_generic all_generic_ide=1\n")
 
-    for type in sysmods:
-        if type == systeminfo.MODULE_CLASS_SCSI:
-            for a_mod in sysmods[type]:
-                modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
-                                        (scsi_count,a_mod) )
-                scsi_count= scsi_count + 1
+    # MEF: I am not sure this is the proper thing to do if there are
+    # two completely different scsi_hostadapter.  I think its ok, but
+    # it seems rather arbitrary.
+    count=0
+    for a_mod in sysmods[systeminfo.MODULE_CLASS_SCSI]:
+        line="alias scsi_hostadapter%d %s\n" % (count,a_mod) 
+        modulesconf_file.write(line)
+        count=count+1
 
-        elif type == systeminfo.MODULE_CLASS_NETWORK:
-            for a_mod in sysmods[type]:
-                modulesconf_file.write( "alias eth%d %s\n" %
-                                        (eth_count,a_mod) )
-                eth_count= eth_count + 1
+    # This should involve looking at the NodeNetworks associated with
+    # this node and matching on their ethernet address.  Barring that
+    # information order the remaining ethX numbering according to PCI
+    # enumeration order. This should be integrated with
+    # WriteNetworkConfig and integrate.  For now lets just comment out
+    # the 'alias ethX a_mod' lines in modprobe.conf
+    count=0
+    for a_mod in sysmods[systeminfo.MODULE_CLASS_NETWORK]:
+        line="alias eth%d %s # Want to comment this out in the future.\n" % (count,a_mod) 
+        modulesconf_file.write(line)
+        count=count+1
 
     modulesconf_file.close()
     modulesconf_file= None
@@ -85,6 +90,8 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     # before we do the real kexec, check to see if we had any
     # network drivers written to modprobe.conf. if not, return -1,
     # which will cause this node to be switched to a debug state.
+    scsi_count=len(sysmods[systeminfo.MODULE_CLASS_SCSI])
+    eth_count=len(sysmods[systeminfo.MODULE_CLASS_NETWORK])
     if eth_count == 0:
         log.write( "\nIt appears we don't have any network drivers. Aborting.\n" )
         
