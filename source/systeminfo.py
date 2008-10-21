@@ -52,6 +52,9 @@ LSPCI_CMD= "/sbin/lspci -nm"
 MODULE_CLASS_NETWORK= "network"
 MODULE_CLASS_SCSI= "scsi"
 
+PCI_BASE_CLASS_NETWORK=0x02L
+PCI_BASE_CLASS_STORAGE=0x01L
+
 def get_total_phsyical_mem(vars = {}, log = sys.stderr):
     """
     return the total physical memory of the machine, in kilobytes.
