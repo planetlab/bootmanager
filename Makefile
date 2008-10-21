@@ -27,3 +27,5 @@ endif
 ##########
 tags:
 	find . '(' -name '*.py' -o -name '*.spec' ')' | xargs etags
+
+.PHONY: tags

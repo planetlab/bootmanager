@@ -80,6 +80,7 @@ class log:
         """
 
         if self.OutputFile is not None:
+            self.LogEntry( "NOTE: upload logs is known to be broken (beg)")
             self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_PATH )
             
             self.OutputFile.close()
@@ -90,6 +91,7 @@ class log:
                                    GetVars = None, PostVars = None,
                                    FormData = ["log=@" + self.OutputFilePath],
                                    DoSSL = True, DoCertCheck = True)
+            self.LogEntry( "NOTE: upload logs is known to be broken (end)")
         
     
 
