@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # $Id$
 #
 # Copyright (c) 2003 Intel Corporation
