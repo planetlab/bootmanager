@@ -90,19 +90,16 @@ def Run( vars, log ):
 
     vars['ROOT_MOUNTED']= 1
 
-    # check which nodegroups we are part of (>=4.0)
-    utils.breakpoint("querying nodegroups for loading extensions")
+    # which extensions are we part of ?
+    utils.breakpoint("Getting the extension tag on node")
     try:
-        nodes = BootAPI.call_api_function(vars, "GetNodes", ([NODE_ID], ['nodegroup_ids']))
-        node = nodes[0]
-        nodegroups = BootAPI.call_api_function(vars, "GetNodeGroups", (node['nodegroup_ids'], ['groupname']))
-        nodegroupnames = [ nodegroup['groupname'].lower() for nodegroup in nodegroups ]
+        extension_tag = BootAPI.call_api_function(vars, "GetNodeExtension", ([NODE_ID]))
+        extensions = extension_tag.split()
 
     except:
-        log.write("WARNING : Failed to query nodegroups - installing only core software\n")
-        nodegroupnames = []
-        pass
-
+        log.write("WARNING : Failed to query the extension tag - installing only core software\n")
+        extensions = []
+    
     # see also GetBootMedium in PLCAPI that does similar things
     # figuring the default node family:
     # (1) look at /etc/planetlab/nodefamily on the bootcd
@@ -110,33 +107,16 @@ def Run( vars, log ):
     try:
         (pldistro,arch) = file("/etc/planetlab/nodefamily").read().strip().split("-")
     except:
-        (pldistro,arch) = ("planetlab","i386")
+        # what arch should be used for this node
+        utils.breakpoint("Getting the arch tag on node")
+        pldistro="planetlab"
+        default_arch="i386"
+        try:
+            arch = BootAPI.call_api_function(vars, "GetNodeArch", ([NODE_ID]))
+        except:
+            log.write("WARNING : Failed to query node arch - using %(default_arch)s\n"%locals())
+            arch = default_arch
 
-    # scan nodegroupnames - temporary, as most of this nodegroup-based info 
-    # should be more adequately defined in the nodes data model
-    known_archs = [ 'i386', 'x86_64' ]
-    extensions = []
-    # (1) if groupname == arch, nodefamily becomes pldistro-groupname
-    # (2) else if groupname looks like pldistro-arch, it is taken as a nodefamily
-    # (3) otherwise groupname is taken as an extension
-    for nodegroupname in nodegroupnames:
-        if nodegroupname in known_archs:
-            arch = nodegroupname
-        else:
-            is_nodefamily = False
-            for known_arch in known_archs:
-                try:
-                    (api_pldistro,api_arch)=nodegroupname.split("-")
-                    # sanity check
-                    if api_arch != known_arch: raise Exception,"mismatch"
-                    (pldistro,arch) = (api_pldistro, api_arch)
-                    is_nodefamily = True
-                    break
-                except:
-                    pass
-            if not is_nodefamily:
-                extensions.append(nodegroupname)
-            
     bootstrapfs_names = [ pldistro ] + extensions
 
     # download and extract support tarball for this step, which has
@@ -203,36 +183,10 @@ def Run( vars, log ):
     utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
                   SYSIMG_PATH)
 
-    # yum-based extensions:
-    # before we can use yum, yum.conf needs to get installed
-    # xxx this should probably depend on the node's nodegroup, at least among alpha, beta ..
-    # however there does not seem to be a clear interface for that in yum.conf.php
-    # so let's keep it simple for the bootstrap phase, as yum.conf will get overwritten anyway
+    # the yum config has changed entirely; 
+    # in addition yum installs have more or less never worked - let's forget about this
+    # maybe NodeManager could profitably do the job instead
     if yum_extensions:
-        getDict = {'gpgcheck':1,'arch':arch}
-        url="PlanetLabConf/yum.conf.php"
-        dest="%s/etc/yum.conf"%SYSIMG_PATH
-        log.write("downloading bootstrap yum.conf\n")
-        yumconf=bs_request.DownloadFile (url,getDict,None,
-                                         1, 1, dest)
-        if not yumconf:
-            log.write("Cannot fetch %s from %s - aborting yum extensions"%(dest,url))
-            # failures here should not stop the install process
-            return 1
-
-        # yum also needs /proc to be mounted 
-        # do it here so as to not break the tarballs-only case
-        cmd = "mount -t proc none %s/proc" % SYSIMG_PATH
-        utils.sysexec( cmd, log )
-        # we now just need to yum groupinstall everything
-        for extension in yum_extensions:
-            yum_command="yum groupinstall extension%s"%extension
-            utils.breakpoint ("before chroot %s %s"%(SYSIMG_PATH,yum_command))
-            log.write("Attempting to install extension %s through yum\n"%extension)
-            utils.sysexec_noerr("chroot %s %s" % (SYSIMG_PATH,yum_command))
-            # xxx how to check that this completed correctly ?
-        # let's cleanup
-        utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
-        utils.breakpoint ("Done with yum extensions")
+        log.write('WARNING : yum installs for node extensions are not supported anymore')
 
     return 1
