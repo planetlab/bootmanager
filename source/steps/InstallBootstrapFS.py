@@ -93,7 +93,7 @@ def Run( vars, log ):
     # which extensions are we part of ?
     utils.breakpoint("Getting the extension tag on node")
     try:
-        extension_tag = BootAPI.call_api_function(vars, "GetNodeExtension", ([NODE_ID]))
+        extension_tag = BootAPI.call_api_function(vars, "GetNodeExtensions", ([NODE_ID]))
         extensions = extension_tag.split()
 
     except:
