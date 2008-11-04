@@ -88,12 +88,8 @@ def Run( vars, log ):
     except KeyError, e:
         raise BootManagerException, "Missing value %s in interface settings." % str(e)
 
-    try:
-        dns2= ''
-        dns2= interface_settings['dns2']
-    except KeyError, e:
-        pass
-
+    # dns2 is not required to be set
+    dns2 = interface_settings.get('dns2','')
 
     # Node Manager needs at least PLC_API_HOST and PLC_BOOT_HOST
     log.write("Writing /etc/planetlab/plc_config\n")
@@ -179,10 +175,7 @@ def Run( vars, log ):
 
             elif interface['method'] == "dhcp":
                 inter['BOOTPROTO'] = "dhcp"
-                if interface['hostname']:
-                    inter['DHCP_HOSTNAME'] = interface['hostname']
-                else:
-                    inter['DHCP_HOSTNAME'] = hostname
+                inter['DHCP_HOSTNAME'] = interface.get('hostname',hostname)
                 if not interface['is_primary']:
                     inter['DHCLIENTARGS'] = "-R subnet-mask"
 
