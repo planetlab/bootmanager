@@ -185,9 +185,8 @@ def update_vserver_network_files( vserver_dir, vars, log ):
         hosts_file.write( "127.0.0.1       localhost\n" )
         if method == "static":
             hosts_file.write( "%s %s.%s\n" % (ip, hostname, domainname) )
-            hosts_file.close()
-            hosts_file= None
-
+        hosts_file.close()
+        hosts_file= None
 
         file_path= "%s/etc/resolv.conf" % vserver_dir
         if method == "dhcp":
