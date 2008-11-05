@@ -175,7 +175,10 @@ def Run( vars, log ):
 
             elif interface['method'] == "dhcp":
                 inter['BOOTPROTO'] = "dhcp"
-                inter['DHCP_HOSTNAME'] = interface.get('hostname',hostname)
+                if interface['hostname']:
+                    inter['DHCP_HOSTNAME'] = interface['hostname']
+                else:
+                    inter['DHCP_HOSTNAME'] = hostname 
                 if not interface['is_primary']:
                     inter['DHCLIENTARGS'] = "-R subnet-mask"
 
