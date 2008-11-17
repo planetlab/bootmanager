@@ -10,7 +10,7 @@ PLCSSH:=root@$(PLCHOST):/vservers/$(VSERVER)
 endif
 endif
 
-LOCAL_RSYNC_EXCLUDES	:= --exclude '*.pyc' 
+LOCAL_RSYNC_EXCLUDES	:= --exclude '*.pyc' --exclude debug_root_ssh_key
 RSYNC_EXCLUDES		:= --exclude .svn --exclude CVS --exclude '*~' --exclude TAGS $(LOCAL_RSYNC_EXCLUDES)
 RSYNC_COND_DRY_RUN	:= $(if $(findstring n,$(MAKEFLAGS)),--dry-run,)
 RSYNC			:= rsync -a -v $(RSYNC_COND_DRY_RUN) $(RSYNC_EXCLUDES)

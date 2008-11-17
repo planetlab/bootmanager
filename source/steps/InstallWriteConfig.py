@@ -34,8 +34,6 @@ def Run( vars, log ):
     PLCONF_DIR              The directory to store the configuration file in
     INTERFACE_SETTINGS  A dictionary of the values from the network
                                 configuration file
-    BOOT_CD_VERSION          A tuple of the current bootcd version
-    
     Sets the following variables:
     None
     
@@ -64,10 +62,6 @@ def Run( vars, log ):
         INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
         if INTERFACE_SETTINGS == "":
             raise ValueError, "INTERFACE_SETTINGS"
-
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var

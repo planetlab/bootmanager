@@ -11,7 +11,6 @@ import string
 import InstallPartitionDisks
 from Exceptions import *
 import systeminfo
-import compatibility
 import utils
 import os
 
@@ -22,7 +21,6 @@ def Run( vars, log ):
     
     Expect the following variables to be set:
     SYSIMG_PATH          the path where the system image will be mounted
-    BOOT_CD_VERSION          A tuple of the current bootcd version
     MINIMUM_DISK_SIZE       any disks smaller than this size, in GB, are not used
     
     Set the following variables upon successfully running:
@@ -33,10 +31,6 @@ def Run( vars, log ):
 
     # make sure we have the variables we need
     try:
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
@@ -54,11 +48,6 @@ def Run( vars, log ):
 
     all_devices= systeminfo.get_block_device_list(vars, log)
     
-    # find out if there are unused disks in all_devices that are greater
-    # than old cds need extra utilities to run lvm
-    if BOOT_CD_VERSION[0] == 2:
-        compatibility.setup_lvm_2x_cd( vars, log )
-        
     # will contain the new devices to add to the volume group
     new_devices= []
 
@@ -172,21 +161,18 @@ def Run( vars, log ):
                 break
 
             log.write( "making the ext3 filesystem match new logical volume size.\n" )
-            if BOOT_CD_VERSION[0] == 2:
-                cmd = "resize2fs %s" % PARTITIONS["vservers"]
-                resize = utils.sysexec_noerr(cmd,log)
-            elif BOOT_CD_VERSION[0] >= 3:
-                vars['ROOT_MOUNTED']= 1
-                cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
-                utils.sysexec_noerr( cmd, log )
-                cmd = "mount %s %s/vservers" % \
-                      (PARTITIONS["vservers"],SYSIMG_PATH)
-                utils.sysexec_noerr( cmd, log )
-                cmd = "ext2online %s/vservers" % SYSIMG_PATH
-                resize = utils.sysexec_noerr(cmd,log)
-                utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
-                utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
-                vars['ROOT_MOUNTED']= 0
+
+            vars['ROOT_MOUNTED']= 1
+            cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
+            utils.sysexec_noerr( cmd, log )
+            cmd = "mount %s %s/vservers" % \
+                (PARTITIONS["vservers"],SYSIMG_PATH)
+            utils.sysexec_noerr( cmd, log )
+            cmd = "ext2online %s/vservers" % SYSIMG_PATH
+            resize = utils.sysexec_noerr(cmd,log)
+            utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
+            utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
+            vars['ROOT_MOUNTED']= 0
 
             utils.sysexec( "vgchange -an", log )
 

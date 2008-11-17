@@ -68,24 +68,6 @@ def Run( vars, log ):
 
     BOOT_CD_VERSION= vars['BOOT_CD_VERSION']
     
-    # old cds need extra modules loaded for compaq smart array
-    if BOOT_CD_VERSION[0] == 2:
-
-        has_smartarray= utils.sysexec_noerr(
-            'lspci | egrep "0e11:b178|0e11:4070|0e11:4080|0e11:4082|0e11:4083"')
-        
-        if has_smartarray:
-            log.write( "Loading support for Compaq smart array\n" )
-            utils.sysexec_noerr( "modprobe cciss", log )
-            _create_cciss_dev_entries()
-            
-
-        has_fusion= utils.sysexec_noerr('lspci | egrep "1000:0030"')
-        
-        if has_fusion:
-            log.write( "Loading support for Fusion MPT SCSI controllers\n" )
-            utils.sysexec_noerr( "modprobe mptscsih", log )
-
     # for anything that needs to know we are running under the boot cd and
     # not the runtime os
     os.environ['PL_BOOTCD']= "1"

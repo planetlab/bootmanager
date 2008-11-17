@@ -11,7 +11,6 @@ import os
 from Exceptions import *
 import utils
 import systeminfo
-import compatibility
 import ModelOptions
 
 
@@ -24,7 +23,6 @@ def Run( vars, log ):
     Expect the following variables to be set:
     SYSIMG_PATH              the path where the system image will be mounted
                              (always starts with TEMP_PATH)
-    BOOT_CD_VERSION          A tuple of the current bootcd version
     ROOT_MOUNTED             the node root file system is mounted
     NODE_ID                  The db node_id for this machine
     PLCONF_DIR               The directory to store the configuration file in
@@ -37,10 +35,6 @@ def Run( vars, log ):
 
     # make sure we have the variables we need
     try:
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
@@ -66,16 +60,13 @@ def Run( vars, log ):
 
 
     ROOT_MOUNTED= 0
-    if 'ROOT_MOUNTED' in vars.keys():
+    if vars.has_key('ROOT_MOUNTED'):
         ROOT_MOUNTED= vars['ROOT_MOUNTED']
 
     # mount the root system image if we haven't already.
     # capture BootManagerExceptions during the vgscan/change and mount
     # calls, so we can return 0 instead
     if ROOT_MOUNTED == 0:
-        # old cds need extra utilities to run lvm
-        if BOOT_CD_VERSION[0] == 2:
-            compatibility.setup_lvm_2x_cd( vars, log )
             
         # simply creating an instance of this class and listing the system
         # block devices will make them show up so vgscan can find the planetlab

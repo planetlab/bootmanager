@@ -40,7 +40,6 @@ def Run( vars, log ):
                             this node to be usable after install
     SKIP_HARDWARE_REQUIREMENT_CHECK
                             If set, don't check if minimum requirements are met
-    BOOT_CD_VERSION          A tuple of the current bootcd version                            
     Sets the following variables:
     INSTALL_BLOCK_DEVICES    list of block devices to install onto
     """
@@ -64,10 +63,6 @@ def Run( vars, log ):
         SKIP_HARDWARE_REQUIREMENT_CHECK= \
                    int(vars["SKIP_HARDWARE_REQUIREMENT_CHECK"])
         
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
     except KeyError, var:
         raise BootManagerException, \
               "Missing variable in install store: %s" % var
@@ -248,11 +243,5 @@ def Run( vars, log ):
                        "insufficient, but running anyway.\n" )
             
     log.write( "Total size for all usable block devices: %4.2f GB\n" % total_size )
-
-    # turn off UDMA for all block devices on 2.x cds (2.4 kernel)
-    if BOOT_CD_VERSION[0] == 2:
-        for device in install_devices:
-            log.write( "Disabling UDMA on %s\n" % device )
-            utils.sysexec_noerr( "/sbin/hdparm -d0 %s" % device, log )
 
     return 1

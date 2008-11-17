@@ -97,7 +97,7 @@ def Run( vars, log ):
         extensions = extension_tag.split()
 
     except:
-        log.write("WARNING : Failed to query the extension tag - installing only core software\n")
+        log.write("WARNING : Failed to query tag 'extensions' - installing only core software\n")
         extensions = []
     
     # see also GetBootMedium in PLCAPI that does similar things
