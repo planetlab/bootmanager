@@ -260,9 +260,53 @@ def Run( vars, log ):
                         utils.sysexec_noerr( "modprobe -r %s" % parts[0], log )
             except IndexError, e:
                 log.write( "Couldn't parse /proc/modules, continuing.\n" )
+        modules.close()
     except IOError:
         log.write( "Couldn't read /proc/modules, continuing.\n" )
 
+    try:
+	modules=file("/tmp/loadedmodules","r")
+	log.write("BM loaded modules:")
+	for line in modules:
+            	module=string.strip(line)
+		log.write("%s " % module)
+	log.write("\n")
+        modules.close()
+
+	t={}
+	log.write("Not unloading:")
+	modules=file("/proc/modules","r")
+	for line in modules:
+		parts=line.split()
+		name=parts[0].strip()
+		count=parts[2].strip()
+		dep=parts[3].strip()
+		log.write("(%s->%s,%s)" % (name,count,dep))
+		t[name]=(count,dep)
+        modules.close()
+	log.write("\n")
+
+	#removemodules=("ata_generic","sg","libata","scsi_mod")
+        removemodules=()
+	for removemodule in removemodules:
+		entry=t.get(removemodule,None)
+		if entry <> None:
+                    	log.write("Unloading %s driver; sleeping 4 seconds...\n" % removemodule)
+                	utils.sysexec_noerr( "modprobe -r %s" % removemodule, log )
+                    	time.sleep(4)
+			
+	log.write("Remaining modules:")
+	modules=file("/proc/modules","r")
+	for line in modules:
+		parts=line.split()
+		name=parts[0].strip()
+		count=parts[2].strip()
+		dep=parts[3].strip()
+		log.write("(%s->%s,%s)" % (name,count,dep))
+        modules.close()
+	log.write("\n")
+    except IOError:
+        log.write( "Couldn't read /proc/modules, continuing.\n" )
 
     kargs = "root=%s ramdisk_size=8192" % PARTITIONS["mapper-root"]
     if NODE_MODEL_OPTIONS & ModelOptions.SMP:
@@ -281,8 +325,13 @@ def Run( vars, log ):
 
     utils.breakpoint ("Before kexec");
     try:
-        utils.sysexec( 'kexec --force --initrd=/tmp/initrd ' \
-                       '--append="%s" /tmp/kernel' % kargs)
+        #kargs = kargs + " acpi=off noapic nolapic nosmp"
+        #kargs = kargs + " console=ttyS0,115200 earlyprintk=ttyS0"
+        #kexecdebug="--console-serial --serial-baud=115200 --debug"
+        kexecdebug=""
+	kexec='kexec %s --force --initrd=/tmp/initrd --append="%s" /tmp/kernel' % (kexecdebug,kargs)
+        log.write("%s\n"%kexec)
+        utils.sysexec(kexec)
     except BootManagerException, e:
         # if kexec fails, we've shut the machine down to a point where nothing
         # can run usefully anymore (network down, all modules unloaded, file
