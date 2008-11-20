@@ -46,9 +46,6 @@ DEVICES_SCANNED_FLAG= "/tmp/devices_scanned"
 BLOCKS_PER_GB = pow(10, 9) / 1024.0;
 
 
-# -n is numeric ids (no lookup), -m is machine readable
-LSPCI_CMD= "/sbin/lspci -nm"
-
 MODULE_CLASS_NETWORK= "network"
 MODULE_CLASS_SCSI= "scsi"
 
@@ -281,7 +278,8 @@ def get_system_modules( vars = {}, log = sys.stderr):
     # XXX: this is really similar to what BootCD/conf_files/pl_hwinit does. merge?
     pcidevs = get_devices()
 
-    for (slot, dev) in pcidevs.iteritems():
+    for slot in sorted(pcidevs.keys()):
+        dev = pcidevs[slot]
         base = (dev[4] & 0xff0000) >> 16
         if base not in (PCI_BASE_CLASS_STORAGE,
                         PCI_BASE_CLASS_NETWORK):
