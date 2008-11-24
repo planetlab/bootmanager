@@ -100,6 +100,16 @@ def Run( vars, log ):
         log.write("WARNING : Failed to query tag 'extensions' - installing only core software\n")
         extensions = []
     
+    # check if the plain-bootstrapfs tag is set
+    download_suffix=".tar.bz2"
+    untar_option="-j"
+    try:
+        if BootAPI.call_api_function (vars, "GetNodePlainBootstrapfs", ([NODE_ID])):
+            download_suffix=".tar"
+            untar_option=""
+    except:
+        pass
+
     # see also GetBootMedium in PLCAPI that does similar things
     # figuring the default node family:
     # (1) look at /etc/planetlab/nodefamily on the bootcd
@@ -126,7 +136,7 @@ def Run( vars, log ):
     yum_extensions = []
     # download and extract support tarball for this step, 
     for bootstrapfs_name in bootstrapfs_names:
-        tarball = "bootstrapfs-%s-%s.tar.bz2"%(bootstrapfs_name,arch)
+        tarball = "bootstrapfs-%s-%s%s"%(bootstrapfs_name,arch,download_suffix)
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
@@ -138,7 +148,7 @@ def Run( vars, log ):
                                          30, 14400)
         if result:
             log.write( "extracting %s in %s\n" % (dest_file,SYSIMG_PATH) )
-            result= utils.sysexec( "tar -C %s -xpjf %s" % (SYSIMG_PATH,dest_file), log )
+            result= utils.sysexec( "tar -C %s -xpf %s %s" % (SYSIMG_PATH,dest_file,untar_option), log )
             log.write( "Done\n")
             utils.removefile( dest_file )
         else:
