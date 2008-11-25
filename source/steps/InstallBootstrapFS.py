@@ -10,6 +10,7 @@
 import os, sys, string
 import popen2
 import shutil
+import traceback 
 
 from Exceptions import *
 import utils
@@ -92,23 +93,32 @@ def Run( vars, log ):
 
     # which extensions are we part of ?
     utils.breakpoint("Getting the extension tag on node")
+    extensions = []
     try:
-        extension_tag = BootAPI.call_api_function(vars, "GetNodeExtensions", ([NODE_ID]))
-        extensions = extension_tag.split()
+        extension_tag = BootAPI.call_api_function(vars, "GetNodeExtensions", (NODE_ID,) )
+        if extension_tag:
+            extensions = extension_tag.split()
 
     except:
-        log.write("WARNING : Failed to query tag 'extensions' - installing only core software\n")
-        extensions = []
+        log.write("WARNING : Failed to query tag 'extensions'")
+        log.write(traceback.format_exc())
+
+    if not extensions:
+        log.write("installing only core software\n")
     
     # check if the plain-bootstrapfs tag is set
     download_suffix=".tar.bz2"
     untar_option="-j"
     try:
-        if BootAPI.call_api_function (vars, "GetNodePlainBootstrapfs", ([NODE_ID])):
+        if BootAPI.call_api_function (vars, "GetNodePlainBootstrapfs", (NODE_ID,) ):
             download_suffix=".tar"
             untar_option=""
     except:
-        pass
+        log.write("WARNING : Failed to query tag 'plain-bootstrapfs'")
+        log.write(traceback.format_exc())
+
+    if not untar_option:
+        log.write("Using uncompressed bootstrapfs images\n")
 
     # see also GetBootMedium in PLCAPI that does similar things
     # figuring the default node family:
@@ -122,10 +132,13 @@ def Run( vars, log ):
         pldistro="planetlab"
         default_arch="i386"
         try:
-            arch = BootAPI.call_api_function(vars, "GetNodeArch", ([NODE_ID]))
+            arch = BootAPI.call_api_function(vars, "GetNodeArch", (NODE_ID,) )
         except:
-            log.write("WARNING : Failed to query node arch - using %(default_arch)s\n"%locals())
+            log.write("WARNING : Failed to query tag 'arch'")
+            log.write(traceback.format_exc())
             arch = default_arch
+
+    log.write ("Using arch=%s\n"%arch)
 
     bootstrapfs_names = [ pldistro ] + extensions
 
