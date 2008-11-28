@@ -71,25 +71,25 @@ def Run( vars, log ):
 
 
     try:
-        interface_settings= vars['INTERFACE_SETTINGS']
+        INTERFACE_SETTINGS= vars['INTERFACE_SETTINGS']
     except KeyError, e:
         raise BootManagerException, "No interface settings found in vars."
 
     try:
-        hostname= interface_settings['hostname']
-        domainname= interface_settings['domainname']
-        method= interface_settings['method']
-        ip= interface_settings['ip']
-        gateway= interface_settings['gateway']
-        network= interface_settings['network']
-        netmask= interface_settings['netmask']
-        dns1= interface_settings['dns1']
-        mac= interface_settings['mac']
+        hostname= INTERFACE_SETTINGS['hostname']
+        domainname= INTERFACE_SETTINGS['domainname']
+        method= INTERFACE_SETTINGS['method']
+        ip= INTERFACE_SETTINGS['ip']
+        gateway= INTERFACE_SETTINGS['gateway']
+        network= INTERFACE_SETTINGS['network']
+        netmask= INTERFACE_SETTINGS['netmask']
+        dns1= INTERFACE_SETTINGS['dns1']
+        mac= INTERFACE_SETTINGS['mac']
     except KeyError, e:
         raise BootManagerException, "Missing value %s in interface settings." % str(e)
 
     # dns2 is not required to be set
-    dns2 = interface_settings.get('dns2','')
+    dns2 = INTERFACE_SETTINGS.get('dns2','')
 
     # Node Manager needs at least PLC_API_HOST and PLC_BOOT_HOST
     log.write("Writing /etc/planetlab/plc_config\n")
@@ -184,35 +184,33 @@ def Run( vars, log ):
 
             alias = ""
             ifname=None
-            if len(interface['interface_setting_ids']) > 0:
-                settings = \
-                    BootAPI.call_api_function(vars, "GetInterfaceSettings",
-                                              ({'interface_setting_id': 
-                                                interface['interface_setting_ids']},))
-                for setting in settings:
+            if len(interface['interface_tag_ids']) > 0:
+                tags =  BootAPI.call_api_function(vars, "GetInterfaceTags",
+                                                  ({'interface_tag_id': interface['interface_tag_ids']},))
+                for tag in tags:
                     # to explicitly set interface name
-                    if   setting['name'].upper() == "IFNAME":
-                        ifname=setting['value']
-                    elif setting['name'].upper() == "DRIVER":
+                    if   tag['tagname'].upper() == "IFNAME":
+                        ifname=tag['value']
+                    elif tag['tagname'].upper() == "DRIVER":
                         # xxx not sure how to do that yet - probably add a line in modprobe.conf
                         pass
-                    elif setting['name'].upper() == "ALIAS":
-                        alias = ":" + setting['value']
+                    elif tag['tagname'].upper() == "ALIAS":
+                        alias = ":" + tag['value']
 
                     # a hack for testing before a new setting is hardcoded here
-                    # use the backdoor setting and put as a value 'var=value'
-                    elif setting['name'].upper() == "BACKDOOR":
-                        [var,value]=setting['value'].split('=',1)
+                    # use the backdoor tag and put as a value 'var=value'
+                    elif tag['tagname'].upper() == "BACKDOOR":
+                        [var,value]=tag['value'].split('=',1)
                         inter[var]=value
 
-                    elif setting['name'].lower() in \
+                    elif tag['tagname'].lower() in \
                             [  "mode", "essid", "nw", "freq", "channel", "sens", "rate",
                                "key", "key1", "key2", "key3", "key4", "securitymode", 
                                "iwconfig", "iwpriv" ] :
-                        inter [setting['name'].upper()] = setting['value']
+                        inter [tag['tagname'].upper()] = tag['value']
                         inter ['TYPE']='Wireless'
                     else:
-                        log.write("Warning - ignored setting named %s\n"%setting['name'])
+                        log.write("Warning - ignored tag named %s\n"%tag['tagname'])
 
             if alias and 'HWADDR' in inter:
                 for (dev, i) in interfaces.iteritems():
