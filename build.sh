@@ -73,16 +73,16 @@ if [ -f "$PLC_DEBUG_SSH_KEY_PUB" ] ; then
     install -D -m 644 "$PLC_DEBUG_SSH_KEY_PUB" $srcdir/source/debug_files/debug_root_ssh_key
 fi
 
-# Add pypcilib
-pypcilib=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
-mkdir $pypcilib/source
-cp $(rpm -ql pypcilib | grep -v '\.py[co]$') $pypcilib/source
+# Add pypcilib and pyplnet
+extra_libs=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
+mkdir $extra_libs/source
+cp -p $(rpm -ql pypcilib pyplnet | grep -v '\.py[co]$') $extra_libs/source
 
 # Embed the uuencoded tarball in the script
-tar -cj -C $srcdir source/ -C $pypcilib source/ | uuencode -m - >> $DEST_SCRIPT
+tar -cj -C $srcdir source/ -C $extra_libs source/ | uuencode -m - >> $DEST_SCRIPT
 
 # Remove temp directory
-rm -fr $pypcilib
+rm -fr $extra_libs
 
 echo '_EOF_' >> $DEST_SCRIPT
 echo 'cd /tmp/source' >> $DEST_SCRIPT

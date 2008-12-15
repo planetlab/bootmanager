@@ -16,6 +16,23 @@ import ModelOptions
 import urlparse
 import httplib
 import BootAPI
+import plnet
+
+class BootAPIWrap:
+    def __init__(self, vars):
+        self.vars = vars
+    def call(self, func, *args):
+        BootAPI.call_api_function(self.vars, func, args)
+    def __getattr__(self, func):
+        return lambda *args: self.call(func, *args)
+
+class logger:
+    def __init__(self, log):
+        self._log = log
+    def log(self, msg, level=3):
+        self._log.write(msg + "\n")
+    def verbose(self, msg):
+        self.log(msg, 0)
 
 def Run( vars, log ):
     """
@@ -133,110 +150,7 @@ def Run( vars, log ):
     hosts_file.close()
     hosts_file= None
     
-
-    if method == "static":
-        log.write( "Writing /etc/resolv.conf\n" )
-        resolv_file= file("%s/etc/resolv.conf" % SYSIMG_PATH, "w" )
-        if dns1 != "":
-            resolv_file.write( "nameserver %s\n" % dns1 )
-        if dns2 != "":
-            resolv_file.write( "nameserver %s\n" % dns2 )
-        resolv_file.write( "search %s\n" % domainname )
-        resolv_file.close()
-        resolv_file= None
-
-    log.write( "Writing /etc/sysconfig/network\n" )
-    network_file= file("%s/etc/sysconfig/network" % SYSIMG_PATH, "w" )
-    network_file.write( "NETWORKING=yes\n" )
-    network_file.write( "HOSTNAME=%s.%s\n" % (hostname, domainname) )
-    if method == "static":
-        network_file.write( "GATEWAY=%s\n" % gateway )
-    network_file.close()
-    network_file= None
-
-    interfaces = {}
-    interface = 1
-    for network in vars['NODE_NETWORKS']:
-        if method == "static" or method == "dhcp":
-            if network['is_primary'] == 1:
-                ifnum = 0
-            else:
-                ifnum = interface
-                interface += 1
-
-            inter = {}
-            if network['mac']:
-                inter['HWADDR'] = network['mac']
-
-            if network['method'] == "static":
-                inter['BOOTPROTO'] = "static"
-                inter['IPADDR'] = network['ip']
-                inter['NETMASK'] = network['netmask']
-
-            elif network['method'] == "dhcp":
-                inter['BOOTPROTO'] = "dhcp"
-                if network['hostname']:
-                    inter['DHCP_HOSTNAME'] = network['hostname']
-                else:
-                    inter['DHCP_HOSTNAME'] = hostname
-                if not network['is_primary']:
-                    inter['DHCLIENTARGS'] = "-R subnet-mask"
-
-            alias = ""
-            ifname=None
-            if len(network['nodenetwork_setting_ids']) > 0:
-                settings = BootAPI.call_api_function(vars, "GetNodeNetworkSettings",
-                    ({'nodenetwork_setting_id': network['nodenetwork_setting_ids']},))
-                for setting in settings:
-                    # to explicitly set interface name
-                    if   setting['name'].upper() == "IFNAME":
-                        ifname=setting['value']
-                    elif setting['name'].upper() == "DRIVER":
-                        # xxx not sure how to do that yet - probably add a line in modprobe.conf
-                        pass
-                    elif setting['name'].upper() == "ALIAS":
-                        alias = ":" + setting['value']
-
-                    # a hack for testing before a new setting is hardcoded here
-                    # use the backdoor setting and put as a value 'var=value'
-                    elif setting['name'].upper() == "BACKDOOR":
-                        [var,value]=setting['value'].split('=',1)
-                        inter[var]=value
-
-                    elif setting['name'].lower() in \
-                            [  "mode", "essid", "nw", "freq", "channel", "sens", "rate",
-                               "key", "key1", "key2", "key3", "key4", "securitymode", 
-                               "iwconfig", "iwpriv" ] :
-                        inter [setting['name'].upper()] = setting['value']
-                        inter ['TYPE']='Wireless'
-                    else:
-                        log.write("Warning - ignored setting named %s\n"%setting['name'])
-
-            if alias and 'HWADDR' in inter:
-                for (dev, i) in interfaces.iteritems():
-                    if i['HWADDR'] == inter['HWADDR']:
-                        break
-                del inter['HWADDR']
-                interfaces[dev + alias] =inter 
-                interface -= 1
-            else:
-                if not ifname:
-                    ifname="eth%d" % ifnum
-                else:
-                    interface -= 1
-                interfaces[ifname] =inter 
-
-    for (dev, inter) in interfaces.iteritems():
-        path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
-               SYSIMG_PATH, dev)
-        f = file(path, "w")
-        log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
-
-        f.write("DEVICE=%s\n" % dev)
-        f.write("ONBOOT=yes\n")
-        f.write("USERCTL=no\n")
-        for (key, val) in inter.iteritems():
-            f.write('%s="%s"\n' % (key, val))
-
-        f.close()
-
+    data =  {'hostname': '%s.%s' % (hostname, domainname),
+             'networks': vars['NODE_NETWORKS']}
+    plnet.InitInterfaces(logger(log), BootAPIWrap(vars), data, SYSIMG_PATH,
+                         True, "BootManager")
