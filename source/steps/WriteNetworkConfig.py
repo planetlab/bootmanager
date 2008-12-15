@@ -151,7 +151,7 @@ def Run( vars, log ):
     hosts_file= None
     
     data =  {'hostname': '%s.%s' % (hostname, domainname),
-             'networks': vars['NODE_NETWORKS']}
+             'networks': vars['INTERFACES']}
     plnet.InitInterfaces(logger(log), BootAPIWrap(vars), data, SYSIMG_PATH,
                          True, "BootManager")
 
