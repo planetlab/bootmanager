@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 13
+%define taglevel 14
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Mon Dec 15 2008 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-3.2-14
+- Use pyplnet.
+- Order devices by PCI slot number.
+- Module debugging code.
+
 * Fri Sep 26 2008 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-13
 - include latest module tweaks in current production bootmanager.
 
