@@ -55,6 +55,13 @@ def Run( vars, log ):
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
 
+        if NODE_MODEL_OPTIONS & ModelOptions.RAWDISK:
+            VSERVERS_SIZE= "-1"
+            if "VSERVER_SIZE" in vars:
+                VSERVERS_SIZE= vars["VSERVERS_SIZE"]
+                if VSERVERS_SIZE == "" or VSERVERS_SIZE == 0:
+                    raise ValueError, "VSERVERS_SIZE"
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -80,11 +87,15 @@ def Run( vars, log ):
     
     used_devices= []
 
-    for device in INSTALL_BLOCK_DEVICES:
+    for device in sorted(INSTALL_BLOCK_DEVICES):
 
         if single_partition_device( device, vars, log ):
-            used_devices.append( device )
-            log.write( "Successfully initialized %s\n" % device )
+            if (len(used_devices) > 0 and
+                (vars['NODE_MODEL_OPTIONS'] & ModelOptions.RAWDISK)):
+                log.write( "Running in raw disk mode, not using %s.\n" % device )
+            else:
+                used_devices.append( device )
+                log.write( "Successfully initialized %s\n" % device )
         else:
             log.write( "Unable to partition %s, not using it.\n" % device )
             continue
@@ -112,11 +123,16 @@ def Run( vars, log ):
     # create root logical volume
     utils.sysexec( "lvcreate -L%s -nroot planetlab" % ROOT_SIZE, log )
 
-    # create vservers logical volume with all remaining space
-    # first, we need to get the number of remaining extents we can use
-    remaining_extents= get_remaining_extents_on_vg( vars, log )
-    
-    utils.sysexec( "lvcreate -l%s -nvservers planetlab" % remaining_extents, log )
+    if vars['NODE_MODEL_OPTIONS'] & ModelOptions.RAWDISK and VSERVERS_SIZE != "-1":
+        utils.sysexec( "lvcreate -L%s -nvservers planetlab" % VSERVERS_SIZE, log )
+        remaining_extents= get_remaining_extents_on_vg( vars, log )
+        utils.sysexec( "lvcreate -l%s -nrawdisk planetlab" % remaining_extents, log )
+    else:
+        # create vservers logical volume with all remaining space
+        # first, we need to get the number of remaining extents we can use
+        remaining_extents= get_remaining_extents_on_vg( vars, log )
+        
+        utils.sysexec( "lvcreate -l%s -nvservers planetlab" % remaining_extents, log )
 
     # activate volume group (should already be active)
     #utils.sysexec( TEMP_PATH + "vgchange -ay planetlab", log )

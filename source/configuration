@@ -51,6 +51,11 @@ ROOT_SIZE=7G
 SWAP_SIZE=1G
 
 
+# in raw disk mode, the size of /vservers
+# if unset or -1, use the entire first disk
+VSERVERS_SIZE=-1
+
+
 # whether or not to skip hardware requirement check
 SKIP_HARDWARE_REQUIREMENT_CHECK=0
 

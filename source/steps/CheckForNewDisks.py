@@ -14,6 +14,8 @@ import systeminfo
 import utils
 import os
 
+import ModelOptions
+
 
 def Run( vars, log ):
     """
@@ -22,6 +24,7 @@ def Run( vars, log ):
     Expect the following variables to be set:
     SYSIMG_PATH          the path where the system image will be mounted
     MINIMUM_DISK_SIZE       any disks smaller than this size, in GB, are not used
+    NODE_MODEL_OPTIONS   the node's model options
     
     Set the following variables upon successfully running:
     ROOT_MOUNTED             the node root file system is mounted
@@ -41,6 +44,7 @@ def Run( vars, log ):
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
         
+        NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
@@ -96,16 +100,21 @@ def Run( vars, log ):
                 log.write("To paranoid to add %s to vservers lvm.\n" % device)
                 continue
         
-        log.write( "Attempting to add %s to the volume group\n" % device )
-
         if not InstallPartitionDisks.single_partition_device( device, vars, log ):
             log.write( "Unable to partition %s, not using it.\n" % device )
             continue
 
-        log.write( "Successfully initialized %s\n" % device )
+        log.write( "Successfully partitioned %s\n" % device )
+
+        if NODE_MODEL_OPTIONS & ModelOptions.RAWDISK:
+            log.write( "Running on a raw disk node, not using it.\n" )
+            continue
 
         part_path= InstallPartitionDisks.get_partition_path_from_device( device,
                                                                          vars, log )
+
+        log.write( "Attempting to add %s to the volume group\n" % device )
+
         if not InstallPartitionDisks.create_lvm_physical_volume( part_path,
                                                                  vars, log ):
             log.write( "Unable to create lvm physical volume %s, not using it.\n" %
