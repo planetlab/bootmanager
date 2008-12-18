@@ -102,12 +102,14 @@ def Run( vars, log ):
         vars['ROOT_MOUNTED']= 1
         
     
-    # check if the base kernel is installed
+    # check if the base kernel is installed 
+    # these 2 links are created by our kernel's post-install scriplet
+    log.write("Checking for a custom kernel\n")
     try:
         os.stat("%s/boot/kernel-boot" % SYSIMG_PATH)
         os.stat("%s/boot/initrd-boot" % SYSIMG_PATH)
     except OSError, e:            
-        log.write( "FATAL: Couldn't locate base kernel.\n")                
+        log.write( "Couldn't locate base kernel (you might be using the stock kernel).\n")
         return 0
 
     # check if the model specified kernel is installed
@@ -138,6 +140,6 @@ def Run( vars, log ):
         log.write( "Unable to write out /etc/planetlab/node_id\n" )
         return 0
 
-    log.write( "Everything appears to be ok\n" )
+    log.write( "Node installation appears to be ok\n" )
     
     return 1
