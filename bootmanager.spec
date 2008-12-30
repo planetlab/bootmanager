@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 14
+%define taglevel 15
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Tue Dec 30 2008 Marc E. Fiuczynski <mef@cs.princeton.edu> - BootManager-3.2-15
+- Added in Daniel's support to only create a small /vserver and leave
+  remaining disks alone so that their partitions can be used as raw
+  disk extents by slices
+
 * Mon Dec 15 2008 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-3.2-14
 - Use pyplnet.
 - Order devices by PCI slot number.
