@@ -93,6 +93,18 @@ def Run( vars, log ):
         utils.makedirs( SYSIMG_PATH )
 
         try:
+            # first run fsck to prevent fs corruption from hanging mount...
+            log.write( "fsck root file system\n" )
+            utils.sysexec("e2fsck -v -p %s" % (PARTITIONS["root"]),log)
+
+            log.write( "fsck vserver file system\n" )
+            utils.sysexec("e2fsck -v -p %s" % (PARTITIONS["vservers"]),log)
+        except BootManagerException, e:
+            log.write( "BootManagerException during fsck of /root and /vservers : %s\n" %
+                       str(e) )
+
+        try:
+            # then attempt to mount them
             log.write( "mounting root file system\n" )
             utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
 
