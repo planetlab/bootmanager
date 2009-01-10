@@ -253,6 +253,8 @@ class BootManager:
             self.VARS['BOOT_STATE']=state
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )
+            # fsck/mount fs if present, and ignore return value if it's not.
+            ValidateNodeInstall.Run( self.VARS, self.LOG )
 
         def _badstateRun():
             # should never happen; log event
