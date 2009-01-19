@@ -25,7 +25,7 @@ class BootAPIWrap:
     def __init__(self, vars):
         self.vars = vars
     def call(self, func, *args):
-        BootAPI.call_api_function(self.vars, func, args)
+        return BootAPI.call_api_function(self.vars, func, args)
     def __getattr__(self, func):
         return lambda *args: self.call(func, *args)
 
