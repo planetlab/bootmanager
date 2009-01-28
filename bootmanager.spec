@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 1
+%define taglevel 2
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,17 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Jan 28 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-2
+- most of the actual network config job moved to (py)plnet
+- support for RAWDISK
+- network interfaces deterministically sorted
+- does not use nodegroups anymore for getting node arch and other extensions
+- drop yum-based extensions
+- debug sshd started as early as possible
+- timestamped and uploadable logs (requires upload-bmlog.php from nodeconfig/)
+- cleaned up (drop support for bootcdv2)
+- still needs testing
+
 * Wed Sep 10 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-1
 - reflects new names from the data model
 
