@@ -191,7 +191,7 @@ def Run( vars, log ):
     
     # modules that should not get unloaded
     # unloading cpqphp causes a kernel panic
-    blacklist = [ "floppy", "cpqphp", "i82875p_edac" ]
+    blacklist = [ "floppy", "cpqphp", "i82875p_edac", "mptspi"]
     try:
         modules= file("/tmp/loadedmodules","r")
         
