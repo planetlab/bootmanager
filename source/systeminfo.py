@@ -278,7 +278,9 @@ def get_system_modules( vars = {}, log = sys.stderr):
     # XXX: this is really similar to what BootCD/conf_files/pl_hwinit does. merge?
     pcidevs = get_devices()
 
-    for slot in sorted(pcidevs.keys()):
+    devlist=pcidevs.keys()
+    devlist.sort()
+    for slot in devlist:
         dev = pcidevs[slot]
         base = (dev[4] & 0xff0000) >> 16
         if base not in (PCI_BASE_CLASS_STORAGE,
