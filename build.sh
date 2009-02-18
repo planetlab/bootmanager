@@ -93,7 +93,7 @@ fi
 # Add pypcilib and pyplnet
 extra_libs=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
 mkdir $extra_libs/source
-cp -p $(rpm -ql pypcilib pyplnet | grep -v '\.py[co]$') $extra_libs/source
+cp -p $(rpm -ql pypcilib pyplnet monitor-runlevelagent | grep -v '\.py[co]$') $extra_libs/source
 
 # Embed the uuencoded tarball in the script
 tar -cj -C $srcdir source/ -C $extra_libs source/ | uuencode -m - >> $DEST_SCRIPT

@@ -51,7 +51,6 @@ def create_auth_structure( vars, call_params ):
         auth = auth_session
 
     except:
-        import traceback; traceback.print_exc()
         auth['AuthMethod']= 'hmac'
 
         try:

@@ -274,6 +274,7 @@ class BootManager:
             InitializeBootManager.Run( self.VARS, self.LOG )
             ReadNodeConfiguration.Run( self.VARS, self.LOG )
             AuthenticateWithPLC.Run( self.VARS, self.LOG )
+            StartRunlevelAgent.Run( self.VARS, self.LOG )
             GetAndUpdateNodeDetails.Run( self.VARS, self.LOG )
 
             # override machine's current state from the command line
