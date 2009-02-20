@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 15
+%define taglevel 16
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri Feb 20 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-16
+- removed 'sorted' so older versions of python could continue to run code
+- fixed WriteNetworkConfig so that it returns the result of calls to the API
+- added e2fsck prior to mounting any filesystem.
+
 * Tue Dec 30 2008 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-3.2-15
 - Added in Daniel's support to only create a small /vserver and leave
 - remaining disks alone so that their partitions can be used as raw
