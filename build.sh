@@ -90,10 +90,12 @@ if [ -f "$PLC_DEBUG_SSH_KEY_PUB" ] ; then
     install -D -m 644 "$PLC_DEBUG_SSH_KEY_PUB" $srcdir/source/debug_files/debug_root_ssh_key
 fi
 
-# Add pypcilib and pyplnet
+# Add python code from the following packages
+# make sure they are in the 'Requires' header of the specfile
+required_rpms="pypcilib pyplnet monitor-runlevelagent"
 extra_libs=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
 mkdir $extra_libs/source
-cp -p $(rpm -ql pypcilib pyplnet monitor-runlevelagent | grep -v '\.py[co]$') $extra_libs/source
+cp -p $(rpm -ql $required_rpms | grep -v '\.py[co]$') $extra_libs/source
 
 # Embed the uuencoded tarball in the script
 tar -cj -C $srcdir source/ -C $extra_libs source/ | uuencode -m - >> $DEST_SCRIPT

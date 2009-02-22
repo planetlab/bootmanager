@@ -26,6 +26,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: tar, gnupg, sharutils, bzip2, pypcilib
 Requires: PLCAPI >= 5.0
 
+# the python code packaged in these are shipped on the node as well
+Requires: pypcilib pyplnet monitor-runlevelagent
+
 AutoReqProv: no
 %define debug_package %{nil}
 
