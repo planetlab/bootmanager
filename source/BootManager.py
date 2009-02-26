@@ -17,8 +17,8 @@ import notify_messages
 import BootServerRequest
 
 # all output is written to this file
-LOG_FILE= "/tmp/bm.log"
-UPLOAD_LOG_PATH = "/alpina-logs/upload.php"
+BM_NODE_LOG= "/tmp/bm.log"
+UPLOAD_LOG_SCRIPT = "/boot/upload-bmlog.php"
 
 # the new contents of PATH when the boot manager is running
 BIN_PATH= ('/usr/local/bin',
@@ -36,14 +36,12 @@ NodeRunStates = {}
 class log:
 
     def __init__( self, OutputFilePath= None ):
-        if OutputFilePath:
-            try:
-                self.OutputFilePath= OutputFilePath
-                self.OutputFile= GzipFile( OutputFilePath, "w", 9 )
-            except:
-                print( "Unable to open output file for log, continuing" )
-                self.OutputFile= None
-
+        try:
+            self.OutputFile= open( OutputFilePath, "w")
+            self.OutputFilePath= OutputFilePath
+        except:
+            print( "bootmanager log : Unable to open output file %r, continuing"%OutputFilePath )
+            self.OutputFile= None
     
     def LogEntry( self, str, inc_newline= 1, display_screen= 1 ):
         if self.OutputFile:
@@ -71,19 +69,21 @@ class log:
 
 
     
+    # bm log uploading is available back again, as of nodeconfig-5.0-2
     def Upload( self ):
         """
         upload the contents of the log to the server
         """
-
         if self.OutputFile is not None:
-            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_PATH )
+            self.OutputFile.flush()
+
+            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_SCRIPT )
             
             self.OutputFile.close()
             self.OutputFile= None
 
             bs_request = BootServerRequest.BootServerRequest()
-            bs_request.MakeRequest(PartialPath = UPLOAD_LOG_PATH,
+            bs_request.MakeRequest(PartialPath = UPLOAD_LOG_SCRIPT,
                                    GetVars = None, PostVars = None,
                                    FormData = ["log=@" + self.OutputFilePath],
                                    DoSSL = True, DoCertCheck = True)
@@ -188,6 +188,14 @@ class BootManager:
             # checking whether someone added or changed disks, and
             # then finally chain boots.
 
+            # starting the fallback/debug ssh daemon for safety:
+            # if the node install somehow hangs, or if it simply takes ages, 
+            # we can still enter and investigate
+            try:
+                StartDebug.Run(self.VARS, self.LOG, last_resort = False)
+            except:
+                pass
+
             InstallInit.Run( self.VARS, self.LOG )                    
             if ValidateNodeInstall.Run( self.VARS, self.LOG ):
                 WriteModprobeConfig.Run( self.VARS, self.LOG )
@@ -200,6 +208,15 @@ class BootManager:
                 _nodeNotInstalled()
 
         def _rinsRun():
+
+            # starting the fallback/debug ssh daemon for safety:
+            # if the node install somehow hangs, or if it simply takes ages, 
+            # we can still enter and investigate
+            try:
+                StartDebug.Run(self.VARS, self.LOG, last_resort = False)
+            except:
+                pass
+
             # implements the reinstall logic, which will check whether
             # the min. hardware requirements are met, install the
             # software, and upon correct installation will switch too
@@ -314,7 +331,7 @@ def main(argv):
     
     # all output goes through this class so we can save it and post
     # the data back to PlanetLab central
-    LOG= log( LOG_FILE )
+    LOG= log( BM_NODE_LOG )
 
     LOG.LogEntry( "BootManager started at: %s" % \
                   strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
