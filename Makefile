@@ -1,5 +1,5 @@
 # 
-# $Id: Makefile 682 2007-07-19 09:00:25Z thierry $
+# $Id$
 #
 
 ########## make sync PLCHOST=hostname
