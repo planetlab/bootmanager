@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 16
+%define taglevel 17
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,12 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Thu Feb 26 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-17
+- from trunk : upload logs on myplc
+- from trunk : early sshd start
+- tweaked fstab for remount after kexec
+- modprobe write: uses new module from pyplnet
+
 * Fri Feb 20 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-16
 - removed 'sorted' so older versions of python could continue to run code
 - fixed WriteNetworkConfig so that it returns the result of calls to the API
