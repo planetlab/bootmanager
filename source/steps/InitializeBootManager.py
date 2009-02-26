@@ -1,5 +1,7 @@
 #!/usr/bin/python2
 
+# $Id$
+
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -86,8 +88,9 @@ def Run( vars, log ):
             log.write( "Loading support for Fusion MPT SCSI controllers\n" )
             utils.sysexec_noerr( "modprobe mptscsih", log )
 
-    log.write( "Loading support for LVM\n" )
-    utils.sysexec_noerr( "modprobe dm_mod", log )
+# out of the way for rc26
+#    log.write( "Loading support for LVM\n" )
+#    utils.sysexec_noerr( "modprobe dm_mod", log )
     # for anything that needs to know we are running under the boot cd and
     # not the runtime os
     os.environ['PL_BOOTCD']= "1"
