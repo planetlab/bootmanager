@@ -54,22 +54,33 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
         
     # parse the existing modprobe.conf file, if one exists
     mfile = "%s/%s" % (SYSIMG_PATH,filename)
-    m = modprobe.Modprobe(mfile)
-    try:
+    m = modprobe.Modprobe()
+    if os.path.exists(mfile):
         m.input(mfile)
-    except:
-        pass
 
+    blacklist = modprobe.Modprobe()
+    if os.path.exists("/etc/modprobe.d"):
+        flist = os.listdir("/etc/modprobe.d")
+        for f in flist:
+            if f.find("blacklist") == 0:            
+                blacklist.input("/etc/modprobe.d/%s"%f)
+        
     # storage devices
     m.optionsset("ata_generic","all_generic_ide=1")
     scsi_count= 0
     for a_mod in sysmods[systeminfo.MODULE_CLASS_SCSI]:
+        if m.blacklistget(a_mod) <> None or \
+               blacklist.blacklistget(a_mod) <> None:
+            continue
         m.aliasset("scsi_hostadapter%d"%scsi_count,a_mod)
         scsi_count= scsi_count + 1
 
     # network devices
     eth_count= 0
     for a_mod in sysmods[systeminfo.MODULE_CLASS_NETWORK]:
+        if m.blacklistget(a_mod) <> None or \
+               blacklist.blacklistget(a_mod) <> None:
+            continue
         m.aliasset("eth%d"%eth_count,a_mod)
         eth_count= eth_count + 1
     m.output(mfile, "BootManager")
