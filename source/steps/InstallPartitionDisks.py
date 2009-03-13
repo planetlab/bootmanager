@@ -3,11 +3,12 @@
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
-# Copyright (c) 2004-2006 The Trustees of Princeton University
+# Copyright (c) 2004-2009 The Trustees of Princeton University
 # All rights reserved.
 # expected /proc/partitions format
 
 import os, sys
+import time
 import string
 import popen2
 
@@ -96,6 +97,7 @@ def Run( vars, log ):
     utils.sysexec_noerr( "vgscan", log )
     
     used_devices= []
+    raw_devices=[]
 
     INSTALL_BLOCK_DEVICES.sort()
     for device in INSTALL_BLOCK_DEVICES:
@@ -103,6 +105,7 @@ def Run( vars, log ):
         if single_partition_device( device, vars, log ):
             if (len(used_devices) > 0 and
                 (vars['NODE_MODEL_OPTIONS'] & ModelOptions.RAWDISK)):
+                raw_devices.append(device)
                 log.write( "Running in raw disk mode, not using %s.\n" % device )
             else:
                 used_devices.append( device )
@@ -113,6 +116,17 @@ def Run( vars, log ):
 
     # list of devices to be used with vgcreate
     vg_device_list= ""
+
+    # clean out unused devices/partitions so that subsequent lvm
+    # operations don't get confused
+
+    for device in raw_devices:
+        
+        part_path= get_partition_path_from_device( device, vars, log )
+
+        if not nuke_lvm_physical_volume( part_path, vars, log ):        
+            raise BootManagerException, "Could not nuke lvm physical volume " \
+                  "on partition %s" % part_path
 
     # initialize the physical volumes
     for device in used_devices:
@@ -273,6 +287,21 @@ def single_partition_device( device, vars, log ):
 
 
 
+def nuke_lvm_physical_volume( part_path, vars, log ):
+    """
+    remove all lvm/partition information from the specified lvm physical volume
+    """
+
+    try:
+        # again, wipe any old data, this time on the partition
+        utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % part_path, log )        
+        utils.sysexec( "pvremove -ffy %s" % part_path, log)
+    except BootManagerException, e:
+        log.write( "nuke_lvm_physical_volume failed.\n" )
+        return 0
+
+    return 1
+
 def create_lvm_physical_volume( part_path, vars, log ):
     """
     make the specificed partition a lvm physical volume.
@@ -281,10 +310,10 @@ def create_lvm_physical_volume( part_path, vars, log ):
     """
 
     try:
-        # again, wipe any old data, this time on the partition
-        utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % part_path, log )
+        # wipe old partition/lvm data on the partition
+        nuke_lvm_physical_volume( part_path, vars, log)
+
         ### patch Thierry Parmentelat, required on some hardware
-        import time
         time.sleep(1)
         utils.sysexec( "pvcreate -ffy %s" % part_path, log )
     except BootManagerException, e:
@@ -292,7 +321,6 @@ def create_lvm_physical_volume( part_path, vars, log ):
         return 0
 
     return 1
-
 
 
 def get_partition_path_from_device( device, vars, log ):
