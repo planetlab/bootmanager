@@ -87,7 +87,8 @@ def Run( vars, log ):
     
     used_devices= []
 
-    for device in sorted(INSTALL_BLOCK_DEVICES):
+    INSTALL_BLOCK_DEVICES.sort()
+    for device in INSTALL_BLOCK_DEVICES:
 
         if single_partition_device( device, vars, log ):
             if (len(used_devices) > 0 and
