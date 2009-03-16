@@ -24,7 +24,7 @@ Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 Requires: tar, gnupg, sharutils, bzip2, pypcilib
-Requires: PLCAPI >= 5.0
+Requires: PLCAPI >= 4.3
 
 # the python code packaged in these are shipped on the node as well
 Requires: pypcilib pyplnet monitor-runlevelagent
@@ -80,7 +80,7 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
-* Wed Jan 28 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-2
+* Wed Jan 28 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-2
 - most of the actual network config job moved to (py)plnet
 - support for RAWDISK
 - network interfaces deterministically sorted
@@ -91,7 +91,7 @@ EOF
 - cleaned up (drop support for bootcdv2)
 - still needs testing
 
-* Wed Sep 10 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-1
+* Wed Sep 10 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-1
 - reflects new names from the data model
 
 * Sat May 24 2008 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-7
