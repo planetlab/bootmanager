@@ -4,7 +4,7 @@
 %define url $URL$
 
 %define name bootmanager
-%define version 5.0
+%define version 4.3
 %define taglevel 2
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
