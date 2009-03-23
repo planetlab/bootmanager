@@ -71,7 +71,8 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     # the 'alias ethX a_mod' lines in modprobe.conf
     count=0
     for a_mod in sysmods[systeminfo.MODULE_CLASS_NETWORK]:
-        line="alias eth%d %s # Want to comment this out in the future.\n" % (count,a_mod) 
+        line="# Want to comment this out in the future.\n"
+        line="alias eth%d %s\n" % (count,a_mod) 
         modulesconf_file.write(line)
         count=count+1
 
