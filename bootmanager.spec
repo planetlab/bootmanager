@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 2
+%define taglevel 3
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -80,6 +80,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Mar 25 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-3
+- renumbered 4.3
+- New step StartRunLevelAgent
+- various other tweaks
+
 * Wed Jan 28 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-2
 - most of the actual network config job moved to (py)plnet
 - support for RAWDISK
