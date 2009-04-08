@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 3
+%define taglevel 4
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -80,6 +80,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Apr 08 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-4
+- load device mapper if needed, for centos5-based bootcd variant
+
 * Wed Mar 25 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-3
 - renumbered 4.3
 - New step StartRunLevelAgent
