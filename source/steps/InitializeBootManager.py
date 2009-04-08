@@ -70,6 +70,12 @@ def Run( vars, log ):
 
     BOOT_CD_VERSION= vars['BOOT_CD_VERSION']
     
+    # In case we are booted with a kernel that does not have the
+    # device mapper code compiled into the kernel.
+    if not os.path.exists("/dev/mapper"):
+        log.write( "Loading support for LVM\n" )
+        utils.sysexec_noerr( "modprobe dm_mod", log )
+
     # for anything that needs to know we are running under the boot cd and
     # not the runtime os
     os.environ['PL_BOOTCD']= "1"
