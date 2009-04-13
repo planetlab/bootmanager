@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 17
+%define taglevel 18
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Mon Apr 13 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-18
+- looks like some modprobe fixes
+- added nuke_lvm functions
+- use 'sort' instead of 'sorted' for backward compatibility.
+
 * Thu Feb 26 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-3.2-17
 - from trunk : upload logs on myplc
 - from trunk : early sshd start
