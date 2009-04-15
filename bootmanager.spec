@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 19
+%define taglevel 20
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Apr 15 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-3.2-20
+- The 'failboot' BOOT_STATE is for 4.3, not 4.2.  Revert to using 'dbg' BOOT_STATE.
+
 * Wed Apr 15 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-3.2-19
 - Only use
 - /etc/modprobe.d/blacklist
