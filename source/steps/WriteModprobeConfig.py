@@ -59,11 +59,10 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
         m.input(mfile)
 
     blacklist = modprobe.Modprobe()
-    if os.path.exists("/etc/modprobe.d"):
-        flist = os.listdir("/etc/modprobe.d")
-        for f in flist:
-            if f.find("blacklist") == 0:            
-                blacklist.input("/etc/modprobe.d/%s"%f)
+    blacklistfiles = ("blacklist","blacklist-compat","blacklist-firewire")
+    for blf in blacklistfiles:
+        if os.path.exists("/etc/modprobe.d/%s"%blf):
+            blacklist.input("/etc/modprobe.d/%s"%blf)
         
     # storage devices
     m.optionsset("ata_generic","all_generic_ide=1")
