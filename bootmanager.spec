@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 3.2
-%define taglevel 18
+%define taglevel 19
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -77,6 +77,15 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Apr 15 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-3.2-19
+- Only use
+- /etc/modprobe.d/blacklist
+- /etc/modprobe.d/blacklist-compat
+- /etc/modprobe.d/blacklist-firewire
+- as the blacklist files.
+- When no ethernet interfaces can be found for the production kernel set
+- the BOOT_STATE to failboot, rather than dbg.
+
 * Mon Apr 13 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-3.2-18
 - looks like some modprobe fixes
 - added nuke_lvm functions
