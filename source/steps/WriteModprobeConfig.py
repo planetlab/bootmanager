@@ -100,7 +100,7 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     if eth_count == 0:
         log.write( "\nIt appears we don't have any network drivers. Aborting.\n" )
         
-        vars['BOOT_STATE']= 'dbg'
+        vars['BOOT_STATE']= 'failboot'
         vars['STATE_CHANGE_NOTIFY']= 1
         vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
              notify_messages.MSG_NO_DETECTED_NETWORK
