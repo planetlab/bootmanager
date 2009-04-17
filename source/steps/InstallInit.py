@@ -70,8 +70,8 @@ def Run( vars, log ):
     utils.sysexec_noerr( "umount %s" % SYSIMG_PATH )
     vars['ROOT_MOUNTED']= 0
 
-    log.write( "Removing any old files, directories\n" )
-    utils.removedir( TEMP_PATH )
+#    log.write( "Removing any old files, directories\n" )
+#    utils.removedir( TEMP_PATH )
     
     log.write( "Cleaning up any existing PlanetLab config files\n" )
     try:
