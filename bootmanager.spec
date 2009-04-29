@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 5
+%define taglevel 6
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -80,6 +80,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Apr 29 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-4.3-6
+- Use modprobe module to write out /etc/modprobe.conf.
+
 * Wed Apr 22 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-5
 - minor updates - using the new modprobe module *not* in this tag
 
