@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 6
+%define taglevel 7
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -80,6 +80,11 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri May 15 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-7
+- review selection nodefamily at bootstrapfs install-time
+- now based on (1) tags (2) nodefamily and (3) defaults
+- this is required on very old bootcd
+
 * Wed Apr 29 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-4.3-6
 - Use modprobe module to write out /etc/modprobe.conf.
 
