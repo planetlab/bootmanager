@@ -92,7 +92,7 @@ def Run( vars, log ):
     vars['ROOT_MOUNTED']= 1
 
     # which extensions are we part of ?
-    utils.breakpoint("Getting the extension tag on node")
+    utils.breakpoint("Checking for the extension(s) tags")
     extensions = []
     try:
         extension_tag = BootAPI.call_api_function(vars, "GetNodeExtensions", (NODE_ID,) )
@@ -100,7 +100,7 @@ def Run( vars, log ):
             extensions = extension_tag.split()
 
     except:
-        log.write("WARNING : Failed to query tag 'extensions'")
+        log.write("WARNING : Failed to query tag 'extensions'\n")
         log.write(traceback.format_exc())
 
     if not extensions:
@@ -114,7 +114,7 @@ def Run( vars, log ):
             download_suffix=".tar"
             untar_option=""
     except:
-        log.write("WARNING : Failed to query tag 'plain-bootstrapfs'")
+        log.write("WARNING : Failed to query tag 'plain-bootstrapfs'\n")
         log.write(traceback.format_exc())
 
     if not untar_option:
@@ -122,23 +122,49 @@ def Run( vars, log ):
 
     # see also GetBootMedium in PLCAPI that does similar things
     # figuring the default node family:
-    # (1) look at /etc/planetlab/nodefamily on the bootcd
-    # (2) if that fails, set to planetlab-i386
-    try:
-        (pldistro,arch) = file("/etc/planetlab/nodefamily").read().strip().split("-")
-    except:
-        # what arch should be used for this node
-        utils.breakpoint("Getting the arch tag on node")
-        pldistro="planetlab"
-        default_arch="i386"
-        try:
-            arch = BootAPI.call_api_function(vars, "GetNodeArch", (NODE_ID,) )
-        except:
-            log.write("WARNING : Failed to query tag 'arch'")
-            log.write(traceback.format_exc())
-            arch = default_arch
+    # (1) get node's tags 'arch' and 'pldistro'
+    # (2) if unsuccessful search /etc/planetlab/nodefamily on the bootcd
+    # (3) if that fails, set to planetlab-i386
 
-    log.write ("Using arch=%s\n"%arch)
+    try:
+        api_pldistro = BootAPI.call_api_function(vars, "GetNodePldistro", (NODE_ID,) )
+    except:
+        log.write("WARNING : Failed to query tag 'pldistro'\n")
+        api_pldistro = None
+    try:
+        api_arch = BootAPI.call_api_function(vars, "GetNodeArch", (NODE_ID,) )
+    except:
+        log.write("WARNING : Failed to query tag 'arch'\n")
+        api_arch = None
+    try:
+        (etc_pldistro,etc_arch) = file("/etc/planetlab/nodefamily").read().strip().split("-")
+    except:
+        log.write("WARNING : Failed to parse /etc/planetlab/nodefamily\n")
+        (etc_pldistro,etc_arch)=(None,None)
+    default_pldistro="planetlab"
+    default_arch="i386"
+
+    if api_pldistro:
+        pldistro = api_pldistro
+        log.write ("Using pldistro from pldistro API tag\n")
+    elif etc_pldistro:
+        pldistro = etc_pldistro
+        log.write ("Using pldistro from /etc/planetlab/nodefamily\n")
+    else:
+        pldistro = default_pldistro
+        log.write ("Using default pldistro\n")
+
+    if api_arch:
+        arch = api_arch
+        log.write ("Using arch from arch API tag\n")
+    elif etc_arch:
+        arch = etc_arch
+        log.write ("Using arch from /etc/planetlab/nodefamily\n")
+    else:
+        arch = default_arch
+        log.write ("Using default arch\n")
+
+    log.write ("Using nodefamily=%s-%s\n"%(pldistro,arch))
 
     bootstrapfs_names = [ pldistro ] + extensions
 
@@ -210,6 +236,6 @@ def Run( vars, log ):
     # in addition yum installs have more or less never worked - let's forget about this
     # maybe NodeManager could profitably do the job instead
     if yum_extensions:
-        log.write('WARNING : yum installs for node extensions are not supported anymore')
+        log.write("WARNING : yum installs for node extensions are not supported anymore\n")
 
     return 1
