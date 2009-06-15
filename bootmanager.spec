@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 7
+%define taglevel 8
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -80,6 +80,10 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Mon Jun 15 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-8
+- include a fix for public pl dealing with old/new boot images and root
+- environments
+
 * Fri May 15 2009 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-7
 - review selection nodefamily at bootstrapfs install-time
 - now based on (1) tags (2) nodefamily and (3) defaults
