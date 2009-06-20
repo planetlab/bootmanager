@@ -282,11 +282,17 @@ def get_system_modules( vars = {}, log = sys.stderr):
     for slot in devlist:
         dev = pcidevs[slot]
         base = (dev[4] & 0xff0000) >> 16
+        modules = pcimap.get(dev)
         if base not in (PCI_BASE_CLASS_STORAGE,
                         PCI_BASE_CLASS_NETWORK):
-            continue
+            # special exception for forcedeth NICs whose base id
+            # claims to be a Bridge, even though it is clearly a
+            # network device
+            if "forcedeth" in modules: 
+                base=PCI_BASE_CLASS_NETWORK
+            else:
+                continue
 
-        modules = pcimap.get(dev)
         if len(modules) > 0:
             if base == PCI_BASE_CLASS_NETWORK:
                 network_mods += modules
