@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 8
+%define taglevel 9
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -80,6 +80,9 @@ EOF
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Mon Jun 29 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-4.3-9
+- Special handling for "forcedeth" ethernet NIC.
+
 * Mon Jun 15 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-8
 - include a fix for public pl dealing with old/new boot images and root
 - environments
