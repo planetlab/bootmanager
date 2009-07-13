@@ -73,6 +73,10 @@ Remember to GPG sign /var/www/html/boot/bootmanager.sh with the
 PlanetLab private key.
 EOF
 
+# NOTE: do not run this agent when installed on a myplc.
+chkconfig monitor-runlevelagent off
+chkconfig --del monitor-runlevelagent
+
 %files
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
