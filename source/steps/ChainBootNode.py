@@ -266,6 +266,7 @@ def Run( vars, log ):
         # kargs, which is ramdisk_size=8192
         pass 
 
+    utils.sysexec_noerr( 'hwclock --systohc --utc ' )
     utils.breakpoint ("Before kexec");
     try:
         utils.sysexec( 'kexec --force --initrd=/tmp/initrd ' \
