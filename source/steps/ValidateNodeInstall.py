@@ -93,6 +93,7 @@ def Run( vars, log ):
         except BootManagerException, e:
             log.write( "BootManagerException during fsck of /root and /vservers : %s\n" %
                        str(e) )
+            return 0
 
         try:
             # then attempt to mount them
