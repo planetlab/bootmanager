@@ -69,11 +69,11 @@ def Run( vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
     log.write( "Setting local time to UTC\n" )
-    utils.sysexec( "chroot %s ln -sf /usr/share/zoneinfo/UTC /etc/localtime" % \
-                   SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH,
+        "ln -sf /usr/share/zoneinfo/UTC /etc/localtime", log )
 
     log.write( "Enabling ntp at boot\n" )
-    utils.sysexec( "chroot %s chkconfig ntpd on" % SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH, "chkconfig ntpd on", log )
 
     log.write( "Creating system directory %s\n" % PLCONF_DIR )
     if not utils.makedirs( "%s/%s" % (SYSIMG_PATH,PLCONF_DIR) ):
@@ -103,14 +103,14 @@ def Run( vars, log ):
     issue.close()
 
     log.write( "Setting up authentication (non-ssh)\n" )
-    utils.sysexec( "chroot %s authconfig --nostart --kickstart --enablemd5 " \
-                   "--enableshadow" % SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH, "authconfig --nostart --kickstart --enablemd5 " \
+                   "--enableshadow", log )
     utils.sysexec( "sed -e 's/^root\:\:/root\:*\:/g' " \
                    "%s/etc/shadow > %s/etc/shadow.new" % \
                    (SYSIMG_PATH,SYSIMG_PATH), log )
-    utils.sysexec( "chroot %s mv " \
-                   "/etc/shadow.new /etc/shadow" % SYSIMG_PATH, log )
-    utils.sysexec( "chroot %s chmod 400 /etc/shadow" % SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH, "mv " \
+                   "/etc/shadow.new /etc/shadow", log )
+    utils.sysexec_chroot( SYSIMG_PATH, "chmod 400 /etc/shadow", log )
 
     # if we are setup with dhcp, copy the current /etc/resolv.conf into
     # the system image so we can run programs inside that need network access
@@ -134,22 +134,22 @@ def Run( vars, log ):
 
     log.write( "Generating SSH1 RSA host key:\n" )
     key_file= "/etc/ssh/ssh_host_key"
-    utils.sysexec( "chroot %s %s -q -t rsa1 -f %s -C '' -N ''" %
-                   (SYSIMG_PATH,key_gen_prog,key_file), log )
+    utils.sysexec_chroot( SYSIMG_PATH, "%s -q -t rsa1 -f %s -C '' -N ''" %
+                   (key_gen_prog,key_file), log )
     utils.sysexec( "chmod 600 %s/%s" % (SYSIMG_PATH,key_file), log )
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
     
     log.write( "Generating SSH2 RSA host key:\n" )
     key_file= "/etc/ssh/ssh_host_rsa_key"
-    utils.sysexec( "chroot %s %s -q -t rsa -f %s -C '' -N ''" %
-                   (SYSIMG_PATH,key_gen_prog,key_file), log )
+    utils.sysexec_chroot( SYSIMG_PATH, "%s -q -t rsa -f %s -C '' -N ''" %
+                   (key_gen_prog,key_file), log )
     utils.sysexec( "chmod 600 %s/%s" % (SYSIMG_PATH,key_file), log )
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
     
     log.write( "Generating SSH2 DSA host key:\n" )
     key_file= "/etc/ssh/ssh_host_dsa_key"
-    utils.sysexec( "chroot %s %s -q -t dsa -f %s -C '' -N ''" %
-                   (SYSIMG_PATH,key_gen_prog,key_file), log )
+    utils.sysexec_chroot( SYSIMG_PATH, "%s -q -t dsa -f %s -C '' -N ''" %
+                   (key_gen_prog,key_file), log )
     utils.sysexec( "chmod 600 %s/%s" % (SYSIMG_PATH,key_file), log )
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
 

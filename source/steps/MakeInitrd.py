@@ -71,12 +71,12 @@ def Run( vars, log ):
     # hack for CentOS 5.3
     bypassRaidIfNeeded(SYSIMG_PATH)
     if kernelHasMkinitrd() == True:
-        utils.sysexec( "chroot %s mkinitrd -v /boot/initrd-%s.img %s" % \
-                   (SYSIMG_PATH, kernel_version, kernel_version), log )
+        utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v /boot/initrd-%s.img %s" % \
+                   (kernel_version, kernel_version), log )
     else:
         shutil.copy("./mkinitrd.sh","%s/tmp/mkinitrd.sh" % SYSIMG_PATH)
         os.chmod("%s/tmp/mkinitrd.sh" % SYSIMG_PATH, 755)
-        utils.sysexec( "chroot %s /tmp/mkinitrd.sh %s" % (SYSIMG_PATH, kernel_version))
+        utils.sysexec_chroot( SYSIMG_PATH, "/tmp/mkinitrd.sh %s" % (kernel_version))
 
     utils.sysexec_noerr("umount %s/sys" % SYSIMG_PATH)
     utils.sysexec_noerr("umount %s/dev" % SYSIMG_PATH)

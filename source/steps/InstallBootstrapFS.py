@@ -229,8 +229,7 @@ def Run( vars, log ):
     utils.sysexec("gpg --homedir=/root --export --armor" \
                   " --no-default-keyring --keyring %s/usr/boot/pubring.gpg" \
                   " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH))
-    utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
-                  SYSIMG_PATH)
+    utils.sysexec_chroot(SYSIMG_PATH, "rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab")
 
     # the yum config has changed entirely; 
     # in addition yum installs have more or less never worked - let's forget about this

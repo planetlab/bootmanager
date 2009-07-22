@@ -110,18 +110,18 @@ def Run( vars, log ):
     log.write( "Updating configuration files.\n" )
     try:
         cmd = "/etc/init.d/conf_files start --noscripts"
-        utils.sysexec( "chroot %s %s" % (SYSIMG_PATH, cmd), log )
+        utils.sysexec_chroot( SYSIMG_PATH, cmd, log )
     except IOError, e:
         log.write("conf_files failed with \n %s" % e)
 
     # update node packages
     log.write( "Running node update.\n" )
     if os.path.exists( SYSIMG_PATH + "/usr/bin/NodeUpdate.py" ):
-        cmd = "chroot %s /usr/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
+        cmd = "/usr/bin/NodeUpdate.py start noreboot"
     else:
         # for backwards compatibility
-        cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
-    utils.sysexec( cmd, log )
+        cmd = "/usr/local/planetlab/bin/NodeUpdate.py start noreboot"
+    utils.sysexec_chroot( SYSIMG_PATH, cmd, log )
 
     # the following step should be done by NM
     UpdateNodeConfiguration.Run( vars, log )
@@ -155,7 +155,7 @@ def Run( vars, log ):
     try:
         # backwards compat, though, we should never hit this case post PL 3.2
         os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
-        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+        utils.sysexec_chroot_noerr( SYSIMG_PATH, "umount /rcfs", log )
     except OSError, e:
         pass
 
