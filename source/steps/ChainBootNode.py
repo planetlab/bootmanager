@@ -11,7 +11,6 @@ import string
 import re
 import os
 
-import UpdateBootStateWithPLC
 import UpdateNodeConfiguration
 from Exceptions import *
 import utils

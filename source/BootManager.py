@@ -90,10 +90,8 @@ class BootManager:
     VARS_FILE = "configuration"
 
     # the set of valid node run states
-    NodeRunStates = {'install':None,
-                     'reinstall':None,
+    NodeRunStates = {'reinstall':None,
                      'boot':None,
-                     'failboot':None,
                      'safeboot':None,
                      'disabled':None,
                      }
@@ -173,7 +171,7 @@ class BootManager:
 
         def _nodeNotInstalled():
             # called by the _xxxState() functions below upon failure
-            self.VARS['BOOT_STATE']= 'failboot'
+            self.VARS['RUN_LEVEL']= 'failboot'
             self.VARS['STATE_CHANGE_NOTIFY']= 1
             self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
                       notify_messages.MSG_NODE_NOT_INSTALLED
@@ -220,7 +218,7 @@ class BootManager:
             # software, and upon correct installation will switch too
             # 'boot' state and chainboot into the production system
             if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
-                self.VARS['BOOT_STATE']= 'failboot'
+                self.VARS['RUN_LEVEL']= 'failboot'
                 raise BootManagerException, "Hardware requirements not met."
 
             # runinstaller
@@ -245,13 +243,13 @@ class BootManager:
             if not ConfirmInstallWithUser.Run( self.VARS, self.LOG ):
                 return 0
             self.VARS['BOOT_STATE']= 'reinstall'
-            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+            UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
             _reinstallRun()
 
         def _debugRun(state='failboot'):
             # implements debug logic, which starts the sshd and just waits around
-            self.VARS['BOOT_STATE']=state
-            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+            self.VARS['RUN_LEVEL']=state
+            UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )
             # fsck/mount fs if present, and ignore return value if it's not.
             ValidateNodeInstall.Run( self.VARS, self.LOG )
@@ -262,10 +260,8 @@ class BootManager:
             _debugRun()
 
         # setup state -> function hash table
-        BootManager.NodeRunStates['install']    = _installRun
         BootManager.NodeRunStates['reinstall']  = _reinstallRun
         BootManager.NodeRunStates['boot']       = _bootRun
-        BootManager.NodeRunStates['failboot']   = _bootRun   # should always try to boot.
         BootManager.NodeRunStates['safeboot']   = lambda : _debugRun('safeboot')
         BootManager.NodeRunStates['disabled']   = lambda : _debugRun('disabled')
 
@@ -281,6 +277,7 @@ class BootManager:
             if self.forceState is not None:
                 self.VARS['BOOT_STATE']= self.forceState
                 UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+                UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
 
             stateRun = BootManager.NodeRunStates.get(self.VARS['BOOT_STATE'],_badstateRun)
             stateRun()

@@ -17,7 +17,7 @@ from Exceptions import *
 import BootServerRequest
 import BootAPI
 import notify_messages
-import UpdateBootStateWithPLC
+import UpdateRunLevelWithPLC
 
 
 # two possible names of the configuration files
@@ -605,12 +605,12 @@ def __parse_configuration_file( vars, log, file_contents ):
         if can_make_api_call:
             log.write( "Notifying contacts of problem.\n" )
 
-            vars['BOOT_STATE']= 'failboot'
+            vars['RUN_LEVEL']= 'failboot'
             vars['STATE_CHANGE_NOTIFY']= 1
             vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
                                      notify_messages.MSG_HOSTNAME_NOT_RESOLVE
             
-            UpdateBootStateWithPLC.Run( vars, log )
+            UpdateRunLevelWithPLC.Run( vars, log )
                     
         log.write( "\n\n" )
         log.write( "The hostname and/or ip in the network configuration\n" )

@@ -15,6 +15,10 @@ def Run( vars, log ):
     """
     Change this nodes boot state at PLC.
 
+    The only valid transition is from reinstall to boot.  All other changes to
+    the boot state of a node should be performed by the Admin, Tech or PI
+    through the API or Web interface.
+
     The current value of the BOOT_STATE key in vars is used.
     Optionally, notify the contacts of the boot state change.
     If this is the case, the following keys/values

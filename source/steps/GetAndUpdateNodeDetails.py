@@ -73,6 +73,7 @@ def Run( vars, log ):
                                               ['boot_state', 'nodegroup_ids', 'interface_ids', 'model', 'site_id']))[0]
 
     vars['BOOT_STATE']= node_details['boot_state']
+    vars['RUN_LEVEL']= node_details['boot_state']
     vars['NODE_MODEL']= string.strip(node_details['model'])
     vars['SITE_ID'] = node_details['site_id'] 
     log.write( "Successfully retrieved node record.\n" )
