@@ -169,14 +169,13 @@ class BootManager:
         at the top of each of the invididual step functions.
         """
 
-        def _nodeNotInstalled():
+        def _nodeNotInstalled(message='MSG_NODE_NOT_INSTALLED'):
             # called by the _xxxState() functions below upon failure
             self.VARS['RUN_LEVEL']= 'failboot'
+			notify = getattr(notify_messages, message)
             self.VARS['STATE_CHANGE_NOTIFY']= 1
-            self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                      notify_messages.MSG_NODE_NOT_INSTALLED
-            raise BootManagerException, \
-                  notify_messages.MSG_NODE_NOT_INSTALLED
+            self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= notify
+            raise BootManagerException, notify
 
         def _bootRun():
             # implements the boot logic, which consists of first
@@ -193,13 +192,20 @@ class BootManager:
                 pass
 
             InstallInit.Run( self.VARS, self.LOG )                    
-            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
+            ret = ValidateNodeInstall.Run( self.VARS, self.LOG )
+			if ret == 1:
                 WriteModprobeConfig.Run( self.VARS, self.LOG )
                 MakeInitrd.Run( self.VARS, self.LOG )
                 WriteNetworkConfig.Run( self.VARS, self.LOG )
                 CheckForNewDisks.Run( self.VARS, self.LOG )
                 SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
                 ChainBootNode.Run( self.VARS, self.LOG )
+			elif ret == -1:
+                _nodeNotInstalled('MSG_NODE_FILESYSTEM_CORRUPT')
+			elif ret == -2:
+                _nodeNotInstalled('MSG_NODE_MOUNT_FAILED')
+			elif ret == -3:
+                _nodeNotInstalled('MSG_NODE_MISSING_KERNEL')
             else:
                 _nodeNotInstalled()
 

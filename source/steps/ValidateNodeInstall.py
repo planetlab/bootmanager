@@ -93,7 +93,7 @@ def Run( vars, log ):
         except BootManagerException, e:
             log.write( "BootManagerException during fsck of /root and /vservers : %s\n" %
                        str(e) )
-            return 0
+            return -1
 
         try:
             # then attempt to mount them
@@ -112,7 +112,7 @@ def Run( vars, log ):
         except BootManagerException, e:
             log.write( "BootManagerException during mount of /root, /vservers and /proc: %s\n" %
                        str(e) )
-            return 0
+            return -2
 
         ROOT_MOUNTED= 1
         vars['ROOT_MOUNTED']= 1
@@ -126,7 +126,7 @@ def Run( vars, log ):
         os.stat("%s/boot/initrd-boot" % SYSIMG_PATH)
     except OSError, e:            
         log.write( "Couldn't locate base kernel (you might be using the stock kernel).\n")
-        return 0
+        return -3
 
     # check if the model specified kernel is installed
     option = ''
