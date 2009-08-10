@@ -18,7 +18,7 @@ def Run( vars, log ):
     """
     See if a node installation is valid. More checks should certainly be
     done in the future, but for now, make sure that the sym links kernel-boot
-    and initrd-boot exist in /boot
+    exist in /boot
     
     Expect the following variables to be set:
     SYSIMG_PATH              the path where the system image will be mounted
@@ -123,7 +123,6 @@ def Run( vars, log ):
     log.write("Checking for a custom kernel\n")
     try:
         os.stat("%s/boot/kernel-boot" % SYSIMG_PATH)
-        os.stat("%s/boot/initrd-boot" % SYSIMG_PATH)
     except OSError, e:            
         log.write( "Couldn't locate base kernel (you might be using the stock kernel).\n")
         return -3
@@ -134,7 +133,6 @@ def Run( vars, log ):
         option = 'smp'
         try:
             os.stat("%s/boot/kernel-boot%s" % (SYSIMG_PATH,option))
-            os.stat("%s/boot/initrd-boot%s" % (SYSIMG_PATH,option))
         except OSError, e:
             # smp kernel is not there; remove option from modeloptions
             # such that the rest of the code base thinks we are just
