@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 9
+%define taglevel 10
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,13 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Mon Aug 10 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-10
+- Replace UpdateBootstate with UpdateRunlevel where appropriate.
+- Removed failboot and install from forced states.
+- Removed checks for initrd in Validate
+- Added extra messages for Validate failures, not-installed, no kernel, failed fsck
+- Added libc-opendir-hack.so patch from 3.2 branch for 2.6.12 bootcds on PL.
+
 * Mon Jun 29 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-4.3-9
 - Special handling for "forcedeth" ethernet NIC.
 
