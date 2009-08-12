@@ -70,7 +70,7 @@ def Run( vars, log ):
     try:
         utils.removefile( "%s/boot/%s" % (SYSIMG_PATH, initrd) )
     except:
-        print "%s/boot/%s is already removed" % (SYSIMG_PATH, initrd) )
+        print "%s/boot/%s is already removed" % (SYSIMG_PATH, initrd)
 
     # hack for CentOS 5.3
     bypassRaidIfNeeded(SYSIMG_PATH)
