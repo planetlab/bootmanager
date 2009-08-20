@@ -79,8 +79,8 @@ def create_auth_structure( vars, call_params ):
             auth = auth_session
 
         except Exception, e:
-            print e
-            pass
+            # NOTE: BM has failed to authenticate utterly.
+            raise BootManagerAuthenticationException, "%s" % e
 
     return auth
 

@@ -293,6 +293,12 @@ class BootManager:
             self.LOG.write( "\n\nKeyError while running: %s\n" % str(e) )
         except BootManagerException, e:
             self.LOG.write( "\n\nException while running: %s\n" % str(e) )
+        except BootManagerAuthenticationException, e:
+            self.LOG.write( "\n\nFailed to Authenticate Node: %s\n" % str(e) )
+            # sets /tmp/CANCEL_BOOT flag
+            StartDebug.Run(self.VARS, self.LOG )
+            # Return immediately b/c any other calls to API will fail
+            return success
         except:
             self.LOG.write( "\n\nImplementation Error\n")
             traceback.print_exc(file=self.LOG.OutputFile)
