@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 10
+%define taglevel 11
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,10 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Wed Aug 26 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-11
+- raise a single exception for nodes with authentication errors
+- fix syntax error in MakeInitrd.py
+
 * Mon Aug 10 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-10
 - Replace UpdateBootstate with UpdateRunlevel where appropriate.
 - Removed failboot and install from forced states.
