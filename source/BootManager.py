@@ -18,7 +18,7 @@ import BootServerRequest
 
 # all output is written to this file
 BM_NODE_LOG= "/tmp/bm.log"
-UPLOAD_LOG_SCRIPT = "/boot/upload-bmlog.php"
+VARS_FILE = "configuration"
 
 # the new contents of PATH when the boot manager is running
 BIN_PATH= ('/usr/local/bin',
@@ -27,7 +27,43 @@ BIN_PATH= ('/usr/local/bin',
            '/usr/sbin',
            '/bin',
            '/sbin')
-           
+
+def read_configuration_file(filename):
+    # read in and store all variables in VARS_FILE into each line
+    # is in the format name=val (any whitespace around the = is
+    # removed. everything after the = to the end of the line is
+    # the value
+    vars = {}
+    vars_file= file(filename,'r')
+    validConfFile = True
+    for line in vars_file:
+        # if its a comment or a whitespace line, ignore
+        if line[:1] == "#" or string.strip(line) == "":
+            continue
+
+        parts= string.split(line,"=")
+        if len(parts) != 2:
+            validConfFile = False
+            raise Exception( "Invalid line in vars file: %s" % line )
+
+        name= string.strip(parts[0])
+        value= string.strip(parts[1])
+        value= value.replace("'", "")   # remove quotes
+        value= value.replace('"', "")   # remove quotes
+        vars[name]= value
+
+    vars_file.close()
+    if not validConfFile:
+        raise Exception( "Unable to read configuration vars." )
+
+    # find out which directory we are running it, and set a variable
+    # for that. future steps may need to get files out of the bootmanager
+    # directory
+    current_dir= os.getcwd()
+    vars['BM_SOURCE_DIR']= current_dir
+
+    return vars
+
 ##############################
 class log:
 
@@ -40,6 +76,14 @@ class log:
         except:
             print( "bootmanager log : Unable to open output file %r, continuing"%OutputFilePath )
             self.OutputFile= None
+
+        self.VARS = None
+        try:
+            vars = read_configuration_file(VARS_FILE)
+            self.VARS = vars
+        except Exception, e:
+            self.LogEntry( str(e) )
+            return
     
     def LogEntry( self, str, inc_newline= 1, display_screen= 1 ):
         now=time.strftime(log.format, time.localtime())
@@ -72,22 +116,24 @@ class log:
         if self.OutputFile is not None:
             self.OutputFile.flush()
 
-            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_SCRIPT )
+            self.LogEntry( "Uploading logs to %s" % self.VARS['UPLOAD_LOG_SCRIPT'] )
             
             self.OutputFile.close()
             self.OutputFile= None
 
-            bs_request = BootServerRequest.BootServerRequest()
-            bs_request.MakeRequest(PartialPath = UPLOAD_LOG_SCRIPT,
+            hostname= self.VARS['INTERFACE_SETTINGS']['hostname'] + "." + \
+                      self.VARS['INTERFACE_SETTINGS']['domainname']
+            bs_request = BootServerRequest.BootServerRequest(self.VARS)
+            bs_request.MakeRequest(PartialPath = self.VARS['UPLOAD_LOG_SCRIPT'],
                                    GetVars = None, PostVars = None,
-                                   FormData = ["log=@" + self.OutputFilePath],
+                                   FormData = ["log=@" + self.OutputFilePath,
+                                   "hostname=" + hostname, "type=bm.log"],
                                    DoSSL = True, DoCertCheck = True)
 
 ##############################
 class BootManager:
 
     # file containing initial variables/constants
-    VARS_FILE = "configuration"
 
     # the set of valid node run states
     NodeRunStates = {'reinstall':None,
@@ -105,46 +151,16 @@ class BootManager:
 
         # set to 1 if we can run after initialization
         self.CAN_RUN = 0
-             
-        # read in and store all variables in VARS_FILE into each line
-        # is in the format name=val (any whitespace around the = is
-        # removed. everything after the = to the end of the line is
-        # the value
-        vars = {}
-        vars_file= file(self.VARS_FILE,'r')
-        validConfFile = True
-        for line in vars_file:
-            # if its a comment or a whitespace line, ignore
-            if line[:1] == "#" or string.strip(line) == "":
-                continue
 
-            parts= string.split(line,"=")
-            if len(parts) != 2:
-                self.LOG.LogEntry( "Invalid line in vars file: %s" % line )
-                validConfFile = False
-                break
-
-            name= string.strip(parts[0])
-            value= string.strip(parts[1])
-            vars[name]= value
-
-        vars_file.close()
-        if not validConfFile:
-            self.LOG.LogEntry( "Unable to read configuration vars." )
+        if log.VARS:
+            # this contains a set of information used and updated by each step
+            self.VARS= log.VARS
+        else:
             return
-
-        # find out which directory we are running it, and set a variable
-        # for that. future steps may need to get files out of the bootmanager
-        # directory
-        current_dir= os.getcwd()
-        vars['BM_SOURCE_DIR']= current_dir
-
+             
         # not sure what the current PATH is set to, replace it with what
         # we know will work with all the boot cds
         os.environ['PATH']= string.join(BIN_PATH,":")
-                   
-        # this contains a set of information used and updated by each step
-        self.VARS= vars
 
         self.CAN_RUN= 1
 

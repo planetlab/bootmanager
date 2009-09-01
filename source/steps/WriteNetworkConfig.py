@@ -132,7 +132,7 @@ def Run( vars, log ):
     except :
         log.write(" .. Failed.  Using old method. -- stack trace follows\n")
         traceback.print_exc(file=log.OutputFile)
-        bs= BootServerRequest.BootServerRequest()
+        bs= BootServerRequest.BootServerRequest(vars)
         if bs.BOOTSERVER_CERTS:
             print >> plc_config, "PLC_BOOT_HOST='%s'" % bs.BOOTSERVER_CERTS.keys()[0]
         print >> plc_config, "PLC_API_HOST='%s'" % host

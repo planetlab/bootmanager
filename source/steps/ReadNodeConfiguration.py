@@ -473,7 +473,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         log.write( "Configuration file does not contain the node_id value.\n" )
         log.write( "Querying PLC for node_id.\n" )
 
-        bs_request= BootServerRequest.BootServerRequest()
+        bs_request= BootServerRequest.BootServerRequest(vars)
         
         postVars= {"mac_addr" : INTERFACE_SETTINGS["mac"]}
         result= bs_request.DownloadFile( "%s/getnodeid.php" %

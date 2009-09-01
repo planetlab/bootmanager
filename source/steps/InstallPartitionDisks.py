@@ -67,7 +67,7 @@ def Run( vars, log ):
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    bs_request= BootServerRequest.BootServerRequest()
+    bs_request= BootServerRequest.BootServerRequest(vars)
 
     
     # disable swap if its on

@@ -73,7 +73,7 @@ def Run( vars, log ):
         log.write( "Missing partition in PARTITIONS: %s\n" % part )
         return 0   
 
-    bs_request= BootServerRequest.BootServerRequest()
+    bs_request= BootServerRequest.BootServerRequest(vars)
     
     log.write( "turning on swap space\n" )
     utils.sysexec( "swapon %s" % PARTITIONS["swap"], log )
