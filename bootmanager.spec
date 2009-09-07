@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 11
+%define taglevel 12
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,18 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Mon Sep 07 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-12
+- Moved some configuration values from BootServerRequest.py to 'configuration' file.
+- BootServerRequest takes the 'VARS' variable to read these values.
+- UPLOAD_LOG_SCRIPT can point optionally to the 'upload-bmlog.php' or 'monitor/upload'
+- (or any other interface that accepts a POST file)
+- build.sh bundles cacerts for boot and monitor servers (if present) to
+- authenticate the UPLOAD_LOG_SCRIPT.
+- Previously, these certs were re-used from the bootcd, now they are bundled
+- with BM.  This allows the BM to point to a completely different myplc if
+- desired, and it is still secure, because the original download is
+- authenticated.
+
 * Wed Aug 26 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-11
 - raise a single exception for nodes with authentication errors
 - fix syntax error in MakeInitrd.py
