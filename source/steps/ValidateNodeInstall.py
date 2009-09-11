@@ -83,41 +83,45 @@ def Run( vars, log ):
             
         utils.makedirs( SYSIMG_PATH )
 
-        try:
-            # first run fsck to prevent fs corruption from hanging mount...
-            log.write( "fsck root file system\n" )
-            utils.sysexec("e2fsck -v -p %s" % (PARTITIONS["root"]),log)
-
-            log.write( "fsck vserver file system\n" )
-            utils.sysexec("e2fsck -v -p %s" % (PARTITIONS["vservers"]),log)
-        except BootManagerException, e:
-            log.write( "BootManagerException during fsck of /root and /vservers : %s\n" %
-                       str(e) )
-            return -1
+        for filesystem in ("root","vservers"):
+            try:
+                # first run fsck to prevent fs corruption from hanging mount...
+                log.write( "fsck %s file system\n" % filesystem )
+                utils.sysexec("e2fsck -v -p %s" % (PARTITIONS[filesystem]),log)
+            except BootManagerException, e:
+                log.write( "BootManagerException during fsck of %s (%s) filesystem : %s\n" %
+                           (filesystem, PARTITIONS[filesystem], str(e)) )
+                return -1
 
         try:
             # then attempt to mount them
             log.write( "mounting root file system\n" )
-            utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
+            utils.sysexec("mount -t ext2 %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
+        except BootManagerException, e:
+            log.write( "BootManagerException during mount of /root: %s\n" % str(e) )
+            return -2
             
-            VSERVERS_PATH = "%s/vservers" % SYSIMG_PATH
-            utils.makedirs(VSERVERS_PATH)
-            log.write( "mounting vserver partition in root file system\n" )
-            utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["vservers"], VSERVERS_PATH), log)
-
+        try:
             PROC_PATH = "%s/proc" % SYSIMG_PATH
             utils.makedirs(PROC_PATH)
             log.write( "mounting /proc\n" )
             utils.sysexec( "mount -t proc none %s" % PROC_PATH, log )
         except BootManagerException, e:
-            log.write( "BootManagerException during mount of /root, /vservers and /proc: %s\n" %
-                       str(e) )
+            log.write( "BootManagerException during mount of /proc: %s\n" % str(e) )
+            return -2
+
+        try:
+            VSERVERS_PATH = "%s/vservers" % SYSIMG_PATH
+            utils.makedirs(VSERVERS_PATH)
+            log.write( "mounting vserver partition in root file system\n" )
+            utils.sysexec("mount -t ext2 %s %s" % (PARTITIONS["vservers"], VSERVERS_PATH), log)
+        except BootManagerException, e:
+            log.write( "BootManagerException during mount of /vservers: %s\n" % str(e) )
             return -2
 
         ROOT_MOUNTED= 1
         vars['ROOT_MOUNTED']= 1
         
-    
     # check if the base kernel is installed 
     # these 2 links are created by our kernel's post-install scriplet
     log.write("Checking for a custom kernel\n")

@@ -169,7 +169,7 @@ def Run( vars, log ):
                 res = 1
                 break
 
-            log.write( "making the ext3 filesystem match new logical volume size.\n" )
+            log.write( "making the ext filesystem match new logical volume size.\n" )
 
             vars['ROOT_MOUNTED']= 1
             cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
