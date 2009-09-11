@@ -85,9 +85,9 @@ def Run( vars, log ):
 
         cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
         utils.sysexec( cmd, log )
-        cmd = "mount %s %s/vservers" % (PARTITIONS["vservers"],SYSIMG_PATH)
-        utils.sysexec( cmd, log )
         cmd = "mount -t proc none %s/proc" % SYSIMG_PATH
+        utils.sysexec( cmd, log )
+        cmd = "mount %s %s/vservers" % (PARTITIONS["vservers"],SYSIMG_PATH)
         utils.sysexec( cmd, log )
 
         ROOT_MOUNTED= 1
@@ -151,17 +151,10 @@ def Run( vars, log ):
     BootAPI.save(vars)
 
     log.write( "Unmounting disks.\n" )
-    try:
-        # backwards compat, though, we should never hit this case post PL 3.2
-        os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
-        utils.sysexec_chroot_noerr( SYSIMG_PATH, "umount /rcfs", log )
-    except OSError, e:
-        pass
-
-    utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "umount -r %s/vservers" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "umount -r %s" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "vgchange -an", log )
+    utils.sysexec( "umount %s/vservers" % SYSIMG_PATH, log )
+    utils.sysexec( "umount %s/proc" % SYSIMG_PATH, log )
+    utils.sysexec( "umount %s" % SYSIMG_PATH, log )
+    utils.sysexec( "vgchange -an", log )
 
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
