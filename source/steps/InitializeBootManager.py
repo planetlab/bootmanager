@@ -41,6 +41,10 @@ def Run( vars, log ):
 
     log.write( "\n\nStep: Initializing the BootManager.\n" )
 
+    # Default model option.  Required in case we go into debug mode
+    # before we successfully called GetAndUpdateNodeDetails().
+    vars["NODE_MODEL_OPTIONS"] = vars.get("NODE_MODEL_OPTIONS",0)
+
     # define the basic partition paths
     PARTITIONS= {}
     PARTITIONS["root"]= "/dev/planetlab/root"
