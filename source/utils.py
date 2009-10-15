@@ -142,7 +142,7 @@ def sysexec( cmd, log= None ):
             raise BootManagerException, "Interrupted by user"
 
     returncode= prog.wait()
-    if returncode != 0:
+    if returncode != 0 and returncode != 256:
         raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
 
     prog= None
