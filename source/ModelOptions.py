@@ -19,6 +19,7 @@ GEODE   = 0x040
 BADHD   = 0x080
 LAST    = 0x100
 RAWDISK = 0x200
+NAT     = 0x400
 
 modeloptions = {'smp':SMP,
                 'x64':X86_64,
@@ -30,7 +31,8 @@ modeloptions = {'smp':SMP,
                 'geode':GEODE,
                 'badhd':BADHD,
                 'minhw':MINHW,
-                'rawdisk':RAWDISK}
+                'rawdisk':RAWDISK,
+                'nat':NAT}
 
 def Get(model):
     modelinfo = string.split(model,'/')
