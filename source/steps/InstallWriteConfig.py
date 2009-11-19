@@ -84,9 +84,9 @@ def Run( vars, log ):
     fstab= file( "%s/etc/fstab" % SYSIMG_PATH, "w" )
     fstab.write( "%s           none        swap      sw        0 0\n" % \
                  PARTITIONS["mapper-swap"] )
-    fstab.write( "%s           /           ext2      defaults  1 1\n" % \
+    fstab.write( "%s           /           ext3      defaults  1 1\n" % \
                  PARTITIONS["mapper-root"] )
-    fstab.write( "%s           /vservers   ext2      tagxid,defaults  1 2\n" % \
+    fstab.write( "%s           /vservers   ext3      tagxid,defaults  1 2\n" % \
                  PARTITIONS["mapper-vservers"] )
     fstab.write( "none         /proc       proc      defaults  0 0\n" )
     fstab.write( "none         /dev/shm    tmpfs     defaults  0 0\n" )

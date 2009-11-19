@@ -96,7 +96,7 @@ def Run( vars, log ):
         try:
             # then attempt to mount them
             log.write( "mounting root file system\n" )
-            utils.sysexec("mount -t ext2 %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
+            utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["root"],SYSIMG_PATH),log)
         except BootManagerException, e:
             log.write( "BootManagerException during mount of /root: %s\n" % str(e) )
             return -2
@@ -114,7 +114,7 @@ def Run( vars, log ):
             VSERVERS_PATH = "%s/vservers" % SYSIMG_PATH
             utils.makedirs(VSERVERS_PATH)
             log.write( "mounting vserver partition in root file system\n" )
-            utils.sysexec("mount -t ext2 %s %s" % (PARTITIONS["vservers"], VSERVERS_PATH), log)
+            utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["vservers"], VSERVERS_PATH), log)
         except BootManagerException, e:
             log.write( "BootManagerException during mount of /vservers: %s\n" % str(e) )
             return -2
