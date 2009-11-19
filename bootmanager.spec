@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 13
+%define taglevel 14
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,10 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Thu Nov 19 2009 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-4.3-14
+- Use ext2 instead of ext3.
+- Add NAT model option for nodes which don't resolve properly.
+
 * Mon Sep 07 2009 Stephen Soltesz <soltesz@cs.princeton.edu> - BootManager-4.3-12
 - Moved some configuration values from BootServerRequest.py to 'configuration' file.
 - BootServerRequest takes the 'VARS' variable to read these values.
