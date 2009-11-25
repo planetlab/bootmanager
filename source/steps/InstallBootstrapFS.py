@@ -91,6 +91,18 @@ def Run( vars, log ):
 
     vars['ROOT_MOUNTED']= 1
 
+    # check deployment (if it's alpha?)
+    deployment = ""
+    try:
+        node_tag_ids = BootAPI.call_api_function(vars, "GetNodes", (NODE_ID,))[0]['node_tag_ids']
+        node_tags = BootAPI.call_api_function(vars, "GetNodeTags", (node_tag_ids,))
+        deployment_tag = [x for x in node_tags if x['tagname'] == 'deployment']
+        if deployment_tag:
+            deployment = deployment_tag[0]['value']
+    except:
+        log.write("WARNING : Failed to query tag 'deployment'\n")
+        log.write(traceback.format_exc())
+
     # which extensions are we part of ?
     utils.breakpoint("Checking for the extension(s) tags")
     extensions = []
@@ -176,8 +188,12 @@ def Run( vars, log ):
     # download and extract support tarball for this step, 
     for bootstrapfs_name in bootstrapfs_names:
         tarball = "bootstrapfs-%s-%s%s"%(bootstrapfs_name,arch,download_suffix)
+        if len(deployment):
+            # we keep bootstrapfs tarballs for deployments in a
+            # sub-folder, but with same filenames
+            tarball = "%s/%s" %(deployment, tarball)
         source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
-        dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
+        dest_file= "%s/%s" % (SYSIMG_PATH, os.path.basename(tarball))
 
         # 30 is the connect timeout, 14400 is the max transfer time in
         # seconds (4 hours)
