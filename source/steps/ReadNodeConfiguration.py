@@ -18,7 +18,6 @@ import BootServerRequest
 import BootAPI
 import notify_messages
 import UpdateRunLevelWithPLC
-import ModelOptions
 
 
 # two possible names of the configuration files
@@ -601,7 +600,7 @@ def __parse_configuration_file( vars, log, file_contents ):
     vars["INTERFACE_SETTINGS"]= INTERFACE_SETTINGS
 
     if (not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION'] and
-        (vars['NODE_MODEL_OPTIONS'] & ModelOptions.NAT) == 0):
+        'NAT_MODE' not in vars):
         log.write( "Hostname does not resolve correctly, will not continue.\n" )
 
         if can_make_api_call:
