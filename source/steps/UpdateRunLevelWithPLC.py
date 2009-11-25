@@ -34,7 +34,10 @@ def Run( vars, log ):
     log.write( "\n\nStep: Updating node run level at PLC.\n" )
 
     update_vals= {}
-    update_vals['run_level']= vars['RUN_LEVEL']
+    # translate boot_state values to run_level value
+    if vars['RUN_LEVEL'] in ['diag', 'diagnose', 'disabled', 'disable']:
+        vars['RUN_LEVEL']='safeboot'
+    update_vals['run_level']=vars['RUN_LEVEL']
     try:
         BootAPI.call_api_function( vars, "ReportRunlevel", (update_vals,) )
         log.write( "Successfully updated run level for this node at PLC\n" )
