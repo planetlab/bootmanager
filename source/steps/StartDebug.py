@@ -69,6 +69,11 @@ def Run( vars, log, last_resort = True):
     ssh_home= "/root/.ssh"
     cancel_boot_flag= "/tmp/CANCEL_BOOT"
     sshd_started_flag= "/tmp/SSHD_RUNNING"
+
+    # pre-sshd
+    pre_sshd_script= os.path.join(ssh_source_files, "pre-sshd")
+    if os.path.exists(pre_sshd_script):
+        os.spawnv(os.P_WAIT, pre_sshd_script, [pre_sshd_script])
     
     # create host keys if needed
     if not os.path.isdir (ssh_dir):
