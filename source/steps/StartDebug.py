@@ -73,7 +73,7 @@ def Run( vars, log, last_resort = True):
     # pre-sshd
     pre_sshd_script= os.path.join(ssh_source_files, "pre-sshd")
     if os.path.exists(pre_sshd_script):
-        os.spawnv(os.P_WAIT, pre_sshd_script, [pre_sshd_script])
+        utils.sysexec_noerr( pre_sshd_script, log )
     
     # create host keys if needed
     if not os.path.isdir (ssh_dir):
