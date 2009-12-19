@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 14
+%define taglevel 15
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,11 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Sat Dec 19 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-4.3-15
+- - support for when the node is behind a NAT
+- - clean up RUN_LEVEL support
+- - support for early sshd
+
 * Thu Nov 19 2009 Daniel Hokka Zakrisson <daniel@hozac.com> - BootManager-4.3-14
 - Add NAT model option for nodes which don't resolve properly.
 
