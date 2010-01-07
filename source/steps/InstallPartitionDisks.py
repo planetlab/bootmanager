@@ -169,7 +169,7 @@ def Run( vars, log ):
     return 1
 
 
-
+import parted
 def single_partition_device( device, vars, log ):
     """
     initialize a disk by removing the old partition tables,
@@ -178,11 +178,21 @@ def single_partition_device( device, vars, log ):
     return 1 if sucessful, 0 otherwise
     """
 
-    import parted
+    # two forms, depending on which version of pyparted we have
+    try:
+        version=parted.version()
+        return single_partition_device_2_x (device, vars, log)
+    except:
+        return single_partition_device_1_x (device, vars, log)
+
+        
+
+def single_partition_device_1_x ( device, vars, log):
     
     lvm_flag= parted.partition_flag_get_by_name('lvm')
     
     try:
+        print >>log, "Using pyparted 1.x"
         # wipe the old partition table
         utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % device, log )
 
@@ -217,6 +227,40 @@ def single_partition_device( device, vars, log ):
 
     except parted.error, e:
         log.write( "parted exception while running: %s\n" % str(e) )
+        return 0
+                   
+    return 1
+
+
+
+def single_partition_device_2_x ( device, vars, log):
+    try:
+        print >>log, "Using pyparted 2.x"
+        # wipe the old partition table
+        utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % device, log )
+        # get the device
+        dev= parted.Device(device)
+        # create a new partition table
+        disk= parted.freshDisk(dev,'msdos')
+        # create one big partition on each block device
+        constraint= parted.constraint.Constraint (device=dev)
+        geometry = parted.geometry.Geometry (device=dev, start=0, end=1)
+        fs = parted.filesystem.FileSystem (type="ext2",geometry=geometry)
+        new_part= parted.partition.Partition (disk, type=parted.PARTITION_NORMAL, 
+                                              fs=fs, geometry=geometry)
+        # make it an lvm partition
+        new_part.setFlag(parted.PARTITION_LVM)
+        # actually add the partition to the disk
+        disk.addPartition(new_part, constraint)
+        disk.maximizePartition(new_part,constraint)
+        disk.commit()
+        print >>log, 'Current disk for %s'%device,disk
+        print >>log, 'Current dev for %s'%device,dev
+        del disk
+    except Exception, e:
+        log.write( "Exception inside single_partition_device_2_x : %s\n" % str(e) )
+        import traceback
+        traceback.print_exc(file=log)
         return 0
                    
     return 1
