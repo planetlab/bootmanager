@@ -124,11 +124,24 @@ class log:
             hostname= self.VARS['INTERFACE_SETTINGS']['hostname'] + "." + \
                       self.VARS['INTERFACE_SETTINGS']['domainname']
             bs_request = BootServerRequest.BootServerRequest(self.VARS)
-            bs_request.MakeRequest(PartialPath = self.VARS['UPLOAD_LOG_SCRIPT'],
-                                   GetVars = None, PostVars = None,
-                                   FormData = ["log=@" + self.OutputFilePath,
-                                   "hostname=" + hostname, "type=bm.log"],
-                                   DoSSL = True, DoCertCheck = True)
+            try:
+                # this was working until f10
+                bs_request.MakeRequest(PartialPath = self.VARS['UPLOAD_LOG_SCRIPT'],
+                                       GetVars = None, PostVars = None,
+                                       DoSSL = True, DoCertCheck = True,
+                                       FormData = ["log=@" + self.OutputFilePath,
+                                                   "hostname=" + hostname, 
+                                                   "type=bm.log"])
+            except:
+                # new pycurl
+                import pycurl
+                bs_request.MakeRequest(PartialPath = self.VARS['UPLOAD_LOG_SCRIPT'],
+                                       GetVars = None, PostVars = None,
+                                       DoSSL = True, DoCertCheck = True,
+                                       FormData = [('log',(pycurl.FORM_FILE, self.OutputFilePath)),
+                                                   ("hostname",hostname),
+                                                   ("type","bm.log")])
+
 
 ##############################
 class BootManager:
