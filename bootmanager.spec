@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 15
+%define taglevel 16
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,9 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Sat Jan 09 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-16
+- support for fedora 12
+
 * Sat Dec 19 2009 Marc Fiuczynski <mef@cs.princeton.edu> - BootManager-4.3-15
 - - support for when the node is behind a NAT
 - - clean up RUN_LEVEL support
