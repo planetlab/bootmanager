@@ -3,9 +3,7 @@
 #
 %define url $URL$
 
-%define nodefamily %{pldistro}-%{_arch}
-
-%define name bootmanager-%{nodefamily}
+%define name bootmanager
 %define version 4.3
 %define taglevel 16
 
