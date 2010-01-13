@@ -3,7 +3,9 @@
 #
 %define url $URL$
 
-%define name bootmanager
+%define nodefamily %{pldistro}-%{_arch}
+
+%define name bootmanager-%{nodefamily}
 %define version 4.3
 %define taglevel 16
 
@@ -22,12 +24,17 @@ License: BSD
 Group: System Environment/Base
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildArch: noarch
 
 Requires: tar, gnupg, sharutils, bzip2, pypcilib
 Requires: PLCAPI >= 4.3
-
 # the python code packaged in these are shipped on the node as well
 Requires: pypcilib pyplnet monitor-runlevelagent
+
+# plc.d/bootmanager is moving
+Conflicts: myplc <= 4.3.37
+# nodeconfig/boot/index.php is moving
+Conflicts: nodeconfig <= 4.3.7
 
 AutoReqProv: no
 %define debug_package %{nil}
@@ -46,10 +53,18 @@ gcc -shared -fPIC -ldl -Os -o source/libc-opendir-hack.so source/libc-opendir-ha
 rm -rf $RPM_BUILD_ROOT
 
 # Install source so that it can be rebuilt
-find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/
+find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/regular/
 
-touch bootmanager.sh
-install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
+install -m 644 README  $RPM_BUILD_ROOT/%{_datadir}/%{name}/README
+
+# formerly in the nodeconfig module
+install -m 755 nodeconfig/boot/index.php $RPM_BUILD_ROOT/var/www/html/boot/index.php
+
+# formerly in the MyPLC module
+install -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/pld.c/bootmanager
+
+#touch bootmanager.sh
+#install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
 
 # This is only required for 2.x bootcds.
 install -D -m 644 support-files/uudecode.gz $RPM_BUILD_ROOT/var/www/html/boot/uudecode.gz
@@ -57,32 +72,21 @@ install -D -m 644 support-files/uudecode.gz $RPM_BUILD_ROOT/var/www/html/boot/uu
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-# If run under sudo
-if [ -n "$SUDO_USER" ] ; then
-    # Allow user to delete the build directory
-    chown -h -R $SUDO_USER .
-    # Some temporary cdroot files like /var/empty/sshd and
-    # /usr/bin/sudo get created with non-readable permissions.
-    find . -not -perm +0600 -exec chmod u+rw {} \;
-    # Allow user to delete the built RPM(s)
-    chown -h -R $SUDO_USER %{_rpmdir}/%{_arch}
-fi
-
 %post
-cat <<EOF
-Remember to GPG sign /var/www/html/boot/bootmanager.sh with the
-PlanetLab private key.
-EOF
+# signing of botmanager.sh occurs as part of plc.d/bootmanager
 
 # NOTE: do not run this agent when installed on a myplc.
+# xxx - a bit hacky maybe
 chkconfig monitor-runlevelagent off
 chkconfig --del monitor-runlevelagent
 
 %files
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
-%ghost /var/www/html/boot/bootmanager.sh
+/var/www/html/boot/index.php
+/etc/pld.c/bootmanager
 /var/www/html/boot/uudecode.gz
+#%ghost /var/www/html/boot/bootmanager.sh
 
 %changelog
 * Sat Jan 09 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-16
