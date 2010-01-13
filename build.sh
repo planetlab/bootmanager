@@ -90,13 +90,6 @@ set -e
 
 UUDECODE=/usr/bin/uudecode
 
-# once we get the beta cds out of use, this can be removed
-if [ ! -x \$UUDECODE ]; then
-  UUDECODE=/tmp/uudecode
-  curl -s http://$PLC_BOOT_HOST/boot/uudecode.gz | gzip -d -c > \$UUDECODE
-  chmod +x \$UUDECODE
-fi
-
 ($UUDECODE | /bin/tar -C /tmp -xj) << _EOF_
 EOF
 

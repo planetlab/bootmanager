@@ -58,16 +58,10 @@ find build.sh source | cpio -p -d -u $RPM_BUILD_ROOT/%{_datadir}/%{name}/regular
 install -m 644 README  $RPM_BUILD_ROOT/%{_datadir}/%{name}/README
 
 # formerly in the nodeconfig module
-install -m 755 nodeconfig/boot/index.php $RPM_BUILD_ROOT/var/www/html/boot/index.php
+install -D -m 755 nodeconfig/boot/index.php $RPM_BUILD_ROOT/var/www/html/boot/index.php
 
 # formerly in the MyPLC module
-install -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/pld.c/bootmanager
-
-#touch bootmanager.sh
-#install -D -m 755 bootmanager.sh $RPM_BUILD_ROOT/var/www/html/boot/bootmanager.sh
-
-# This is only required for 2.x bootcds.
-install -D -m 644 support-files/uudecode.gz $RPM_BUILD_ROOT/var/www/html/boot/uudecode.gz
+install -D -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/pld.c/bootmanager
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -85,8 +79,6 @@ chkconfig --del monitor-runlevelagent
 %{_datadir}/%{name}
 /var/www/html/boot/index.php
 /etc/pld.c/bootmanager
-/var/www/html/boot/uudecode.gz
-#%ghost /var/www/html/boot/bootmanager.sh
 
 %changelog
 * Sat Jan 09 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-16
