@@ -79,6 +79,7 @@ chkconfig --del monitor-runlevelagent
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
 /var/www/html/boot/index.php
+/var/www/html/boot/upload-bmlog.php
 /etc/plc.d/bootmanager
 
 %changelog
