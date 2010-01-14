@@ -32,15 +32,15 @@ cd $(dirname $0)
 sed -i -e "s|SUPPORT_FILE_DIR=.*|SUPPORT_FILE_DIR=$BOOTSTRAPDIR|" source/configuration
 
 # Source bootmanager configuration
-. $srcdir/source/configuration
+. source/configuration
 
 # Write boot script. nodeconfig/boot/index.php retrieves the contents of this script
 # after checking the node id
 
-BMDIR=/var/www/html/bootmanager
+BMDIR=/var/www/html/boot
 mkdir -p $BMDIR
 
-DEST_SCRIPT="$BMDIR/${DEPLOYMENT}_bootmanager.sh"
+DEST_SCRIPT="$BMDIR/bootmanager_${DEPLOYMENT}.sh"
 # Remove the old version or any sym links prior to re-writing
 rm -f ${DEST_SCRIPT}
 rm -f ${DEST_SCRIPT}.sgn
@@ -88,14 +88,12 @@ cat <<EOF > $DEST_SCRIPT
 # Do not tolerate errors
 set -e
 
-UUDECODE=/usr/bin/uudecode
-
-($UUDECODE | /bin/tar -C /tmp -xj) << _EOF_
+(/usr/bin/uudecode | /bin/tar -C /tmp -xj) << _EOF_
 EOF
 
 
 # Embed the uuencoded tarball in the script
-tar -cj -C $srcdir source/ -C $extra_libs source/ | uuencode -m - >> $DEST_SCRIPT
+tar -cj source/ -C $extra_libs source/ | uuencode -m - >> $DEST_SCRIPT
 
 # wrap up the script
 echo '_EOF_' >> $DEST_SCRIPT

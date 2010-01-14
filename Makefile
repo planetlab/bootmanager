@@ -42,6 +42,6 @@ endif
 
 ##########
 tags:
-	find . '(' -name '*.py' -o -name '*.spec' ')' | xargs etags
+	find . -type f | egrep -v '/\.svn/|~$$' | xargs etags
 
 .PHONY: tags

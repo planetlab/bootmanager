@@ -29,9 +29,10 @@ Requires: PLCAPI >= 4.3
 # the python code packaged in these are shipped on the node as well
 Requires: pypcilib pyplnet monitor-runlevelagent
 
-# plc.d/bootmanager is moving
+### avoid having yum complain about updates, as stuff is moving around
+# plc.d/bootmanager
 Conflicts: myplc <= 4.3-37
-# nodeconfig/boot/index.php is moving
+# nodeconfig/boot/*
 Conflicts: nodeconfig <= 4.3-7
 
 AutoReqProv: no
@@ -57,15 +58,17 @@ install -m 644 README  $RPM_BUILD_ROOT/%{_datadir}/%{name}/README
 
 # formerly in the nodeconfig module
 install -D -m 755 nodeconfig/boot/index.php $RPM_BUILD_ROOT/var/www/html/boot/index.php
+install -D -m 755 nodeconfig/boot/upload-bmlog.php $RPM_BUILD_ROOT/var/www/html/boot/upload-bmlog.php
 
 # formerly in the MyPLC module
-install -D -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/pld.c/bootmanager
+install -D -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/plc.d/bootmanager
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
-# signing of botmanager.sh occurs as part of plc.d/bootmanager
+# signing of botmanager.sh occurs as part of /etc/plc.d/bootmanager
+# which in turn invokes build.sh
 
 # NOTE: do not run this agent when installed on a myplc.
 # xxx - a bit hacky maybe
@@ -76,7 +79,7 @@ chkconfig --del monitor-runlevelagent
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
 /var/www/html/boot/index.php
-/etc/pld.c/bootmanager
+/etc/plc.d/bootmanager
 
 %changelog
 * Sat Jan 09 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-4.3-16

@@ -5,8 +5,8 @@ the entry point for the boot CD is installed in
     /var/www/html/boot/index.php
 the bootmanager rpm installs most of its stuff in 
     /usr/share/bootmanager/regular/
-all signed scripts are stored into 
-    /var/www/html/bootmanager
+and the default signed script is created as
+    /var/www/html/boot/bootmanager_regular.sh.sgn
 
 ===
 If you need to create an alternate version for a specific 'deployment'
@@ -27,4 +27,4 @@ which should do everything needed
 
 ===
 It's also possible to attach a (signed) bm script to a unique node by renaming a .sgn into
-/var/www/html/bootmanager/<hostname>_bootmanager.sh.sgn
+/var/www/html/boot/bootmanager_<hostname>.sh.sgn

@@ -13,10 +13,10 @@ require_once 'plc_api.php';
 global $adm;
 
 // location for signed scripts
-$bmdir="/var/www/html/bootmanager";
+$bmdir="/var/www/html/boot";
+$bmext=".sh.sgn";
 
-// Default bootmanager
-$bootmanager = "bootmanager.sh.sgn";
+$candidates = array();
 
 // Look up the node
 $interfaces = $adm->GetInterfaces(array('ip' => $_SERVER['REMOTE_ADDR']));
@@ -58,23 +58,20 @@ if (isset($node)) {
 
   // Custom bootmanager for the node, e.g.
   // planetlab-1.cs.princeton.edu_bootmanager.sh.sgn
-  $bootmanagers = array(strtolower($node['hostname']) . "_" . $bootmanager);
+  $candidates [] = "bootmanager" . "_" . strtolower($node['hostname']);
 
   // Custom bootmanager for the deployment tag, e.g.
-
-  if (!empty($node['nodegroup_ids'])) {
-    $nodegroups = $adm->GetNodeDeployment($node['nodegroup_ids']);
-    foreach ($nodegroups as $nodegroup) {
-      $bootmanagers[] = strtolower($nodegroup['groupname']) . "_" . $bootmanager;
-    }
+  $deployment = $adm->GetNodeDeployment($node['node_id']);
+  if ( ! empty ($deployment) ) {
+    $candidates[] = "bootmanager" . "_" . $deployment;
   }
 }
 
 // Default bootmanager
-$bootmanagers[] = "regular_" . $bootmanager;
+$candidates[] = "bootmanager_regular";
 
-foreach ($bootmanagers as $bootmanager) {
-  $candidate=$bmdir . "/" . $bootmanager;
+foreach ($candidates as $bootmanager) {
+  $candidate=$bmdir . "/" . $bootmanager . $bmext ;
   if (file_exists($candidate)) {
     readfile($candidate);
     exit();
