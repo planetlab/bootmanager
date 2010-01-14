@@ -50,11 +50,6 @@ NONCE_FILE=/tmp/nonce
 PLCONF_DIR=/etc/planetlab
 
 
-# directory on the boot server containing
-# support files and scripts
-SUPPORT_FILE_DIR=/boot
-
-
 # this sets the size of the root logical volume,
 # after the root and swap has been created, remaining
 # goes to the vserver partition

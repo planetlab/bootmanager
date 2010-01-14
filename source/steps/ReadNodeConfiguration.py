@@ -50,8 +50,6 @@ def Run( vars, log ):
     and read, return 1.
 
     Expect the following variables from the store:
-    SUPPORT_FILE_DIR         directory on the boot servers containing
-                             scripts and support files
     
     Sets the following variables from the configuration file:
     WAS_NODE_ID_IN_CONF         Set to 1 if the node id was in the conf file
@@ -83,16 +81,6 @@ def Run( vars, log ):
 
 
     # make sure we have the variables we need
-    try:
-        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-        if SUPPORT_FILE_DIR == None:
-            raise ValueError, "SUPPORT_FILE_DIR"
-
-    except KeyError, var:
-        raise BootManagerException, "Missing variable in vars: %s\n" % var
-    except ValueError, var:
-        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
-
 
     INTERFACE_SETTINGS= {}
     INTERFACE_SETTINGS['method']= "dhcp"
@@ -348,7 +336,6 @@ def __parse_configuration_file( vars, log, file_contents ):
     of the configuration file is completed.
     """
 
-    SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
     INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
     
     if file_contents is None:
@@ -476,8 +463,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         bs_request= BootServerRequest.BootServerRequest(vars)
         
         postVars= {"mac_addr" : INTERFACE_SETTINGS["mac"]}
-        result= bs_request.DownloadFile( "%s/getnodeid.php" %
-                                         SUPPORT_FILE_DIR,
+        result= bs_request.DownloadFile( "/boot/getnodeid.php",
                                          None, postVars, 1, 1,
                                          "/tmp/node_id")
         if result == 0:

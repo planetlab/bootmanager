@@ -28,9 +28,6 @@ BOOTSTRAPDIR="/boot"
 # Change to our source directory
 cd $(dirname $0)
 
-# Translate configuration file
-sed -i -e "s|SUPPORT_FILE_DIR=.*|SUPPORT_FILE_DIR=$BOOTSTRAPDIR|" source/configuration
-
 # Source bootmanager configuration
 . source/configuration
 

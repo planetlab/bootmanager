@@ -27,8 +27,6 @@ def Run( vars, log ):
     SYSIMG_PATH          the path where the system image will be mounted
     PARTITIONS           dictionary of generic part. types (root/swap)
                          and their associated devices.
-    SUPPORT_FILE_DIR     directory on the boot servers containing
-                         scripts and support files
     NODE_ID              the id of this machine
     
     Sets the following variables:
@@ -49,10 +47,6 @@ def Run( vars, log ):
         PARTITIONS= vars["PARTITIONS"]
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
-
-        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-        if SUPPORT_FILE_DIR == None:
-            raise ValueError, "SUPPORT_FILE_DIR"
 
         NODE_ID= vars["NODE_ID"]
         if NODE_ID == "":
@@ -90,6 +84,13 @@ def Run( vars, log ):
                                                      SYSIMG_PATH), log )
 
     vars['ROOT_MOUNTED']= 1
+
+    # fetch deployment tag (like, 'alpha' or the like)
+    try:
+        deployment = BootAPI.call_api_function(vars, "GetNodeDeployment", (NODE_ID,) )
+    except:
+        log.write("WARNING : Failed to query tag 'deployment'\n")
+        deployment = ""
 
     # which extensions are we part of ?
     utils.breakpoint("Checking for the extension(s) tags")
@@ -166,17 +167,21 @@ def Run( vars, log ):
 
     log.write ("Using nodefamily=%s-%s\n"%(pldistro,arch))
 
-    bootstrapfs_names = [ pldistro ] + extensions
+    # deployment is enough, let operators put what they want in there
+    if deployment:
+        bootstrapfs_names = [ deployment ]
+    else:
+        bootstrapfs_names = [ "%s-%s"%(x,arch) for x in [ pldistro ] + extensions ]
 
     # download and extract support tarball for this step, which has
     # everything we need to successfully run
 
-    # we first try to find a tarball, if it is not found we use yum instead
+    # installing extensions through yum has been dismantled
     yum_extensions = []
     # download and extract support tarball for this step, 
-    for bootstrapfs_name in bootstrapfs_names:
-        tarball = "bootstrapfs-%s-%s%s"%(bootstrapfs_name,arch,download_suffix)
-        source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
+    for name in bootstrapfs_names:
+        tarball = "bootstrapfs-%s%s"%(name,download_suffix)
+        source_file= "/boot/%s" % (SUPPORT_FILE_DIR,tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
         # 30 is the connect timeout, 14400 is the max transfer time in
@@ -192,12 +197,12 @@ def Run( vars, log ):
             utils.removefile( dest_file )
         else:
             # the main tarball is required
-            if bootstrapfs_name == pldistro:
+            if name == "%s-%s"%(pldistro,arch):
                 raise BootManagerException, "Unable to download main tarball %s from server." % \
                     source_file
             else:
-                log.write("tarball for %s-%s not found, scheduling a yum attempt\n"%(bootstrapfs_name,arch))
-                yum_extensions.append(bootstrapfs_name)
+                log.write("tarball for %s not found, scheduling a yum attempt\n"%(name))
+                yum_extensions.append(name)
 
     # copy resolv.conf from the base system into our temp dir
     # so DNS lookups work correctly while we are chrooted
