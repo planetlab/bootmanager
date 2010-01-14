@@ -59,6 +59,7 @@ install -m 644 README  $RPM_BUILD_ROOT/%{_datadir}/%{name}/README
 # formerly in the nodeconfig module
 install -D -m 755 nodeconfig/boot/index.php $RPM_BUILD_ROOT/var/www/html/boot/index.php
 install -D -m 755 nodeconfig/boot/upload-bmlog.php $RPM_BUILD_ROOT/var/www/html/boot/upload-bmlog.php
+install -D -m 755 nodeconfig/boot/getnodeid.php $RPM_BUILD_ROOT/var/www/html/boot/getnodeid.php
 
 # formerly in the MyPLC module
 install -D -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/plc.d/bootmanager
@@ -80,6 +81,7 @@ chkconfig --del monitor-runlevelagent
 %{_datadir}/%{name}
 /var/www/html/boot/index.php
 /var/www/html/boot/upload-bmlog.php
+/var/www/html/boot/getnodeid.php
 /etc/plc.d/bootmanager
 
 %changelog
