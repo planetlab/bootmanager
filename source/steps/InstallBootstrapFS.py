@@ -167,7 +167,7 @@ def Run( vars, log ):
 
     log.write ("Using nodefamily=%s-%s\n"%(pldistro,arch))
 
-    # deployment is enough, let operators put what they want in there
+    # deployment has no arch nor extensions, let operators put what they want in there
     if deployment:
         bootstrapfs_names = [ deployment ]
     else:

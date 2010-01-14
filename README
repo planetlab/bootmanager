@@ -1,4 +1,4 @@
-Starting with 4.3.17
+Starting with 4.3.17 (5.0?)
 
 ===
 the entry point for the boot CD is installed in
@@ -28,3 +28,17 @@ which should do everything needed
 ===
 It's also possible to attach a (signed) bm script to a unique node by renaming a .sgn into
 /var/www/html/boot/bootmanager_<hostname>.sh.sgn
+
+======================================== bootstrapfs
+right now, the actual name of the bootstrapfs('s) that need to be installed is performed in 
+the InstallBootstrapFS step
+the logic is
+
+* if the node has the 'deployment' tag set, then we fetch
+https://.../boot/bootstrafs-<deployment>.tar.bz2
+
+* other wise we get
+https://.../boot/bootstrafs-<node-family>.tar.bz2
+  plus 
+https://.../boot/bootstrafs-<extension>-<arch>.tar.bz2
+  for all defined extensions
