@@ -30,9 +30,9 @@ Requires: PLCAPI >= 4.3
 Requires: pypcilib pyplnet monitor-runlevelagent
 
 # plc.d/bootmanager is moving
-Conflicts: myplc <= 4.3.37
+Conflicts: myplc <= 4.3-37
 # nodeconfig/boot/index.php is moving
-Conflicts: nodeconfig <= 4.3.7
+Conflicts: nodeconfig <= 4.3-7
 
 AutoReqProv: no
 %define debug_package %{nil}
