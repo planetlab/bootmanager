@@ -181,7 +181,7 @@ def Run( vars, log ):
     # download and extract support tarball for this step, 
     for name in bootstrapfs_names:
         tarball = "bootstrapfs-%s%s"%(name,download_suffix)
-        source_file= "/boot/%s" % (SUPPORT_FILE_DIR,tarball)
+        source_file= "/boot/%s" % (tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
         # 30 is the connect timeout, 14400 is the max transfer time in
@@ -240,6 +240,6 @@ def Run( vars, log ):
     # in addition yum installs have more or less never worked - let's forget about this
     # maybe NodeManager could profitably do the job instead
     if yum_extensions:
-        log.write("WARNING : yum installs for node extensions are not supported anymore\n")
+        log.write("WARNING : %r yum installs for node extensions are not supported anymore\n"%yum_extensions)
 
     return 1
