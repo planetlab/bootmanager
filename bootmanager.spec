@@ -4,8 +4,8 @@
 %define url $URL$
 
 %define name bootmanager
-%define version 4.3
-%define taglevel 16
+%define version 5.0
+%define taglevel 0
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -191,4 +191,4 @@ chkconfig --del monitor-runlevelagent
 * Fri Sep  2 2005 Mark Huang <mlhuang@cotton.CS.Princeton.EDU> - 
 - Initial build.
 
-%define module_current_branch 3.2
+%define module_current_branch 4.3
