@@ -31,9 +31,9 @@ Requires: pypcilib pyplnet monitor-runlevelagent
 
 ### avoid having yum complain about updates, as stuff is moving around
 # plc.d/bootmanager
-Conflicts: myplc <= 5.0
+Conflicts: myplc <= 4.3
 # nodeconfig/boot/*
-Conflicts: nodeconfig <= 5.0
+Conflicts: nodeconfig <= 4.3
 
 AutoReqProv: no
 %define debug_package %{nil}
