@@ -25,8 +25,19 @@ fi
 # Do not tolerate errors
 set -e
 
+NODEGROUP=$1
+
+BOOTSTRAPDIR="/boot"
+if [ -n "$NODEGROUP" ] ; then
+	BOOTSTRAPDIR="/boot/$NODEGROUP"
+fi
+
+
 # Change to our source directory
 srcdir=$(cd $(dirname $0) && pwd -P)
+
+# Translate configuration file
+sed -i -e "s|SUPPORT_FILE_DIR=.*|SUPPORT_FILE_DIR=$BOOTSTRAPDIR|" $srcdir/source/configuration
 
 # Source bootmanager configuration
 . $srcdir/source/configuration
@@ -35,6 +46,12 @@ srcdir=$(cd $(dirname $0) && pwd -P)
 # after a nonce check.
 
 DEST_SCRIPT=bootmanager.sh
+if [ -n "$NODEGROUP" ] ; then
+	DEST_SCRIPT="${NODEGROUP}_bootmanager.sh"
+	# Remove the old version or any sym links prior to re-writing
+	rm -f ${DEST_SCRIPT}
+	rm -f ${DEST_SCRIPT}.sgn
+fi
 
 cat > $DEST_SCRIPT <<EOF
 #!/bin/bash
@@ -68,21 +85,36 @@ echo '($UUDECODE | /bin/tar -C /tmp -xj) << _EOF_' >> $DEST_SCRIPT
 sed -i -e "s@^BOOT_API_SERVER.*@BOOT_API_SERVER=https://$PLC_API_HOST:443/$PLC_API_PATH/@" \
     $srcdir/source/configuration
 
+sed -i -e "s@^BOOT_SERVER.*@BOOT_SERVER=$PLC_BOOT_HOST@" $srcdir/source/configuration
+if [ "$PLC_MONITOR_ENABLED" = "1" ]; then
+    MONITOR_SERVER=$PLC_MONITOR_HOST
+else
+    MONITOR_SERVER=$PLC_BOOT_HOST
+fi
+sed -i -e "s@^MONITOR_SERVER.*@MONITOR_SERVER=$MONITOR_SERVER@" $srcdir/source/configuration
+
+install -D -m 644 $PLC_BOOT_CA_SSL_CRT $srcdir/source/cacert/$PLC_BOOT_HOST/cacert.pem
+if [ -f $PLC_MONITOR_CA_SSL_CRT ] ; then 
+	install -D -m 644 $PLC_MONITOR_CA_SSL_CRT $srcdir/source/cacert/$PLC_MONITOR_HOST/cacert.pem
+fi
+
 # Replace the default debug SSH key
 if [ -f "$PLC_DEBUG_SSH_KEY_PUB" ] ; then
     install -D -m 644 "$PLC_DEBUG_SSH_KEY_PUB" $srcdir/source/debug_files/debug_root_ssh_key
 fi
 
-# Add pypcilib
-pypcilib=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
-mkdir $pypcilib/source
-cp $(rpm -ql pypcilib | grep -v '\.py[co]$') $pypcilib/source
+# Add python code from the following packages
+# make sure they are in the 'Requires' header of the specfile
+required_rpms="pypcilib pyplnet monitor-runlevelagent"
+extra_libs=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
+mkdir $extra_libs/source
+cp -p $(rpm -ql $required_rpms | grep -v '\.py[co]$') $extra_libs/source
 
 # Embed the uuencoded tarball in the script
-tar -cj -C $srcdir source/ -C $pypcilib source/ | uuencode -m - >> $DEST_SCRIPT
+tar -cj -C $srcdir source/ -C $extra_libs source/ | uuencode -m - >> $DEST_SCRIPT
 
 # Remove temp directory
-rm -fr $pypcilib
+rm -fr $extra_libs
 
 echo '_EOF_' >> $DEST_SCRIPT
 echo 'cd /tmp/source' >> $DEST_SCRIPT

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -32,10 +32,8 @@ def Run( vars, log ):
     PARTITIONS              dictionary of generic part. types (root/swap)
                             and their associated devices.
     PLCONF_DIR              The directory to store the configuration file in
-    NETWORK_SETTINGS  A dictionary of the values from the network
+    INTERFACE_SETTINGS  A dictionary of the values from the network
                                 configuration file
-    BOOT_CD_VERSION          A tuple of the current bootcd version
-    
     Sets the following variables:
     None
     
@@ -61,13 +59,9 @@ def Run( vars, log ):
         if PLCONF_DIR == "":
             raise ValueError, "PLCONF_DIR"
 
-        NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
-        if NETWORK_SETTINGS == "":
-            raise ValueError, "NETWORK_SETTINGS"
-
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
+        INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
+        if INTERFACE_SETTINGS == "":
+            raise ValueError, "INTERFACE_SETTINGS"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -75,11 +69,11 @@ def Run( vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
     log.write( "Setting local time to UTC\n" )
-    utils.sysexec( "chroot %s ln -sf /usr/share/zoneinfo/UTC /etc/localtime" % \
-                   SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH,
+        "ln -sf /usr/share/zoneinfo/UTC /etc/localtime", log )
 
     log.write( "Enabling ntp at boot\n" )
-    utils.sysexec( "chroot %s chkconfig ntpd on" % SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH, "chkconfig ntpd on", log )
 
     log.write( "Creating system directory %s\n" % PLCONF_DIR )
     if not utils.makedirs( "%s/%s" % (SYSIMG_PATH,PLCONF_DIR) ):
@@ -90,15 +84,13 @@ def Run( vars, log ):
     fstab= file( "%s/etc/fstab" % SYSIMG_PATH, "w" )
     fstab.write( "%s           none        swap      sw        0 0\n" % \
                  PARTITIONS["mapper-swap"] )
-    fstab.write( "%s           /           ext3      defaults  0 0\n" % \
+    fstab.write( "%s           /           ext3      defaults  1 1\n" % \
                  PARTITIONS["mapper-root"] )
-    fstab.write( "%s           /vservers   ext3      tagxid,defaults  0 0\n" % \
+    fstab.write( "%s           /vservers   ext3      tagxid,defaults  1 2\n" % \
                  PARTITIONS["mapper-vservers"] )
     fstab.write( "none         /proc       proc      defaults  0 0\n" )
     fstab.write( "none         /dev/shm    tmpfs     defaults  0 0\n" )
     fstab.write( "none         /dev/pts    devpts    defaults  0 0\n" )
-    # no longer needed
-    # fstab.write( "none         /rcfs       rcfs      defaults  0 0\n" )
     fstab.close()
 
     log.write( "Writing system /etc/issue\n" )
@@ -109,20 +101,20 @@ def Run( vars, log ):
     issue.close()
 
     log.write( "Setting up authentication (non-ssh)\n" )
-    utils.sysexec( "chroot %s authconfig --nostart --kickstart --enablemd5 " \
-                   "--enableshadow" % SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH, "authconfig --nostart --kickstart --enablemd5 " \
+                   "--enableshadow", log )
     utils.sysexec( "sed -e 's/^root\:\:/root\:*\:/g' " \
                    "%s/etc/shadow > %s/etc/shadow.new" % \
                    (SYSIMG_PATH,SYSIMG_PATH), log )
-    utils.sysexec( "chroot %s mv " \
-                   "/etc/shadow.new /etc/shadow" % SYSIMG_PATH, log )
-    utils.sysexec( "chroot %s chmod 400 /etc/shadow" % SYSIMG_PATH, log )
+    utils.sysexec_chroot( SYSIMG_PATH, "mv " \
+                   "/etc/shadow.new /etc/shadow", log )
+    utils.sysexec_chroot( SYSIMG_PATH, "chmod 400 /etc/shadow", log )
 
     # if we are setup with dhcp, copy the current /etc/resolv.conf into
     # the system image so we can run programs inside that need network access
     method= ""
     try:
-        method= vars['NETWORK_SETTINGS']['method']
+        method= vars['INTERFACE_SETTINGS']['method']
     except:
         pass
     
@@ -140,22 +132,22 @@ def Run( vars, log ):
 
     log.write( "Generating SSH1 RSA host key:\n" )
     key_file= "/etc/ssh/ssh_host_key"
-    utils.sysexec( "chroot %s %s -q -t rsa1 -f %s -C '' -N ''" %
-                   (SYSIMG_PATH,key_gen_prog,key_file), log )
+    utils.sysexec_chroot( SYSIMG_PATH, "%s -q -t rsa1 -f %s -C '' -N ''" %
+                   (key_gen_prog,key_file), log )
     utils.sysexec( "chmod 600 %s/%s" % (SYSIMG_PATH,key_file), log )
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
     
     log.write( "Generating SSH2 RSA host key:\n" )
     key_file= "/etc/ssh/ssh_host_rsa_key"
-    utils.sysexec( "chroot %s %s -q -t rsa -f %s -C '' -N ''" %
-                   (SYSIMG_PATH,key_gen_prog,key_file), log )
+    utils.sysexec_chroot( SYSIMG_PATH, "%s -q -t rsa -f %s -C '' -N ''" %
+                   (key_gen_prog,key_file), log )
     utils.sysexec( "chmod 600 %s/%s" % (SYSIMG_PATH,key_file), log )
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
     
     log.write( "Generating SSH2 DSA host key:\n" )
     key_file= "/etc/ssh/ssh_host_dsa_key"
-    utils.sysexec( "chroot %s %s -q -t dsa -f %s -C '' -N ''" %
-                   (SYSIMG_PATH,key_gen_prog,key_file), log )
+    utils.sysexec_chroot( SYSIMG_PATH, "%s -q -t dsa -f %s -C '' -N ''" %
+                   (key_gen_prog,key_file), log )
     utils.sysexec( "chmod 600 %s/%s" % (SYSIMG_PATH,key_file), log )
     utils.sysexec( "chmod 644 %s/%s.pub" % (SYSIMG_PATH,key_file), log )
 

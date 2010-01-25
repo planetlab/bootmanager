@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -34,7 +34,7 @@ def Run( vars, log ):
     SYSIMG_PATH              the path where the system image will be mounted
                              (always starts with TEMP_PATH)
     ROOT_MOUNTED             the node root file system is mounted
-    NETWORK_SETTINGS  A dictionary of the values from the network
+    INTERFACE_SETTINGS  A dictionary of the values from the network
                                 configuration file
     """
     
@@ -42,9 +42,9 @@ def Run( vars, log ):
 
     # make sure we have the variables we need
     try:
-        NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
-        if NETWORK_SETTINGS == "":
-            raise ValueError, "NETWORK_SETTINGS"
+        INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
+        if INTERFACE_SETTINGS == "":
+            raise ValueError, "INTERFACE_SETTINGS"
 
         SYSIMG_PATH= vars["SYSIMG_PATH"]
         if SYSIMG_PATH == "":
@@ -60,13 +60,13 @@ def Run( vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
     try:
-        ip= NETWORK_SETTINGS['ip']
-        method= NETWORK_SETTINGS['method']
-        hostname= NETWORK_SETTINGS['hostname']
-        domainname= NETWORK_SETTINGS['domainname']
+        ip= INTERFACE_SETTINGS['ip']
+        method= INTERFACE_SETTINGS['method']
+        hostname= INTERFACE_SETTINGS['hostname']
+        domainname= INTERFACE_SETTINGS['domainname']
     except KeyError, var:
         raise BootManagerException, \
-              "Missing network value %s in var NETWORK_SETTINGS\n" % var
+              "Missing network value %s in var INTERFACE_SETTINGS\n" % var
 
     
     if not ROOT_MOUNTED:
@@ -126,7 +126,7 @@ def update_vserver_network_files( vserver_dir, vars, log ):
     Expect the following variables from the store:
     SYSIMG_PATH        the path where the system image will be mounted
                        (always starts with TEMP_PATH)
-    NETWORK_SETTINGS   A dictionary of the values from the network
+    INTERFACE_SETTINGS   A dictionary of the values from the network
                        configuration file
     """
 
@@ -135,9 +135,9 @@ def update_vserver_network_files( vserver_dir, vars, log ):
         if SYSIMG_PATH == "":
             raise ValueError, "SYSIMG_PATH"
 
-        NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
-        if NETWORK_SETTINGS == "":
-            raise ValueError, "NETWORK_SETTINGS"
+        INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
+        if INTERFACE_SETTINGS == "":
+            raise ValueError, "INTERFACE_SETTINGS"
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -145,13 +145,13 @@ def update_vserver_network_files( vserver_dir, vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
     try:
-        ip= NETWORK_SETTINGS['ip']
-        method= NETWORK_SETTINGS['method']
-        hostname= NETWORK_SETTINGS['hostname']
-        domainname= NETWORK_SETTINGS['domainname']
+        ip= INTERFACE_SETTINGS['ip']
+        method= INTERFACE_SETTINGS['method']
+        hostname= INTERFACE_SETTINGS['hostname']
+        domainname= INTERFACE_SETTINGS['domainname']
     except KeyError, var:
         raise BootManagerException, \
-              "Missing network value %s in var NETWORK_SETTINGS\n" % var
+              "Missing network value %s in var INTERFACE_SETTINGS\n" % var
 
     try:
         os.listdir(vserver_dir)
@@ -179,15 +179,25 @@ def update_vserver_network_files( vserver_dir, vars, log ):
 
     if update_files:
         log.write( "Updating network files in %s.\n" % vserver_dir )
+        try:
+            # NOTE: this works around a recurring problem on public pl,
+            # suspected to be due to mismatch between 2.6.12 bootcd and
+            # 2.6.22/f8 root environment.  files randomly show up with the
+            # immutible attribute set.  this clears it before trying to write
+            # the files below.
+            utils.sysexec( "chattr -i %s/etc/hosts" % vserver_dir )
+            utils.sysexec( "chattr -i %s/etc/resolv.conf" % vserver_dir )
+        except:
+            pass
+
         
         file_path= "%s/etc/hosts" % vserver_dir
         hosts_file= file(file_path, "w" )
         hosts_file.write( "127.0.0.1       localhost\n" )
         if method == "static":
             hosts_file.write( "%s %s.%s\n" % (ip, hostname, domainname) )
-            hosts_file.close()
-            hosts_file= None
-
+        hosts_file.close()
+        hosts_file= None
 
         file_path= "%s/etc/resolv.conf" % vserver_dir
         if method == "dhcp":

@@ -13,14 +13,15 @@ import notify_messages
 
 def Run( vars, log ):
     """
-    Change this nodes boot state at PLC.
+    Change this nodes run level at PLC.
 
-    The only valid transition is from reinstall to boot.  All other changes to
-    the boot state of a node should be performed by the Admin, Tech or PI
-    through the API or Web interface.
+    Replaces the behavior of UpdateBootStateWithPLC.  Where previously, the
+    boot_state of a node would be altered by the BM, now the run_level is
+    updated, and the boot_state is preserved as a record of a User's
+    preference.
 
-    The current value of the BOOT_STATE key in vars is used.
-    Optionally, notify the contacts of the boot state change.
+    The current value of the RUN_LEVEL key in vars is used.
+    Optionally, notify the contacts of the run level change.
     If this is the case, the following keys/values
     should be set in vars before calling this step:
     STATE_CHANGE_NOTIFY= 1
@@ -30,15 +31,18 @@ def Run( vars, log ):
     Return 1 if succesfull, a BootManagerException otherwise.
     """
 
-    log.write( "\n\nStep: Updating node boot state at PLC.\n" )
+    log.write( "\n\nStep: Updating node run level at PLC.\n" )
 
     update_vals= {}
-    update_vals['boot_state']= vars['BOOT_STATE']
+    # translate boot_state values to run_level value
+    if vars['RUN_LEVEL'] in ['diag', 'diagnose', 'disabled', 'disable']:
+        vars['RUN_LEVEL']='safeboot'
+    update_vals['run_level']=vars['RUN_LEVEL']
     try:
-        BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
-        log.write( "Successfully updated boot state for this node at PLC\n" )
+        BootAPI.call_api_function( vars, "ReportRunlevel", (update_vals,) )
+        log.write( "Successfully updated run level for this node at PLC\n" )
     except BootManagerException, e:
-        log.write( "Unable to update boot state for this node at PLC: %s.\n" % e )
+        log.write( "Unable to update run level for this node at PLC: %s.\n" % e )
 
     notify = vars.get("STATE_CHANGE_NOTIFY",0)
 

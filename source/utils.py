@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -17,6 +17,62 @@ import exceptions
 from Exceptions import *
 
 
+### handling breakpoints in the startup process
+import select, sys, string
+
+### global debug settings
+# NOTE. when BREAKPOINT_MODE turns out enabled,
+# you have to attend the boot phase, that would hang otherwise 
+
+# enabling this will cause the node to ask for breakpoint-mode at startup
+# production code should read False/False
+PROMPT_MODE=False
+# default for when prompt is turned off, or it's on but the timeout triggers
+BREAKPOINT_MODE=False
+VERBOSE_MODE=False
+VERBOSE_MODE=True
+# in seconds : if no input, proceed
+PROMPT_TIMEOUT=5
+
+def prompt_for_breakpoint_mode ():
+
+    global BREAKPOINT_MODE
+    if PROMPT_MODE:
+        default_answer=BREAKPOINT_MODE
+        answer=''
+        if BREAKPOINT_MODE:
+            display="[y]/n"
+        else:
+            display="y/[n]"
+        sys.stdout.write ("Want to run in breakpoint mode ? %s "%display)
+        sys.stdout.flush()
+        r,w,e = select.select ([sys.stdin],[],[],PROMPT_TIMEOUT)
+        if r:
+            answer = string.strip(sys.stdin.readline())
+        else:
+            sys.stdout.write("\nTimed-out (%d s)"%PROMPT_TIMEOUT)
+        if answer:
+            BREAKPOINT_MODE = ( answer == "y" or answer == "Y")
+        else:
+            BREAKPOINT_MODE = default_answer
+    label="Off"
+    if BREAKPOINT_MODE:
+        label="On"
+    sys.stdout.write("\nCurrent BREAKPOINT_MODE is %s\n"%label)
+
+def breakpoint (message, cmd = None):
+
+    if BREAKPOINT_MODE:
+
+        if cmd is None:
+            cmd="/bin/sh"
+            message=message+" -- Entering bash - type ^D to proceed"
+
+        print message
+        os.system(cmd)
+
+
+########################################
 def makedirs( path ):
     """
     from python docs for os.makedirs:
@@ -70,7 +126,7 @@ def sysexec( cmd, log= None ):
     0 if failed. A BootManagerException is raised if the command
     was unable to execute or was interrupted by the user with Ctrl+C
     """
-    if BREAKPOINT_MODE:
+    if VERBOSE_MODE:
         print ("sysexec >>> %s" % cmd)
     prog= popen2.Popen4( cmd, 0 )
     if prog is None:
@@ -86,11 +142,39 @@ def sysexec( cmd, log= None ):
             raise BootManagerException, "Interrupted by user"
 
     returncode= prog.wait()
-    if returncode != 0:
+    if returncode != 0 and returncode != 256:
         raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
 
     prog= None
     return 1
+
+
+def sysexec_chroot( path, cmd, log= None ):
+    """
+    same as sysexec, but inside a chroot
+    """
+    preload = ""
+    release = os.uname()[2]
+    # 2.6.12 kernels need this
+    if release[:5] == "2.6.1":
+        library = "%s/lib/libc-opendir-hack.so" % path
+        if not os.path.exists(library):
+            shutil.copy("./libc-opendir-hack.so", library)
+        preload = "/bin/env LD_PRELOAD=/lib/libc-opendir-hack.so"
+    sysexec("chroot %s %s %s" % (path, preload, cmd), log)
+
+
+def sysexec_chroot_noerr( path, cmd, log= None ):
+    """
+    same as sysexec_chroot, but capture boot manager exceptions
+    """
+    try:
+        rc= 0
+        rc= syexec_chroot( cmd, log )
+    except BootManagerException, e:
+        pass
+
+    return rc
 
 
 def sysexec_noerr( cmd, log= None ):
@@ -160,54 +244,3 @@ def get_mac_from_interface(ifname):
         
     return ret
 
-### handling breakpoints in the startup process
-import select, sys, string
-
-### global debug settings
-# NOTE. when BREAKPOINT_MODE turns out enabled,
-# you have to attend the boot phase, that would hang otherwise 
-
-# enabling this will cause the node to ask for breakpoint-mode at startup
-# production code should read False/False
-PROMPT_MODE=False
-# default for when prompt is turned off, or it's on but the timeout triggers
-BREAKPOINT_MODE=False
-# in seconds : if no input, proceed
-PROMPT_TIMEOUT=5
-
-def prompt_for_breakpoint_mode ():
-
-    global BREAKPOINT_MODE
-    if PROMPT_MODE:
-        default_answer=BREAKPOINT_MODE
-        answer=''
-        if BREAKPOINT_MODE:
-            display="[y]/n"
-        else:
-            display="y/[n]"
-        sys.stdout.write ("Want to run in breakpoint mode ? %s "%display)
-        sys.stdout.flush()
-        r,w,e = select.select ([sys.stdin],[],[],PROMPT_TIMEOUT)
-        if r:
-            answer = string.strip(sys.stdin.readline())
-        else:
-            sys.stdout.write("\nTimed-out (%d s)"%PROMPT_TIMEOUT)
-        if answer:
-            BREAKPOINT_MODE = ( answer == "y" or answer == "Y")
-        else:
-            BREAKPOINT_MODE = default_answer
-    label="Off"
-    if BREAKPOINT_MODE:
-        label="On"
-    sys.stdout.write("\nCurrent BREAKPOINT_MODE is %s\n"%label)
-
-def breakpoint (message, cmd = None):
-
-    if BREAKPOINT_MODE:
-
-        if cmd is None:
-            cmd="/bin/sh"
-            message=message+" -- Entering bash - type ^D to proceed"
-
-        print message
-        os.system(cmd)

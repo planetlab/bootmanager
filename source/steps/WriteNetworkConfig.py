@@ -1,5 +1,6 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+# $Id$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -8,25 +9,44 @@
 # expected /proc/partitions format
 
 import os, string
+import traceback
 
-from Exceptions import *
 import utils
-import BootServerRequest
-import ModelOptions
 import urlparse
 import httplib
+
+from Exceptions import *
+import BootServerRequest
+import ModelOptions
 import BootAPI
+import plnet
+
+class BootAPIWrap:
+    def __init__(self, vars):
+        self.vars = vars
+    def call(self, func, *args):
+        return BootAPI.call_api_function(self.vars, func, args)
+    def __getattr__(self, func):
+        return lambda *args: self.call(func, *args)
+
+class logger:
+    def __init__(self, log):
+        self._log = log
+    def log(self, msg, level=3):
+        self._log.write(msg + "\n")
+    def verbose(self, msg):
+        self.log(msg, 0)
 
 def Run( vars, log ):
     """
     Write out the network configuration for this machine:
     /etc/hosts
-    /etc/sysconfig/network-scripts/ifcfg-eth0
+    /etc/sysconfig/network-scripts/ifcfg-<ifname>
     /etc/resolv.conf (if applicable)
     /etc/sysconfig/network
 
     The values to be used for the network settings are to be set in vars
-    in the variable 'NETWORK_SETTINGS', which is a dictionary
+    in the variable 'INTERFACE_SETTINGS', which is a dictionary
     with keys:
 
      Key               Used by this function
@@ -47,10 +67,9 @@ def Run( vars, log ):
 
     Expect the following variables from the store:
     SYSIMG_PATH             the path where the system image will be mounted
-                            (always starts with TEMP_PATH)
-    NETWORK_SETTINGS  A dictionary of the values from the network
-                                configuration file
-    NODE_NETWORKS           All the network associated with this node
+                                (always starts with TEMP_PATH)
+    INTERFACES              All the interfaces associated with this node
+    INTERFACE_SETTINGS      dictionary 
     Sets the following variables:
     None
     """
@@ -69,29 +88,25 @@ def Run( vars, log ):
 
 
     try:
-        network_settings= vars['NETWORK_SETTINGS']
+        INTERFACE_SETTINGS= vars['INTERFACE_SETTINGS']
     except KeyError, e:
-        raise BootManagerException, "No network settings found in vars."
+        raise BootManagerException, "No interface settings found in vars."
 
     try:
-        hostname= network_settings['hostname']
-        domainname= network_settings['domainname']
-        method= network_settings['method']
-        ip= network_settings['ip']
-        gateway= network_settings['gateway']
-        network= network_settings['network']
-        netmask= network_settings['netmask']
-        dns1= network_settings['dns1']
-        mac= network_settings['mac']
+        hostname= INTERFACE_SETTINGS['hostname']
+        domainname= INTERFACE_SETTINGS['domainname']
+        method= INTERFACE_SETTINGS['method']
+        ip= INTERFACE_SETTINGS['ip']
+        gateway= INTERFACE_SETTINGS['gateway']
+        network= INTERFACE_SETTINGS['network']
+        netmask= INTERFACE_SETTINGS['netmask']
+        dns1= INTERFACE_SETTINGS['dns1']
+        mac= INTERFACE_SETTINGS['mac']
     except KeyError, e:
-        raise BootManagerException, "Missing value %s in network settings." % str(e)
+        raise BootManagerException, "Missing value %s in interface settings." % str(e)
 
-    try:
-        dns2= ''
-        dns2= network_settings['dns2']
-    except KeyError, e:
-        pass
-
+    # dns2 is not required to be set
+    dns2 = INTERFACE_SETTINGS.get('dns2','')
 
     # Node Manager needs at least PLC_API_HOST and PLC_BOOT_HOST
     log.write("Writing /etc/planetlab/plc_config\n")
@@ -107,15 +122,17 @@ def Run( vars, log ):
     else:
         port = '80'
     try:
-        log.write("getting via https://%s/PlanetLabConf/get_plc_config.php" % host)
-        bootserver = httplib.HTTPSConnection(host, port)
+        log.write("getting via https://%s/PlanetLabConf/get_plc_config.php " % host)
+        bootserver = httplib.HTTPSConnection(host, int(port))
         bootserver.connect()
         bootserver.request("GET","https://%s/PlanetLabConf/get_plc_config.php" % host)
         plc_config.write("%s" % bootserver.getresponse().read())
         bootserver.close()
-    except:
-        log.write("Failed.  Using old method.")
-        bs= BootServerRequest.BootServerRequest()
+        log.write("Done\n")
+    except :
+        log.write(" .. Failed.  Using old method. -- stack trace follows\n")
+        traceback.print_exc(file=log.OutputFile)
+        bs= BootServerRequest.BootServerRequest(vars)
         if bs.BOOTSERVER_CERTS:
             print >> plc_config, "PLC_BOOT_HOST='%s'" % bs.BOOTSERVER_CERTS.keys()[0]
         print >> plc_config, "PLC_API_HOST='%s'" % host
@@ -133,110 +150,8 @@ def Run( vars, log ):
     hosts_file.close()
     hosts_file= None
     
-
-    if method == "static":
-        log.write( "Writing /etc/resolv.conf\n" )
-        resolv_file= file("%s/etc/resolv.conf" % SYSIMG_PATH, "w" )
-        if dns1 != "":
-            resolv_file.write( "nameserver %s\n" % dns1 )
-        if dns2 != "":
-            resolv_file.write( "nameserver %s\n" % dns2 )
-        resolv_file.write( "search %s\n" % domainname )
-        resolv_file.close()
-        resolv_file= None
-
-    log.write( "Writing /etc/sysconfig/network\n" )
-    network_file= file("%s/etc/sysconfig/network" % SYSIMG_PATH, "w" )
-    network_file.write( "NETWORKING=yes\n" )
-    network_file.write( "HOSTNAME=%s.%s\n" % (hostname, domainname) )
-    if method == "static":
-        network_file.write( "GATEWAY=%s\n" % gateway )
-    network_file.close()
-    network_file= None
-
-    interfaces = {}
-    interface = 1
-    for network in vars['NODE_NETWORKS']:
-        if method == "static" or method == "dhcp":
-            if network['is_primary'] == 1:
-                ifnum = 0
-            else:
-                ifnum = interface
-                interface += 1
-
-            int = {}
-            if network['mac']:
-                int['HWADDR'] = network['mac']
-
-            if network['method'] == "static":
-                int['BOOTPROTO'] = "static"
-                int['IPADDR'] = network['ip']
-                int['NETMASK'] = network['netmask']
-
-            elif network['method'] == "dhcp":
-                int['BOOTPROTO'] = "dhcp"
-                if network['hostname']:
-                    int['DHCP_HOSTNAME'] = network['hostname']
-                else:
-                    int['DHCP_HOSTNAME'] = hostname
-                if not network['is_primary']:
-                    int['DHCLIENTARGS'] = "-R subnet-mask"
-
-            alias = ""
-            ifname=None
-            if len(network['nodenetwork_setting_ids']) > 0:
-                settings = BootAPI.call_api_function(vars, "GetNodeNetworkSettings",
-                    ({'nodenetwork_setting_id': network['nodenetwork_setting_ids']},))
-                for setting in settings:
-                    # to explicitly set interface name
-                    if   setting['name'].upper() == "IFNAME":
-                        ifname=setting['value']
-                    elif setting['name'].upper() == "DRIVER":
-                        # xxx not sure how to do that yet - probably add a line in modprobe.conf
-                        pass
-                    elif setting['name'].upper() == "ALIAS":
-                        alias = ":" + setting['value']
-
-                    # a hack for testing before a new setting is hardcoded here
-                    # use the backdoor setting and put as a value 'var=value'
-                    elif setting['name'].upper() == "BACKDOOR":
-                        [var,value]=setting['value'].split('=',1)
-                        int[var]=value
-
-                    elif setting['name'].lower() in \
-                            [  "mode", "essid", "nw", "freq", "channel", "sens", "rate",
-                               "key", "key1", "key2", "key3", "key4", "securitymode", 
-                               "iwconfig", "iwpriv" ] :
-                        int [setting['name'].upper()] = setting['value']
-                        int ['TYPE']='Wireless'
-                    else:
-                        log.write("Warning - ignored setting named %s\n"%setting['name'])
-
-            if alias and 'HWADDR' in int:
-                for (dev, i) in interfaces.iteritems():
-                    if i['HWADDR'] == int['HWADDR']:
-                        break
-                del int['HWADDR']
-                interfaces[dev + alias] = int
-                interface -= 1
-            else:
-                if not ifname:
-                    ifname="eth%d" % ifnum
-                else:
-                    interface -= 1
-                interfaces[ifname] = int
-
-    for (dev, int) in interfaces.iteritems():
-        path = "%s/etc/sysconfig/network-scripts/ifcfg-%s" % (
-               SYSIMG_PATH, dev)
-        f = file(path, "w")
-        log.write("Writing %s\n" % path.replace(SYSIMG_PATH, ""))
-
-        f.write("DEVICE=%s\n" % dev)
-        f.write("ONBOOT=yes\n")
-        f.write("USERCTL=no\n")
-        for (key, val) in int.iteritems():
-            f.write('%s="%s"\n' % (key, val))
-
-        f.close()
+    data =  {'hostname': '%s.%s' % (hostname, domainname),
+             'networks': vars['INTERFACES']}
+    plnet.InitInterfaces(logger(log), BootAPIWrap(vars), data, SYSIMG_PATH,
+                         True, "BootManager")
 

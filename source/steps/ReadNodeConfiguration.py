@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -17,7 +17,7 @@ from Exceptions import *
 import BootServerRequest
 import BootAPI
 import notify_messages
-import UpdateBootStateWithPLC
+import UpdateRunLevelWithPLC
 
 
 # two possible names of the configuration files
@@ -50,7 +50,6 @@ def Run( vars, log ):
     and read, return 1.
 
     Expect the following variables from the store:
-    BOOT_CD_VERSION          A tuple of the current bootcd version
     SUPPORT_FILE_DIR         directory on the boot servers containing
                              scripts and support files
     
@@ -59,7 +58,7 @@ def Run( vars, log ):
     WAS_NODE_KEY_IN_CONF         Set to 1 if the node key was in the conf file
     NONE_ID                     The db node_id for this machine
     NODE_KEY                    The key for this node
-    NETWORK_SETTINGS            A dictionary of the values from the network
+    INTERFACE_SETTINGS            A dictionary of the values from the network
                                 configuration file. keys set:
                                    method               IP_METHOD
                                    ip                   IP_ADDRESS
@@ -85,10 +84,6 @@ def Run( vars, log ):
 
     # make sure we have the variables we need
     try:
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
         SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
         if SUPPORT_FILE_DIR == None:
             raise ValueError, "SUPPORT_FILE_DIR"
@@ -99,19 +94,19 @@ def Run( vars, log ):
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
 
-    NETWORK_SETTINGS= {}
-    NETWORK_SETTINGS['method']= "dhcp"
-    NETWORK_SETTINGS['ip']= ""
-    NETWORK_SETTINGS['mac']= ""
-    NETWORK_SETTINGS['gateway']= ""
-    NETWORK_SETTINGS['network']= ""
-    NETWORK_SETTINGS['broadcast']= ""
-    NETWORK_SETTINGS['netmask']= ""
-    NETWORK_SETTINGS['dns1']= ""
-    NETWORK_SETTINGS['dns2']= ""
-    NETWORK_SETTINGS['hostname']= "localhost"
-    NETWORK_SETTINGS['domainname']= "localdomain"
-    vars['NETWORK_SETTINGS']= NETWORK_SETTINGS
+    INTERFACE_SETTINGS= {}
+    INTERFACE_SETTINGS['method']= "dhcp"
+    INTERFACE_SETTINGS['ip']= ""
+    INTERFACE_SETTINGS['mac']= ""
+    INTERFACE_SETTINGS['gateway']= ""
+    INTERFACE_SETTINGS['network']= ""
+    INTERFACE_SETTINGS['broadcast']= ""
+    INTERFACE_SETTINGS['netmask']= ""
+    INTERFACE_SETTINGS['dns1']= ""
+    INTERFACE_SETTINGS['dns2']= ""
+    INTERFACE_SETTINGS['hostname']= "localhost"
+    INTERFACE_SETTINGS['domainname']= "localdomain"
+    vars['INTERFACE_SETTINGS']= INTERFACE_SETTINGS
 
     vars['NODE_ID']= 0
     vars['NODE_KEY']= ""
@@ -176,94 +171,91 @@ def Run( vars, log ):
         
     utils.sysexec_noerr( "umount %s" % mount_point, log )
 
+    # 2. check flash devices on 3.0 based cds
+    log.write( "Checking flash devices for plnode.txt file.\n" )
 
+    # this is done the same way the 3.0 cds do it, by attempting
+    # to mount and sd*1 devices that are removable
+    devices= os.listdir("/sys/block/")
 
-    if BOOT_CD_VERSION[0] >= 3:
-        # 2. check flash devices on 3.0 based cds
-        log.write( "Checking flash devices for plnode.txt file.\n" )
+    for device in devices:
+        if device[:2] != "sd":
+            log.write( "Skipping non-scsi device %s\n" % device )
+            continue
 
-        # this is done the same way the 3.0 cds do it, by attempting
-        # to mount and sd*1 devices that are removable
-        devices= os.listdir("/sys/block/")
+        # test removable
+        removable_file_path= "/sys/block/%s/removable" % device
+        try:
+            removable= int(file(removable_file_path,"r").read().strip())
+        except ValueError, e:
+            continue
+        except IOError, e:
+            continue
 
-        for device in devices:
-            if device[:2] != "sd":
-                log.write( "Skipping non-scsi device %s\n" % device )
+        if not removable:
+            log.write( "Skipping non-removable device %s\n" % device )
+            continue
+
+        log.write( "Checking removable device %s\n" % device )
+
+        partitions= file("/proc/partitions", "r")
+        for line in partitions:
+            found_file= 0
+            parsed_file= 0
+            
+            if not re.search("%s[0-9]*$" % device, line):
                 continue
 
-            # test removable
-            removable_file_path= "/sys/block/%s/removable" % device
             try:
-                removable= int(file(removable_file_path,"r").read().strip())
-            except ValueError, e:
+                # major minor  #blocks  name
+                parts= string.split(line)
+
+                # ok, try to mount it and see if we have a conf file.
+                full_device= "/dev/%s" % parts[3]
+            except IndexError, e:
+                log.write( "Incorrect /proc/partitions line:\n%s\n" % line )
                 continue
-            except IOError, e:
+
+            log.write( "Mounting %s on %s\n" % (full_device,mount_point) )
+            try:
+                utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
+                               % (full_device,mount_point), log )
+            except BootManagerException, e:
+                log.write( "Unable to mount, trying next partition\n" )
                 continue
 
-            if not removable:
-                log.write( "Skipping non-removable device %s\n" % device )
-                continue
+            conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
 
-            log.write( "Checking removable device %s\n" % device )
-
-            partitions= file("/proc/partitions", "r")
-            for line in partitions:
-                found_file= 0
-                parsed_file= 0
-                
-                if not re.search("%s[0-9]*$" % device, line):
-                    continue
-
+            log.write( "Checking for existence of %s\n" % conf_file_path )
+            if os.access( conf_file_path, os.R_OK ):
                 try:
-                    # major minor  #blocks  name
-                    parts= string.split(line)
+                    conf_file= file(conf_file_path,"r")
+                    conf_file_contents= conf_file.read()
+                    conf_file.close()
+                    found_file= 1
+                    log.write( "Read in contents of file %s\n" % \
+                               conf_file_path )
 
-                    # ok, try to mount it and see if we have a conf file.
-                    full_device= "/dev/%s" % parts[3]
-                except IndexError, e:
-                    log.write( "Incorrect /proc/partitions line:\n%s\n" % line )
-                    continue
+                    if __parse_configuration_file( vars, log, \
+                                                   conf_file_contents):
+                        parsed_file= 1
+                except IOError, e:
+                    log.write( "Unable to read file %s\n" % conf_file_path )
 
-                log.write( "Mounting %s on %s\n" % (full_device,mount_point) )
-                try:
-                    utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
-                                   % (full_device,mount_point), log )
-                except BootManagerException, e:
-                    log.write( "Unable to mount, trying next partition\n" )
-                    continue
-
-                conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
-
-                log.write( "Checking for existence of %s\n" % conf_file_path )
-                if os.access( conf_file_path, os.R_OK ):
-                    try:
-                        conf_file= file(conf_file_path,"r")
-                        conf_file_contents= conf_file.read()
-                        conf_file.close()
-                        found_file= 1
-                        log.write( "Read in contents of file %s\n" % \
-                                   conf_file_path )
-
-                        if __parse_configuration_file( vars, log, \
-                                                       conf_file_contents):
-                            parsed_file= 1
-                    except IOError, e:
-                        log.write( "Unable to read file %s\n" % conf_file_path )
-
-                utils.sysexec_noerr( "umount %s" % mount_point, log )
-                if found_file:
-                    if parsed_file:
-                        return 1
-                    else:
-                        raise BootManagerException( \
-                            "Found configuration file plnode.txt " \
-                            "on floppy, but was unable to parse it.")
+            utils.sysexec_noerr( "umount %s" % mount_point, log )
+            if found_file:
+                if parsed_file:
+                    return 1
+                else:
+                    raise BootManagerException( \
+                        "Found configuration file plnode.txt " \
+                        "on floppy, but was unable to parse it.")
 
 
             
     # 3. check standard floppy disk for old file name planet.cnf
     log.write( "Checking standard floppy disk for planet.cnf file " \
-               "(from earlier.\n" )
+               "(for legacy nodes).\n" )
 
     if old_conf_file_contents:
         if __parse_configuration_file( vars, log, old_conf_file_contents):
@@ -350,15 +342,14 @@ def Run( vars, log ):
 
 def __parse_configuration_file( vars, log, file_contents ):
     """
-    parse a configuration file, set keys in var NETWORK_SETTINGS
+    parse a configuration file, set keys in var INTERFACE_SETTINGS
     in vars (see comment for function ReadNodeConfiguration). this
     also reads the mac address from the machine if successful parsing
     of the configuration file is completed.
     """
 
-    BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
     SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-    NETWORK_SETTINGS= vars["NETWORK_SETTINGS"]
+    INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
     
     if file_contents is None:
         log.write( "__parse_configuration_file called with no file contents\n" )
@@ -409,37 +400,37 @@ def __parse_configuration_file( vars, log, file_contents ):
                     log.write( "Invalid IP_METHOD in configuration file:\n" )
                     log.write( line + "\n" )
                     return 0
-                NETWORK_SETTINGS['method']= value.strip()
+                INTERFACE_SETTINGS['method']= value.strip()
 
             if name == "IP_ADDRESS":
-                NETWORK_SETTINGS['ip']= value.strip()
+                INTERFACE_SETTINGS['ip']= value.strip()
 
             if name == "IP_GATEWAY":
-                NETWORK_SETTINGS['gateway']= value.strip()
+                INTERFACE_SETTINGS['gateway']= value.strip()
 
             if name == "IP_NETMASK":
-                NETWORK_SETTINGS['netmask']= value.strip()
+                INTERFACE_SETTINGS['netmask']= value.strip()
 
             if name == "IP_NETADDR":
-                NETWORK_SETTINGS['network']= value.strip()
+                INTERFACE_SETTINGS['network']= value.strip()
 
             if name == "IP_BROADCASTADDR":
-                NETWORK_SETTINGS['broadcast']= value.strip()
+                INTERFACE_SETTINGS['broadcast']= value.strip()
 
             if name == "IP_DNS1":
-                NETWORK_SETTINGS['dns1']= value.strip()
+                INTERFACE_SETTINGS['dns1']= value.strip()
 
             if name == "IP_DNS2":
-                NETWORK_SETTINGS['dns2']= value.strip()
+                INTERFACE_SETTINGS['dns2']= value.strip()
 
             if name == "HOST_NAME":
-                NETWORK_SETTINGS['hostname']= string.lower(value)
+                INTERFACE_SETTINGS['hostname']= string.lower(value)
 
             if name == "DOMAIN_NAME":
-                NETWORK_SETTINGS['domainname']= string.lower(value)
+                INTERFACE_SETTINGS['domainname']= string.lower(value)
 
             if name == "NET_DEVICE":
-                NETWORK_SETTINGS['mac']= string.upper(value)
+                INTERFACE_SETTINGS['mac']= string.upper(value)
 
             if name == "DISCONNECTED_OPERATION":
                 vars['DISCONNECTED_OPERATION']= value.strip()
@@ -450,19 +441,19 @@ def __parse_configuration_file( vars, log, file_contents ):
 
     # now if we are set to dhcp, clear out any fields
     # that don't make sense
-    if NETWORK_SETTINGS["method"] == "dhcp":
-        NETWORK_SETTINGS["ip"]= ""
-        NETWORK_SETTINGS["gateway"]= ""     
-        NETWORK_SETTINGS["netmask"]= ""
-        NETWORK_SETTINGS["network"]= ""
-        NETWORK_SETTINGS["broadcast"]= ""
-        NETWORK_SETTINGS["dns1"]= ""
-        NETWORK_SETTINGS["dns2"]= ""
+    if INTERFACE_SETTINGS["method"] == "dhcp":
+        INTERFACE_SETTINGS["ip"]= ""
+        INTERFACE_SETTINGS["gateway"]= ""     
+        INTERFACE_SETTINGS["netmask"]= ""
+        INTERFACE_SETTINGS["network"]= ""
+        INTERFACE_SETTINGS["broadcast"]= ""
+        INTERFACE_SETTINGS["dns1"]= ""
+        INTERFACE_SETTINGS["dns2"]= ""
 
     log.write("Successfully read and parsed node configuration file.\n" )
 
     # if the mac wasn't specified, read it in from the system.
-    if NETWORK_SETTINGS["mac"] == "":
+    if INTERFACE_SETTINGS["mac"] == "":
         device= "eth0"
         mac_addr= utils.get_mac_from_interface(device)
 
@@ -470,10 +461,10 @@ def __parse_configuration_file( vars, log, file_contents ):
             log.write( "Could not get mac address for device eth0.\n" )
             return 0
 
-        NETWORK_SETTINGS["mac"]= string.upper(mac_addr)
+        INTERFACE_SETTINGS["mac"]= string.upper(mac_addr)
 
         log.write( "Got mac address %s for device %s\n" %
-                   (NETWORK_SETTINGS["mac"],device) )
+                   (INTERFACE_SETTINGS["mac"],device) )
         
 
     # now, if the conf file didn't contain a node id, post the mac address
@@ -482,9 +473,9 @@ def __parse_configuration_file( vars, log, file_contents ):
         log.write( "Configuration file does not contain the node_id value.\n" )
         log.write( "Querying PLC for node_id.\n" )
 
-        bs_request= BootServerRequest.BootServerRequest()
+        bs_request= BootServerRequest.BootServerRequest(vars)
         
-        postVars= {"mac_addr" : NETWORK_SETTINGS["mac"]}
+        postVars= {"mac_addr" : INTERFACE_SETTINGS["mac"]}
         result= bs_request.DownloadFile( "%s/getnodeid.php" %
                                          SUPPORT_FILE_DIR,
                                          None, postVars, 1, 1,
@@ -539,10 +530,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         # but in binary form, so we need to convert it to ascii the same
         # way the old boot scripts did so it matches whats in the db
         # (php uses bin2hex, 
-        if BOOT_CD_VERSION[0] == 2:
-            read_mode= "rb"
-        else:
-            read_mode= "r"
+        read_mode= "r"
             
         try:
             nonce_file= file("/tmp/nonce",read_mode)
@@ -552,21 +540,7 @@ def __parse_configuration_file( vars, log, file_contents ):
             log.write( "Unable to read nonce from /tmp/nonce\n" )
             return 0
 
-        if BOOT_CD_VERSION[0] == 2:
-            nonce= nonce.encode('hex')
-
-            # there is this nice bug in the php that currently accepts the
-            # nonce for the old scripts, in that if the nonce contains
-            # null chars (2.x cds sent as binary), then
-            # the nonce is truncated. so, do the same here, truncate the nonce
-            # at the first null ('00'). This could leave us with an empty string.
-            nonce_len= len(nonce)
-            for byte_index in range(0,nonce_len,2):
-                if nonce[byte_index:byte_index+2] == '00':
-                    nonce= nonce[:byte_index]
-                    break
-        else:
-            nonce= string.strip(nonce)
+        nonce= string.strip(nonce)
 
         log.write( "Read nonce, using as key.\n" )
         vars['NODE_KEY']= nonce
@@ -581,8 +555,8 @@ def __parse_configuration_file( vars, log, file_contents ):
     # in the configuration file matches the ip address. if it fails
     # notify the owners
 
-    hostname= NETWORK_SETTINGS['hostname'] + "." + \
-              NETWORK_SETTINGS['domainname']
+    hostname= INTERFACE_SETTINGS['hostname'] + "." + \
+              INTERFACE_SETTINGS['domainname']
 
     # set to 0 if any part of the hostname resolution check fails
     hostname_resolve_ok= 1
@@ -603,14 +577,14 @@ def __parse_configuration_file( vars, log, file_contents ):
         hostname_resolve_ok= 0
         
 
-    if NETWORK_SETTINGS['method'] == "dhcp":
+    if INTERFACE_SETTINGS['method'] == "dhcp":
         if hostname_resolve_ok:
-            NETWORK_SETTINGS['ip']= resolved_node_ip
+            INTERFACE_SETTINGS['ip']= resolved_node_ip
             node_ip= resolved_node_ip
         else:
             can_make_api_call= 0
     else:
-        node_ip= NETWORK_SETTINGS['ip']
+        node_ip= INTERFACE_SETTINGS['ip']
 
     # make sure the dns lookup matches what the configuration file says
     if hostname_resolve_ok:
@@ -623,20 +597,21 @@ def __parse_configuration_file( vars, log, file_contents ):
                        (hostname,node_ip) )
 
         
-    vars["NETWORK_SETTINGS"]= NETWORK_SETTINGS
+    vars["INTERFACE_SETTINGS"]= INTERFACE_SETTINGS
 
-    if not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION']:
+    if (not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION'] and
+        'NAT_MODE' not in vars):
         log.write( "Hostname does not resolve correctly, will not continue.\n" )
 
         if can_make_api_call:
             log.write( "Notifying contacts of problem.\n" )
 
-            vars['BOOT_STATE']= 'dbg'
+            vars['RUN_LEVEL']= 'failboot'
             vars['STATE_CHANGE_NOTIFY']= 1
             vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
                                      notify_messages.MSG_HOSTNAME_NOT_RESOLVE
             
-            UpdateBootStateWithPLC.Run( vars, log )
+            UpdateRunLevelWithPLC.Run( vars, log )
                     
         log.write( "\n\n" )
         log.write( "The hostname and/or ip in the network configuration\n" )

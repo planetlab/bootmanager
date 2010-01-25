@@ -6,9 +6,23 @@
 # the current version of the bootmanager
 VERSION=3.2
 
-
+# this is the server to contact if we don't have a bootcd
+DEFAULT_BOOT_SERVER=boot.planet-lab.org
 # full url to which api server to contact
 BOOT_API_SERVER=https://boot.planet-lab.org:443/PLCAPI/
+
+# keep redundant information to plc_config for simplicity
+BOOT_SERVER=boot.planet-lab.org
+
+# hostname for MyOps server
+MONITOR_SERVER=monitor.planet-lab.org
+#UPLOAD_LOG_SCRIPT=/monitor/upload
+UPLOAD_LOG_SCRIPT=/boot/upload-bmlog.php
+
+# bootcd variables : use %(path)s for path relative to bootcd
+BOOTCD_VERSION_FILE='%(path)s/bootme/ID'
+SERVER_CERT_DIR=/tmp/source/cacert
+CACERT_NAME=cacert.pem
 
 
 # path to store temporary files during the install,
@@ -51,6 +65,11 @@ ROOT_SIZE=7G
 SWAP_SIZE=1G
 
 
+# in raw disk mode, the size of /vservers
+# if unset or -1, use the entire first disk
+VSERVERS_SIZE=-1
+
+
 # whether or not to skip hardware requirement check
 SKIP_HARDWARE_REQUIREMENT_CHECK=0
 
@@ -75,3 +94,7 @@ INSTALL_LANGS=en_US
 
 # number of auth failures before starting debug mode
 NUM_AUTH_FAILURES_BEFORE_DEBUG=2
+
+
+# location of file containing http/https proxy info, if needed
+PROXY_FILE=/etc/planetlab/http_proxy

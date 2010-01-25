@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -16,6 +16,7 @@ __all__ = ["ReadNodeConfiguration",
            "GetAndUpdateNodeDetails",
            "ConfirmInstallWithUser",
            "UpdateBootStateWithPLC",
+           "UpdateRunLevelWithPLC",
            "CheckHardwareRequirements",
            "SendHardwareConfigToPLC",
            "InitializeBootManager",
@@ -24,6 +25,7 @@ __all__ = ["ReadNodeConfiguration",
            "ChainBootNode",
            "ValidateNodeInstall",
            "StartDebug",
+           "StartRunlevelAgent",
            "InstallBootstrapFS",
            "InstallInit",
            "InstallPartitionDisks",

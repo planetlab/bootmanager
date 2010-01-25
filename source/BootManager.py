@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python -u
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -8,8 +8,8 @@
 
 import string
 import sys, os, traceback
-from time import gmtime, strftime
-from gzip import GzipFile
+import time
+import gzip
 
 from steps import *
 from Exceptions import *
@@ -17,39 +17,80 @@ import notify_messages
 import BootServerRequest
 
 # all output is written to this file
-LOG_FILE= "/tmp/bm.log"
-UPLOAD_LOG_PATH = "/alpina-logs/upload.php"
+BM_NODE_LOG= "/tmp/bm.log"
+VARS_FILE = "configuration"
 
 # the new contents of PATH when the boot manager is running
 BIN_PATH= ('/usr/local/bin',
            '/usr/local/sbin',
-           '/bin',
-           '/sbin',
            '/usr/bin',
            '/usr/sbin',
-           '/usr/local/planetlab/bin')
-           
+           '/bin',
+           '/sbin')
 
-# the set of valid node run states
-NodeRunStates = {}
+def read_configuration_file(filename):
+    # read in and store all variables in VARS_FILE into each line
+    # is in the format name=val (any whitespace around the = is
+    # removed. everything after the = to the end of the line is
+    # the value
+    vars = {}
+    vars_file= file(filename,'r')
+    validConfFile = True
+    for line in vars_file:
+        # if its a comment or a whitespace line, ignore
+        if line[:1] == "#" or string.strip(line) == "":
+            continue
 
+        parts= string.split(line,"=")
+        if len(parts) != 2:
+            validConfFile = False
+            raise Exception( "Invalid line in vars file: %s" % line )
+
+        name= string.strip(parts[0])
+        value= string.strip(parts[1])
+        value= value.replace("'", "")   # remove quotes
+        value= value.replace('"', "")   # remove quotes
+        vars[name]= value
+
+    vars_file.close()
+    if not validConfFile:
+        raise Exception( "Unable to read configuration vars." )
+
+    # find out which directory we are running it, and set a variable
+    # for that. future steps may need to get files out of the bootmanager
+    # directory
+    current_dir= os.getcwd()
+    vars['BM_SOURCE_DIR']= current_dir
+
+    return vars
+
+##############################
 class log:
 
-    def __init__( self, OutputFilePath= None ):
-        if OutputFilePath:
-            try:
-                self.OutputFilePath= OutputFilePath
-                self.OutputFile= GzipFile( OutputFilePath, "w", 9 )
-            except:
-                print( "Unable to open output file for log, continuing" )
-                self.OutputFile= None
+    format="%H:%M:%S(%Z) "
 
+    def __init__( self, OutputFilePath= None ):
+        try:
+            self.OutputFile= open( OutputFilePath, "w")
+            self.OutputFilePath= OutputFilePath
+        except:
+            print( "bootmanager log : Unable to open output file %r, continuing"%OutputFilePath )
+            self.OutputFile= None
+
+        self.VARS = None
+        try:
+            vars = read_configuration_file(VARS_FILE)
+            self.VARS = vars
+        except Exception, e:
+            self.LogEntry( str(e) )
+            return
     
     def LogEntry( self, str, inc_newline= 1, display_screen= 1 ):
+        now=time.strftime(log.format, time.localtime())
         if self.OutputFile:
-            self.OutputFile.write( str )
+            self.OutputFile.write( now+str )
         if display_screen:
-            sys.stdout.write( str )
+            sys.stdout.write( now+str )
             
         if inc_newline:
             if display_screen:
@@ -60,44 +101,59 @@ class log:
         if self.OutputFile:
             self.OutputFile.flush()
 
-            
-
     def write( self, str ):
         """
         make log behave like a writable file object (for traceback
         prints)
         """
         self.LogEntry( str, 0, 1 )
-
-
     
+    # bm log uploading is available back again, as of nodeconfig-5.0-2
     def Upload( self ):
         """
         upload the contents of the log to the server
         """
-
         if self.OutputFile is not None:
-            self.LogEntry( "Uploading logs to %s" % UPLOAD_LOG_PATH )
+            self.OutputFile.flush()
+
+            self.LogEntry( "Uploading logs to %s" % self.VARS['UPLOAD_LOG_SCRIPT'] )
             
             self.OutputFile.close()
             self.OutputFile= None
 
-            bs_request = BootServerRequest.BootServerRequest()
-            bs_request.MakeRequest(PartialPath = UPLOAD_LOG_PATH,
-                                   GetVars = None, PostVars = None,
-                                   FormData = ["log=@" + self.OutputFilePath],
-                                   DoSSL = True, DoCertCheck = True)
-        
-    
+            hostname= self.VARS['INTERFACE_SETTINGS']['hostname'] + "." + \
+                      self.VARS['INTERFACE_SETTINGS']['domainname']
+            bs_request = BootServerRequest.BootServerRequest(self.VARS)
+            try:
+                # this was working until f10
+                bs_request.MakeRequest(PartialPath = self.VARS['UPLOAD_LOG_SCRIPT'],
+                                       GetVars = None, PostVars = None,
+                                       DoSSL = True, DoCertCheck = True,
+                                       FormData = ["log=@" + self.OutputFilePath,
+                                                   "hostname=" + hostname, 
+                                                   "type=bm.log"])
+            except:
+                # new pycurl
+                import pycurl
+                bs_request.MakeRequest(PartialPath = self.VARS['UPLOAD_LOG_SCRIPT'],
+                                       GetVars = None, PostVars = None,
+                                       DoSSL = True, DoCertCheck = True,
+                                       FormData = [('log',(pycurl.FORM_FILE, self.OutputFilePath)),
+                                                   ("hostname",hostname),
+                                                   ("type","bm.log")])
 
-        
 
-
+##############################
 class BootManager:
 
     # file containing initial variables/constants
-    VARS_FILE = "configuration"
 
+    # the set of valid node run states
+    NodeRunStates = {'reinstall':None,
+                     'boot':None,
+                     'safeboot':None,
+                     'disabled':None,
+                     }
     
     def __init__(self, log, forceState):
         # override machine's current state from the command line
@@ -108,47 +164,16 @@ class BootManager:
 
         # set to 1 if we can run after initialization
         self.CAN_RUN = 0
-             
-        # read in and store all variables in VARS_FILE into each line
-        # is in the format name=val (any whitespace around the = is
-        # removed. everything after the = to the end of the line is
-        # the value
-        vars = {}
-        vars_file= file(self.VARS_FILE,'r')
-        validConfFile = True
-        for line in vars_file:
-            # if its a comment or a whitespace line, ignore
-            if line[:1] == "#" or string.strip(line) == "":
-                continue
 
-            parts= string.split(line,"=")
-            if len(parts) != 2:
-                self.LOG.LogEntry( "Invalid line in vars file: %s" % line )
-                validConfFile = False
-                break
-
-            name= string.strip(parts[0])
-            value= string.strip(parts[1])
-            vars[name]= value
-
-        vars_file.close()
-        if not validConfFile:
-            self.LOG.LogEntry( "Unable to read configuration vars." )
+        if log.VARS:
+            # this contains a set of information used and updated by each step
+            self.VARS= log.VARS
+        else:
             return
-
-        # find out which directory we are running it, and set a variable
-        # for that. future steps may need to get files out of the bootmanager
-        # directory
-        current_dir= os.getcwd()
-        vars['BM_SOURCE_DIR']= current_dir
-
+             
         # not sure what the current PATH is set to, replace it with what
         # we know will work with all the boot cds
         os.environ['PATH']= string.join(BIN_PATH,":")
-                   
-        # this contains a set of information used and updated
-        # by each step
-        self.VARS= vars
 
         self.CAN_RUN= 1
 
@@ -173,14 +198,13 @@ class BootManager:
         at the top of each of the invididual step functions.
         """
 
-        def _nodeNotInstalled():
+        def _nodeNotInstalled(message='MSG_NODE_NOT_INSTALLED'):
             # called by the _xxxState() functions below upon failure
-            self.VARS['BOOT_STATE']= 'dbg'
+            self.VARS['RUN_LEVEL']= 'failboot'
+            notify = getattr(notify_messages, message)
             self.VARS['STATE_CHANGE_NOTIFY']= 1
-            self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= \
-                      notify_messages.MSG_NODE_NOT_INSTALLED
-            raise BootManagerException, \
-                  notify_messages.MSG_NODE_NOT_INSTALLED
+            self.VARS['STATE_CHANGE_NOTIFY_MESSAGE']= notify
+            raise BootManagerException, notify
 
         def _bootRun():
             # implements the boot logic, which consists of first
@@ -188,26 +212,48 @@ class BootManager:
             # checking whether someone added or changed disks, and
             # then finally chain boots.
 
+            # starting the fallback/debug ssh daemon for safety:
+            # if the node install somehow hangs, or if it simply takes ages, 
+            # we can still enter and investigate
+            try:
+                StartDebug.Run(self.VARS, self.LOG, last_resort = False)
+            except:
+                pass
+
             InstallInit.Run( self.VARS, self.LOG )                    
-            if ValidateNodeInstall.Run( self.VARS, self.LOG ):
+            ret = ValidateNodeInstall.Run( self.VARS, self.LOG )
+            if ret == 1:
                 WriteModprobeConfig.Run( self.VARS, self.LOG )
                 MakeInitrd.Run( self.VARS, self.LOG )
                 WriteNetworkConfig.Run( self.VARS, self.LOG )
-                # the following step should be done by NM
-                UpdateNodeConfiguration.Run( self.VARS, self.LOG )
                 CheckForNewDisks.Run( self.VARS, self.LOG )
                 SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
                 ChainBootNode.Run( self.VARS, self.LOG )
+            elif ret == -1:
+                _nodeNotInstalled('MSG_NODE_FILESYSTEM_CORRUPT')
+            elif ret == -2:
+                _nodeNotInstalled('MSG_NODE_MOUNT_FAILED')
+            elif ret == -3:
+                _nodeNotInstalled('MSG_NODE_MISSING_KERNEL')
             else:
                 _nodeNotInstalled()
 
-        def _rinsRun():
+        def _reinstallRun():
+
+            # starting the fallback/debug ssh daemon for safety:
+            # if the node install somehow hangs, or if it simply takes ages, 
+            # we can still enter and investigate
+            try:
+                StartDebug.Run(self.VARS, self.LOG, last_resort = False)
+            except:
+                pass
+
             # implements the reinstall logic, which will check whether
             # the min. hardware requirements are met, install the
             # software, and upon correct installation will switch too
             # 'boot' state and chainboot into the production system
             if not CheckHardwareRequirements.Run( self.VARS, self.LOG ):
-                self.VARS['BOOT_STATE']= 'dbg'
+                self.VARS['RUN_LEVEL']= 'failboot'
                 raise BootManagerException, "Hardware requirements not met."
 
             # runinstaller
@@ -223,53 +269,52 @@ class BootManager:
             UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
             _bootRun()
             
-        def _newRun():
+        def _installRun():
             # implements the new install logic, which will first check
             # with the user whether it is ok to install on this
-            # machine, switch to 'rins' state and then invoke the rins
-            # logic.  See rinsState logic comments for further
+            # machine, switch to 'reinstall' state and then invoke the reinstall
+            # logic.  See reinstallState logic comments for further
             # details.
             if not ConfirmInstallWithUser.Run( self.VARS, self.LOG ):
                 return 0
-            self.VARS['BOOT_STATE']= 'rins'
-            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-            _rinsRun()
+            self.VARS['BOOT_STATE']= 'reinstall'
+            UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
+            _reinstallRun()
 
-        def _debugRun(state='dbg'):
-            # implements debug logic, which just starts the sshd
-            # and just waits around
-            self.VARS['BOOT_STATE']=state
-            UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+        def _debugRun(state='failboot'):
+            # implements debug logic, which starts the sshd and just waits around
+            self.VARS['RUN_LEVEL']=state
+            UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )
+            # fsck/mount fs if present, and ignore return value if it's not.
+            ValidateNodeInstall.Run( self.VARS, self.LOG )
 
-        def _badRun():
+        def _badstateRun():
             # should never happen; log event
             self.LOG.write( "\nInvalid BOOT_STATE = %s\n" % self.VARS['BOOT_STATE'])
             _debugRun()
 
-        global NodeRunStates
         # setup state -> function hash table
-        NodeRunStates['new']  = _newRun
-        NodeRunStates['inst'] = _newRun
-        NodeRunStates['rins'] = _rinsRun
-        NodeRunStates['boot'] = _bootRun
-        NodeRunStates['dbg']  = _bootRun   # should always try to boot.
-        NodeRunStates['diag']  = lambda : _debugRun('diag')
-        NodeRunStates['disable']  = lambda : _debugRun('disable')
+        BootManager.NodeRunStates['reinstall']  = _reinstallRun
+        BootManager.NodeRunStates['boot']       = _bootRun
+        BootManager.NodeRunStates['safeboot']   = lambda : _debugRun('safeboot')
+        BootManager.NodeRunStates['disabled']   = lambda : _debugRun('disabled')
 
         success = 0
         try:
             InitializeBootManager.Run( self.VARS, self.LOG )
             ReadNodeConfiguration.Run( self.VARS, self.LOG )
             AuthenticateWithPLC.Run( self.VARS, self.LOG )
+            StartRunlevelAgent.Run( self.VARS, self.LOG )
             GetAndUpdateNodeDetails.Run( self.VARS, self.LOG )
 
             # override machine's current state from the command line
             if self.forceState is not None:
                 self.VARS['BOOT_STATE']= self.forceState
                 UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
+                UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
 
-            stateRun = NodeRunStates.get(self.VARS['BOOT_STATE'],_badRun)
+            stateRun = BootManager.NodeRunStates.get(self.VARS['BOOT_STATE'],_badstateRun)
             stateRun()
             success = 1
 
@@ -277,6 +322,12 @@ class BootManager:
             self.LOG.write( "\n\nKeyError while running: %s\n" % str(e) )
         except BootManagerException, e:
             self.LOG.write( "\n\nException while running: %s\n" % str(e) )
+        except BootManagerAuthenticationException, e:
+            self.LOG.write( "\n\nFailed to Authenticate Node: %s\n" % str(e) )
+            # sets /tmp/CANCEL_BOOT flag
+            StartDebug.Run(self.VARS, self.LOG )
+            # Return immediately b/c any other calls to API will fail
+            return success
         except:
             self.LOG.write( "\n\nImplementation Error\n")
             traceback.print_exc(file=self.LOG.OutputFile)
@@ -300,32 +351,23 @@ def main(argv):
     import utils
     utils.prompt_for_breakpoint_mode()
 
-    #utils.breakpoint ("Entering BootManager::main")
+    utils.breakpoint ("Entering BootManager::main")
     
-    global NodeRunStates
-    NodeRunStates = {'new':None,
-                     'inst':None,
-                     'rins':None,
-                     'boot':None,
-                     'diag':None,
-                     'disable':None,
-                     'dbg':None}
-
     # set to 1 if error occurred
     error= 0
     
     # all output goes through this class so we can save it and post
     # the data back to PlanetLab central
-    LOG= log( LOG_FILE )
+    LOG= log( BM_NODE_LOG )
 
     LOG.LogEntry( "BootManager started at: %s" % \
-                  strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+                  time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
 
     try:
         forceState = None
         if len(argv) == 2:
             fState = argv[1]
-            if NodeRunStates.has_key(fState):
+            if BootManager.NodeRunStates.has_key(fState):
                 forceState = fState
             else:
                 LOG.LogEntry("FATAL: cannot force node run state to=%s" % fState)
@@ -336,7 +378,7 @@ def main(argv):
         
     if error:
         LOG.LogEntry( "BootManager finished at: %s" % \
-                      strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+                      time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
         LOG.Upload()
         return error
 
@@ -345,8 +387,7 @@ def main(argv):
         if bm.CAN_RUN == 0:
             LOG.LogEntry( "Unable to initialize BootManager." )
         else:
-            LOG.LogEntry( "Running version %s of BootManager." %
-                          bm.VARS['VERSION'] )
+            LOG.LogEntry( "Running version %s of BootManager." % bm.VARS['VERSION'] )
             success= bm.Run()
             if success:
                 LOG.LogEntry( "\nDone!" );
@@ -358,7 +399,7 @@ def main(argv):
         traceback.print_exc()
 
     LOG.LogEntry( "BootManager finished at: %s" % \
-                  strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) )
+                  time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
     LOG.Upload()
 
     return error

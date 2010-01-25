@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
@@ -46,16 +46,12 @@ DEVICES_SCANNED_FLAG= "/tmp/devices_scanned"
 BLOCKS_PER_GB = pow(10, 9) / 1024.0;
 
 
-# -n is numeric ids (no lookup), -m is machine readable
-LSPCI_CMD= "/sbin/lspci -nm"
-
 MODULE_CLASS_NETWORK= "network"
 MODULE_CLASS_SCSI= "scsi"
 
-PCI_BASE_CLASS_NETWORK=0x02L
-PCI_BASE_CLASS_STORAGE=0x01L
-
-PCI_ANY=0xffffffffL
+#PCI_* is now defined in the pypci modules
+#PCI_BASE_CLASS_NETWORK=0x02L
+#PCI_BASE_CLASS_STORAGE=0x01L
 
 def get_total_phsyical_mem(vars = {}, log = sys.stderr):
     """
@@ -266,7 +262,7 @@ def get_system_modules( vars = {}, log = sys.stderr):
     modules_pcimap_path = "%s/lib/modules/%s/modules.pcimap" % \
                           (SYSIMG_PATH,kernel_version)
     if not os.access(modules_pcimap_path,os.R_OK):
-        print( "Unable to read %s" % path )
+        print( "WARNING: Unable to read %s" % modules_pcimap_path )
         return
 
     pcimap = pypcimap.PCIMap(modules_pcimap_path)
@@ -281,13 +277,22 @@ def get_system_modules( vars = {}, log = sys.stderr):
     # XXX: this is really similar to what BootCD/conf_files/pl_hwinit does. merge?
     pcidevs = get_devices()
 
-    for (slot, dev) in pcidevs.iteritems():
+    devlist=pcidevs.keys()
+    devlist.sort()
+    for slot in devlist:
+        dev = pcidevs[slot]
         base = (dev[4] & 0xff0000) >> 16
+        modules = pcimap.get(dev)
         if base not in (PCI_BASE_CLASS_STORAGE,
                         PCI_BASE_CLASS_NETWORK):
-            continue
+            # special exception for forcedeth NICs whose base id
+            # claims to be a Bridge, even though it is clearly a
+            # network device
+            if "forcedeth" in modules: 
+                base=PCI_BASE_CLASS_NETWORK
+            else:
+                continue
 
-        modules = pcimap.get(dev)
         if len(modules) > 0:
             if base == PCI_BASE_CLASS_NETWORK:
                 network_mods += modules
@@ -365,13 +370,10 @@ if __name__ == "__main__":
     if not modules:
         print "unable to list system modules"
     else:
-        for type in modules:
-            if type == MODULE_CLASS_SCSI:
-                print( "all scsi modules:" )
-                for a_mod in modules[type]:
-                    print a_mod
-            elif type == MODULE_CLASS_NETWORK:
-                print( "all network modules:" )
-                for a_mod in modules[type]:
-                    print a_mod
+        for module_class in (MODULE_CLASS_SCSI,MODULE_CLASS_NETWORK):
+            if len(modules[module_class]) > 0:
+                module_list = ""
+                for a_mod in modules[module_class]:
+                    module_list = module_list + "%s " % a_mod
+                print "all %s modules: %s" % (module_class, module_list)
                 
