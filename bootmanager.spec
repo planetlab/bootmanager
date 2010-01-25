@@ -25,15 +25,15 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildArch: noarch
 
 Requires: tar, gnupg, sharutils, bzip2, pypcilib
-Requires: PLCAPI >= 4.3
+Requires: PLCAPI >= 5.0
 # the python code packaged in these are shipped on the node as well
 Requires: pypcilib pyplnet monitor-runlevelagent
 
 ### avoid having yum complain about updates, as stuff is moving around
 # plc.d/bootmanager
-Conflicts: myplc <= 4.3-37
+Conflicts: myplc <= 5.0
 # nodeconfig/boot/*
-Conflicts: nodeconfig <= 4.3-7
+Conflicts: nodeconfig <= 5.0
 
 AutoReqProv: no
 %define debug_package %{nil}
