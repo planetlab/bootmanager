@@ -1,9 +1,10 @@
-Starting with 4.3.17 (5.0?)
+Starting with 5.0
 
 ===
-the entry point for the boot CD is installed in
+the entry point for the boot CD is installed in the location below
+this is expected to return the signed shell script that runs the bootmanager
     /var/www/html/boot/index.php
-the bootmanager rpm installs most of its stuff in 
+the bootmanager rpm installs most of its stuff in
     /usr/share/bootmanager/regular/
 and the default signed script is created as
     /var/www/html/boot/bootmanager_regular.sh.sgn
@@ -30,15 +31,19 @@ It's also possible to attach a (signed) bm script to a unique node by renaming a
 /var/www/html/boot/bootmanager_<hostname>.sh.sgn
 
 ======================================== bootstrapfs
-right now, the actual name of the bootstrapfs('s) that need to be installed is performed in 
-the InstallBootstrapFS step
-the logic is
+the actual name of the bootstrapfs('s) that need to be installed is
+computed in the PLCAPI, namely the GetNodeFlavour method 
+
+In essence:
 
 * if the node has the 'deployment' tag set, then we fetch
 https://.../boot/bootstrafs-<deployment>.tar.bz2
+* otherwise we get
+https://.../boot/bootstrafs-<nodefamily>.tar.bz2
 
-* other wise we get
-https://.../boot/bootstrafs-<node-family>.tar.bz2
-  plus 
+* as far as extensions, we fetch
 https://.../boot/bootstrafs-<extension>-<arch>.tar.bz2
   for all defined extensions
+
+* also if the plainbootstrapfs tag is set, then the uncompressed files
+  are fetched
