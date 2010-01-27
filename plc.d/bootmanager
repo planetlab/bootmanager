@@ -29,13 +29,17 @@ case "$1" in
 	    [ -d "$topdir" ] || continue
 	    deployment=$(basename $topdir)
 	    if [ "$deployment" = "regular" ] ; then
-		dialog $"Rebuilding Boot Manager"
+		action $"Rebuilding Boot Manager"
 		$topdir/build.sh regular
 		check
-	    else
-		dialog $"Rebuilding Boot Manager for deployment $deployment"
+	    elif [ -x $topdir/build.sh ] ; then
+		action $"Rebuilding Boot Manager for deployment $deployment"
 		$topdir/build.sh $deployment
 		check
+	    elif [ "$deployment" == "source" ] ; then
+		action $"Ignoring obsolete dir, please cleanup" "$topdir"
+	    else
+		action $"WARNING: missing build.sh script in" "$topdir"
 	    fi
 	done
 

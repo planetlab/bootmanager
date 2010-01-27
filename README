@@ -42,8 +42,16 @@ https://.../boot/bootstrafs-<deployment>.tar.bz2
 https://.../boot/bootstrafs-<nodefamily>.tar.bz2
 
 * as far as extensions, we fetch
-https://.../boot/bootstrafs-<extension>-<arch>.tar.bz2
+https://.../boot/bootstrafs-<extension>-<fcdistro>-<arch>.tar.bz2
   for all defined extensions
 
 * also if the plainbootstrapfs tag is set, then the uncompressed files
   are fetched
+
+======================================== yum repo
+
+* if the node has the 'deployment' tag set, then we use
+http://.../install-rpms/alpha
+
+* otherwise 
+http://.../install-rpms/<nodefamily>

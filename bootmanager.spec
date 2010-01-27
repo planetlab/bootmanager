@@ -25,6 +25,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildArch: noarch
 
 Requires: tar, gnupg, sharutils, bzip2, pypcilib
+# need the apache user at install-time
+Requires: httpd 
+
 Requires: PLCAPI >= 5.0
 # the python code packaged in these are shipped on the node as well
 Requires: pypcilib pyplnet monitor-runlevelagent
@@ -68,8 +71,10 @@ install -D -m 755 plc.d/bootmanager $RPM_BUILD_ROOT/etc/plc.d/bootmanager
 rm -rf $RPM_BUILD_ROOT
 
 %post
-# signing of botmanager.sh occurs as part of /etc/plc.d/bootmanager
-# which in turn invokes build.sh
+# initialize the boot manager upload area
+mkdir -p /var/log/bm
+chown apache:apache /var/log/bm
+chmod 700 /var/log/bm
 
 # NOTE: do not run this agent when installed on a myplc.
 # xxx - a bit hacky maybe
