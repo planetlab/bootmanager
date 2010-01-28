@@ -1,4 +1,8 @@
 <?php
+
+// $Id$
+// $URL$
+
 //
 // Returns node boot script
 //

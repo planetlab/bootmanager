@@ -1,11 +1,15 @@
 <?php
+
+// $Id$
+// $URL$
+
 //
 // Returns node ID of requestor
 //
 // Mark Huang <mlhuang@cs.princeton.edu>
 // Copyright (C) 2006 The Trustees of Princeton University
 //
-// $Id: getnodeid.php 9469 2008-05-26 14:13:19Z thierry $ $
+// $Id$ $
 //
 
 // Get admin API handle
