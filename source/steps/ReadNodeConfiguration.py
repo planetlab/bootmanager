@@ -1,5 +1,8 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -17,7 +20,7 @@ from Exceptions import *
 import BootServerRequest
 import BootAPI
 import notify_messages
-import UpdateBootStateWithPLC
+import UpdateRunLevelWithPLC
 
 
 # two possible names of the configuration files
@@ -50,9 +53,6 @@ def Run( vars, log ):
     and read, return 1.
 
     Expect the following variables from the store:
-    BOOT_CD_VERSION          A tuple of the current bootcd version
-    SUPPORT_FILE_DIR         directory on the boot servers containing
-                             scripts and support files
     
     Sets the following variables from the configuration file:
     WAS_NODE_ID_IN_CONF         Set to 1 if the node id was in the conf file
@@ -84,20 +84,6 @@ def Run( vars, log ):
 
 
     # make sure we have the variables we need
-    try:
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
-        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-        if SUPPORT_FILE_DIR == None:
-            raise ValueError, "SUPPORT_FILE_DIR"
-
-    except KeyError, var:
-        raise BootManagerException, "Missing variable in vars: %s\n" % var
-    except ValueError, var:
-        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
-
 
     INTERFACE_SETTINGS= {}
     INTERFACE_SETTINGS['method']= "dhcp"
@@ -176,94 +162,91 @@ def Run( vars, log ):
         
     utils.sysexec_noerr( "umount %s" % mount_point, log )
 
+    # 2. check flash devices on 3.0 based cds
+    log.write( "Checking flash devices for plnode.txt file.\n" )
 
+    # this is done the same way the 3.0 cds do it, by attempting
+    # to mount and sd*1 devices that are removable
+    devices= os.listdir("/sys/block/")
 
-    if BOOT_CD_VERSION[0] >= 3:
-        # 2. check flash devices on 3.0 based cds
-        log.write( "Checking flash devices for plnode.txt file.\n" )
+    for device in devices:
+        if device[:2] != "sd":
+            log.write( "Skipping non-scsi device %s\n" % device )
+            continue
 
-        # this is done the same way the 3.0 cds do it, by attempting
-        # to mount and sd*1 devices that are removable
-        devices= os.listdir("/sys/block/")
+        # test removable
+        removable_file_path= "/sys/block/%s/removable" % device
+        try:
+            removable= int(file(removable_file_path,"r").read().strip())
+        except ValueError, e:
+            continue
+        except IOError, e:
+            continue
 
-        for device in devices:
-            if device[:2] != "sd":
-                log.write( "Skipping non-scsi device %s\n" % device )
+        if not removable:
+            log.write( "Skipping non-removable device %s\n" % device )
+            continue
+
+        log.write( "Checking removable device %s\n" % device )
+
+        partitions= file("/proc/partitions", "r")
+        for line in partitions:
+            found_file= 0
+            parsed_file= 0
+            
+            if not re.search("%s[0-9]*$" % device, line):
                 continue
 
-            # test removable
-            removable_file_path= "/sys/block/%s/removable" % device
             try:
-                removable= int(file(removable_file_path,"r").read().strip())
-            except ValueError, e:
+                # major minor  #blocks  name
+                parts= string.split(line)
+
+                # ok, try to mount it and see if we have a conf file.
+                full_device= "/dev/%s" % parts[3]
+            except IndexError, e:
+                log.write( "Incorrect /proc/partitions line:\n%s\n" % line )
                 continue
-            except IOError, e:
+
+            log.write( "Mounting %s on %s\n" % (full_device,mount_point) )
+            try:
+                utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
+                               % (full_device,mount_point), log )
+            except BootManagerException, e:
+                log.write( "Unable to mount, trying next partition\n" )
                 continue
 
-            if not removable:
-                log.write( "Skipping non-removable device %s\n" % device )
-                continue
+            conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
 
-            log.write( "Checking removable device %s\n" % device )
-
-            partitions= file("/proc/partitions", "r")
-            for line in partitions:
-                found_file= 0
-                parsed_file= 0
-                
-                if not re.search("%s[0-9]*$" % device, line):
-                    continue
-
+            log.write( "Checking for existence of %s\n" % conf_file_path )
+            if os.access( conf_file_path, os.R_OK ):
                 try:
-                    # major minor  #blocks  name
-                    parts= string.split(line)
+                    conf_file= file(conf_file_path,"r")
+                    conf_file_contents= conf_file.read()
+                    conf_file.close()
+                    found_file= 1
+                    log.write( "Read in contents of file %s\n" % \
+                               conf_file_path )
 
-                    # ok, try to mount it and see if we have a conf file.
-                    full_device= "/dev/%s" % parts[3]
-                except IndexError, e:
-                    log.write( "Incorrect /proc/partitions line:\n%s\n" % line )
-                    continue
+                    if __parse_configuration_file( vars, log, \
+                                                   conf_file_contents):
+                        parsed_file= 1
+                except IOError, e:
+                    log.write( "Unable to read file %s\n" % conf_file_path )
 
-                log.write( "Mounting %s on %s\n" % (full_device,mount_point) )
-                try:
-                    utils.sysexec( "mount -o ro -t ext2,msdos %s %s" \
-                                   % (full_device,mount_point), log )
-                except BootManagerException, e:
-                    log.write( "Unable to mount, trying next partition\n" )
-                    continue
-
-                conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
-
-                log.write( "Checking for existence of %s\n" % conf_file_path )
-                if os.access( conf_file_path, os.R_OK ):
-                    try:
-                        conf_file= file(conf_file_path,"r")
-                        conf_file_contents= conf_file.read()
-                        conf_file.close()
-                        found_file= 1
-                        log.write( "Read in contents of file %s\n" % \
-                                   conf_file_path )
-
-                        if __parse_configuration_file( vars, log, \
-                                                       conf_file_contents):
-                            parsed_file= 1
-                    except IOError, e:
-                        log.write( "Unable to read file %s\n" % conf_file_path )
-
-                utils.sysexec_noerr( "umount %s" % mount_point, log )
-                if found_file:
-                    if parsed_file:
-                        return 1
-                    else:
-                        raise BootManagerException( \
-                            "Found configuration file plnode.txt " \
-                            "on floppy, but was unable to parse it.")
+            utils.sysexec_noerr( "umount %s" % mount_point, log )
+            if found_file:
+                if parsed_file:
+                    return 1
+                else:
+                    raise BootManagerException( \
+                        "Found configuration file plnode.txt " \
+                        "on floppy, but was unable to parse it.")
 
 
             
     # 3. check standard floppy disk for old file name planet.cnf
     log.write( "Checking standard floppy disk for planet.cnf file " \
-               "(from earlier.\n" )
+               "(for legacy nodes).\n" )
 
     if old_conf_file_contents:
         if __parse_configuration_file( vars, log, old_conf_file_contents):
@@ -356,8 +339,6 @@ def __parse_configuration_file( vars, log, file_contents ):
     of the configuration file is completed.
     """
 
-    BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-    SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
     INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
     
     if file_contents is None:
@@ -482,11 +463,10 @@ def __parse_configuration_file( vars, log, file_contents ):
         log.write( "Configuration file does not contain the node_id value.\n" )
         log.write( "Querying PLC for node_id.\n" )
 
-        bs_request= BootServerRequest.BootServerRequest()
+        bs_request= BootServerRequest.BootServerRequest(vars)
         
         postVars= {"mac_addr" : INTERFACE_SETTINGS["mac"]}
-        result= bs_request.DownloadFile( "%s/getnodeid.php" %
-                                         SUPPORT_FILE_DIR,
+        result= bs_request.DownloadFile( "/boot/getnodeid.php",
                                          None, postVars, 1, 1,
                                          "/tmp/node_id")
         if result == 0:
@@ -539,10 +519,7 @@ def __parse_configuration_file( vars, log, file_contents ):
         # but in binary form, so we need to convert it to ascii the same
         # way the old boot scripts did so it matches whats in the db
         # (php uses bin2hex, 
-        if BOOT_CD_VERSION[0] == 2:
-            read_mode= "rb"
-        else:
-            read_mode= "r"
+        read_mode= "r"
             
         try:
             nonce_file= file("/tmp/nonce",read_mode)
@@ -552,21 +529,7 @@ def __parse_configuration_file( vars, log, file_contents ):
             log.write( "Unable to read nonce from /tmp/nonce\n" )
             return 0
 
-        if BOOT_CD_VERSION[0] == 2:
-            nonce= nonce.encode('hex')
-
-            # there is this nice bug in the php that currently accepts the
-            # nonce for the old scripts, in that if the nonce contains
-            # null chars (2.x cds sent as binary), then
-            # the nonce is truncated. so, do the same here, truncate the nonce
-            # at the first null ('00'). This could leave us with an empty string.
-            nonce_len= len(nonce)
-            for byte_index in range(0,nonce_len,2):
-                if nonce[byte_index:byte_index+2] == '00':
-                    nonce= nonce[:byte_index]
-                    break
-        else:
-            nonce= string.strip(nonce)
+        nonce= string.strip(nonce)
 
         log.write( "Read nonce, using as key.\n" )
         vars['NODE_KEY']= nonce
@@ -625,18 +588,19 @@ def __parse_configuration_file( vars, log, file_contents ):
         
     vars["INTERFACE_SETTINGS"]= INTERFACE_SETTINGS
 
-    if not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION']:
+    if (not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION'] and
+        'NAT_MODE' not in vars):
         log.write( "Hostname does not resolve correctly, will not continue.\n" )
 
         if can_make_api_call:
             log.write( "Notifying contacts of problem.\n" )
 
-            vars['BOOT_STATE']= 'failboot'
+            vars['RUN_LEVEL']= 'failboot'
             vars['STATE_CHANGE_NOTIFY']= 1
             vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
                                      notify_messages.MSG_HOSTNAME_NOT_RESOLVE
             
-            UpdateBootStateWithPLC.Run( vars, log )
+            UpdateRunLevelWithPLC.Run( vars, log )
                     
         log.write( "\n\n" )
         log.write( "The hostname and/or ip in the network configuration\n" )

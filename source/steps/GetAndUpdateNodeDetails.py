@@ -1,5 +1,8 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -23,7 +26,6 @@ def Run( vars, log ):
     broadcast, netmask, dns1/2, and the hostname/domainname.
 
     Expect the following keys to be set:
-    BOOT_CD_VERSION                     A tuple of the current bootcd version
     SKIP_HARDWARE_REQUIREMENT_CHECK     Whether or not we should skip hardware
                                         requirement checks
                                         
@@ -48,10 +50,6 @@ def Run( vars, log ):
 
     # make sure we have the variables we need
     try:
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
         SKIP_HARDWARE_REQUIREMENT_CHECK= vars["SKIP_HARDWARE_REQUIREMENT_CHECK"]
         if SKIP_HARDWARE_REQUIREMENT_CHECK == "":
             raise ValueError, "SKIP_HARDWARE_REQUIREMENT_CHECK"
@@ -78,6 +76,7 @@ def Run( vars, log ):
                                               ['boot_state', 'nodegroup_ids', 'interface_ids', 'model', 'site_id']))[0]
 
     vars['BOOT_STATE']= node_details['boot_state']
+    vars['RUN_LEVEL']= node_details['boot_state']
     vars['NODE_MODEL']= string.strip(node_details['model'])
     vars['SITE_ID'] = node_details['site_id'] 
     log.write( "Successfully retrieved node record.\n" )

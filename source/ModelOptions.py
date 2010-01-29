@@ -1,5 +1,8 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -18,6 +21,7 @@ NUMA    = 0x020
 GEODE   = 0x040
 BADHD   = 0x080
 LAST    = 0x100
+RAWDISK = 0x200
 
 modeloptions = {'smp':SMP,
                 'x64':X86_64,
@@ -28,7 +32,8 @@ modeloptions = {'smp':SMP,
                 'numa':NUMA,
                 'geode':GEODE,
                 'badhd':BADHD,
-                'minhw':MINHW}
+                'minhw':MINHW,
+                'rawdisk':RAWDISK}
 
 def Get(model):
     modelinfo = string.split(model,'/')

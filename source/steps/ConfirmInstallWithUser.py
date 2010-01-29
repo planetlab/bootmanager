@@ -1,5 +1,8 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #

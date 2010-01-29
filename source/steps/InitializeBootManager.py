@@ -1,5 +1,8 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -20,7 +23,7 @@ BOOT_VERSION_2X_FILE='/usr/bootme/ID'
 BOOT_VERSION_3X_FILE='/pl_version'
 
 # minimium version of the boot os we need to run, as a (major,minor) tuple
-MINIMUM_BOOT_VERSION= (2,0)
+MINIMUM_BOOT_VERSION= (3,0)
 
 # minimum version of python required to run the boot manager
 MINIMUM_PYTHON_VERSION= (2,2,0)
@@ -38,6 +41,10 @@ def Run( vars, log ):
     """
 
     log.write( "\n\nStep: Initializing the BootManager.\n" )
+
+    # Default model option.  Required in case we go into debug mode
+    # before we successfully called GetAndUpdateNodeDetails().
+    vars["NODE_MODEL_OPTIONS"] = vars.get("NODE_MODEL_OPTIONS",0)
 
     # define the basic partition paths
     PARTITIONS= {}
@@ -68,23 +75,11 @@ def Run( vars, log ):
 
     BOOT_CD_VERSION= vars['BOOT_CD_VERSION']
     
-    # old cds need extra modules loaded for compaq smart array
-    if BOOT_CD_VERSION[0] == 2:
-
-        has_smartarray= utils.sysexec_noerr(
-            'lspci | egrep "0e11:b178|0e11:4070|0e11:4080|0e11:4082|0e11:4083"')
-        
-        if has_smartarray:
-            log.write( "Loading support for Compaq smart array\n" )
-            utils.sysexec_noerr( "modprobe cciss", log )
-            _create_cciss_dev_entries()
-            
-
-        has_fusion= utils.sysexec_noerr('lspci | egrep "1000:0030"')
-        
-        if has_fusion:
-            log.write( "Loading support for Fusion MPT SCSI controllers\n" )
-            utils.sysexec_noerr( "modprobe mptscsih", log )
+    # In case we are booted with a kernel that does not have the
+    # device mapper code compiled into the kernel.
+    if not os.path.exists("/dev/mapper"):
+        log.write( "Loading support for LVM\n" )
+        utils.sysexec_noerr( "modprobe dm_mod", log )
 
     # for anything that needs to know we are running under the boot cd and
     # not the runtime os

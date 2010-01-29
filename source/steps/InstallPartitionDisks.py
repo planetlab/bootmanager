@@ -1,5 +1,8 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -15,7 +18,6 @@ import popen2
 from Exceptions import *
 import utils
 import BootServerRequest
-import compatibility
 
 import ModelOptions
 
@@ -28,7 +30,6 @@ def Run( vars, log ):
     TEMP_PATH                somewhere to store what we need to run
     ROOT_SIZE                the size of the root logical volume
     SWAP_SIZE                the size of the swap partition
-    BOOT_CD_VERSION          A tuple of the current bootcd version
     """
 
     log.write( "\n\nStep: Install: partitioning disks.\n" )
@@ -51,28 +52,27 @@ def Run( vars, log ):
         if SWAP_SIZE == "" or SWAP_SIZE == 0:
             raise ValueError, "SWAP_SIZE invalid"
 
-        BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        if BOOT_CD_VERSION == "":
-            raise ValueError, "BOOT_CD_VERSION"
-
         NODE_MODEL_OPTIONS= vars["NODE_MODEL_OPTIONS"]
 
         PARTITIONS= vars["PARTITIONS"]
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
 
+        if NODE_MODEL_OPTIONS & ModelOptions.RAWDISK:
+            VSERVERS_SIZE= "-1"
+            if "VSERVER_SIZE" in vars:
+                VSERVERS_SIZE= vars["VSERVERS_SIZE"]
+                if VSERVERS_SIZE == "" or VSERVERS_SIZE == 0:
+                    raise ValueError, "VSERVERS_SIZE"
+
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
     except ValueError, var:
         raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
 
-    bs_request= BootServerRequest.BootServerRequest()
+    bs_request= BootServerRequest.BootServerRequest(vars)
 
     
-    # old cds need extra utilities to partition disks and setup lvm
-    if BOOT_CD_VERSION[0] == 2:
-        compatibility.setup_partdisks_2x_cd( vars, log )
-
     # disable swap if its on
     utils.sysexec_noerr( "swapoff %s" % PARTITIONS["swap"], log )
 
@@ -90,11 +90,16 @@ def Run( vars, log ):
     
     used_devices= []
 
+    INSTALL_BLOCK_DEVICES.sort()
     for device in INSTALL_BLOCK_DEVICES:
 
         if single_partition_device( device, vars, log ):
-            used_devices.append( device )
-            log.write( "Successfully initialized %s\n" % device )
+            if (len(used_devices) > 0 and
+                (vars['NODE_MODEL_OPTIONS'] & ModelOptions.RAWDISK)):
+                log.write( "Running in raw disk mode, not using %s.\n" % device )
+            else:
+                used_devices.append( device )
+                log.write( "Successfully initialized %s\n" % device )
         else:
             log.write( "Unable to partition %s, not using it.\n" % device )
             continue
@@ -122,11 +127,16 @@ def Run( vars, log ):
     # create root logical volume
     utils.sysexec( "lvcreate -L%s -nroot planetlab" % ROOT_SIZE, log )
 
-    # create vservers logical volume with all remaining space
-    # first, we need to get the number of remaining extents we can use
-    remaining_extents= get_remaining_extents_on_vg( vars, log )
-    
-    utils.sysexec( "lvcreate -l%s -nvservers planetlab" % remaining_extents, log )
+    if vars['NODE_MODEL_OPTIONS'] & ModelOptions.RAWDISK and VSERVERS_SIZE != "-1":
+        utils.sysexec( "lvcreate -L%s -nvservers planetlab" % VSERVERS_SIZE, log )
+        remaining_extents= get_remaining_extents_on_vg( vars, log )
+        utils.sysexec( "lvcreate -l%s -nrawdisk planetlab" % remaining_extents, log )
+    else:
+        # create vservers logical volume with all remaining space
+        # first, we need to get the number of remaining extents we can use
+        remaining_extents= get_remaining_extents_on_vg( vars, log )
+        
+        utils.sysexec( "lvcreate -l%s -nvservers planetlab" % remaining_extents, log )
 
     # activate volume group (should already be active)
     #utils.sysexec( TEMP_PATH + "vgchange -ay planetlab", log )
@@ -162,7 +172,7 @@ def Run( vars, log ):
     return 1
 
 
-
+import parted
 def single_partition_device( device, vars, log ):
     """
     initialize a disk by removing the old partition tables,
@@ -171,78 +181,48 @@ def single_partition_device( device, vars, log ):
     return 1 if sucessful, 0 otherwise
     """
 
-    BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-    if BOOT_CD_VERSION[0] == 2:
-        compatibility.setup_partdisks_2x_cd( vars, log )
+    # two forms, depending on which version of pyparted we have
+    try:
+        version=parted.version()
+        return single_partition_device_2_x (device, vars, log)
+    except:
+        return single_partition_device_1_x (device, vars, log)
 
-    import parted
+        
+
+def single_partition_device_1_x ( device, vars, log):
     
     lvm_flag= parted.partition_flag_get_by_name('lvm')
     
     try:
+        print >>log, "Using pyparted 1.x"
         # wipe the old partition table
         utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % device, log )
 
         # get the device
         dev= parted.PedDevice.get(device)
 
-        # 2.x cds have different libparted that 3.x cds, and they have
-        # different interfaces
-        if BOOT_CD_VERSION[0] >= 3:
+        # create a new partition table
+        disk= dev.disk_new_fresh(parted.disk_type_get("msdos"))
 
-            # create a new partition table
-            disk= dev.disk_new_fresh(parted.disk_type_get("msdos"))
+        # create one big partition on each block device
+        constraint= dev.constraint_any()
 
-            # create one big partition on each block device
-            constraint= dev.constraint_any()
+        new_part= disk.partition_new(
+            parted.PARTITION_PRIMARY,
+            parted.file_system_type_get("ext2"),
+            0, 1 )
 
-            new_part= disk.partition_new(
-                parted.PARTITION_PRIMARY,
-                parted.file_system_type_get("ext2"),
-                0, 1 )
+        # make it an lvm partition
+        new_part.set_flag(lvm_flag,1)
 
-            # make it an lvm partition
-            new_part.set_flag(lvm_flag,1)
+        # actually add the partition to the disk
+        disk.add_partition(new_part, constraint)
 
-            # actually add the partition to the disk
-            disk.add_partition(new_part, constraint)
+        disk.maximize_partition(new_part,constraint)
 
-            disk.maximize_partition(new_part,constraint)
-
-            disk.commit()
-            del disk
-        else:
-            # create a new partition table
-            dev.disk_create(parted.disk_type_get("msdos"))
-
-            # get the disk
-            disk= parted.PedDisk.open(dev)
-
-                # create one big partition on each block device
-            part= disk.next_partition()
-            while part:
-                if part.type == parted.PARTITION_FREESPACE:
-                    new_part= disk.partition_new(
-                        parted.PARTITION_PRIMARY,
-                        parted.file_system_type_get("ext2"),
-                        part.geom.start,
-                        part.geom.end )
-
-                    constraint = disk.constraint_any()
-
-                    # make it an lvm partition
-                    new_part.set_flag(lvm_flag,1)
-
-                    # actually add the partition to the disk
-                    disk.add_partition(new_part, constraint)
-
-                    break
-
-                part= disk.next_partition(part)
-
-            disk.write()
-            disk.close()
-            del disk
+        disk.commit()
+        del disk
             
     except BootManagerException, e:
         log.write( "BootManagerException while running: %s\n" % str(e) )
@@ -250,6 +230,40 @@ def single_partition_device( device, vars, log ):
 
     except parted.error, e:
         log.write( "parted exception while running: %s\n" % str(e) )
+        return 0
+                   
+    return 1
+
+
+
+def single_partition_device_2_x ( device, vars, log):
+    try:
+        print >>log, "Using pyparted 2.x"
+        # wipe the old partition table
+        utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % device, log )
+        # get the device
+        dev= parted.Device(device)
+        # create a new partition table
+        disk= parted.freshDisk(dev,'msdos')
+        # create one big partition on each block device
+        constraint= parted.constraint.Constraint (device=dev)
+        geometry = parted.geometry.Geometry (device=dev, start=0, end=1)
+        fs = parted.filesystem.FileSystem (type="ext2",geometry=geometry)
+        new_part= parted.partition.Partition (disk, type=parted.PARTITION_NORMAL, 
+                                              fs=fs, geometry=geometry)
+        # make it an lvm partition
+        new_part.setFlag(parted.PARTITION_LVM)
+        # actually add the partition to the disk
+        disk.addPartition(new_part, constraint)
+        disk.maximizePartition(new_part,constraint)
+        disk.commit()
+        print >>log, 'Current disk for %s'%device,disk
+        print >>log, 'Current dev for %s'%device,dev
+        del disk
+    except Exception, e:
+        log.write( "Exception inside single_partition_device_2_x : %s\n" % str(e) )
+        import traceback
+        traceback.print_exc(file=log)
         return 0
                    
     return 1
@@ -283,24 +297,12 @@ def get_partition_path_from_device( device, vars, log ):
     given a device, return the path of the first partition on the device
     """
 
-    BOOT_CD_VERSION= vars["BOOT_CD_VERSION"]
-        
     # those who wrote the cciss driver just had to make it difficult
-    if BOOT_CD_VERSION[0] >= 3:
-        cciss_test= "/dev/cciss"
-        if device[:len(cciss_test)] == cciss_test:
-            part_path= device + "p1"
-        else:
-            part_path= device + "1"
+    cciss_test= "/dev/cciss"
+    if device[:len(cciss_test)] == cciss_test:
+        part_path= device + "p1"
     else:
-        # if device ends in /disc, we need to make it end in
-        # /part1 to indicate the first partition (for devfs based 2.x cds)
-        dev_parts= string.split(device,"/")
-        if dev_parts[-1] == "disc":
-            dev_parts[-1]= "part1"
-            part_path= string.join(dev_parts,"/")
-        else:
-            part_path= device + "1"
+        part_path= device + "1"
 
     return part_path
 

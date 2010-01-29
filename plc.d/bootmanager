@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# priority: 1100
+#
+# Rebuild the Boot Manager
+#
+# Mark Huang <mlhuang@cs.princeton.edu>
+# Copyright (C) 2006 The Trustees of Princeton University
+#
+# $Id$
+# $URL$
+#
+
+# Source function library and configuration
+. /etc/plc.d/functions
+. /etc/planetlab/plc_config
+
+# Be verbose
+set -x
+
+case "$1" in
+    start)
+	if [ "$PLC_BOOT_ENABLED" != "1" -a \
+	     "$PLC_WWW_ENABLED" != "1" ] ; then
+	    exit 0
+	fi
+
+	shopt -s nullglob
+	for topdir in /usr/share/bootmanager/* ; do
+	    [ -d "$topdir" ] || continue
+	    deployment=$(basename $topdir)
+	    if [ "$deployment" = "regular" ] ; then
+		action $"Rebuilding Boot Manager"
+		$topdir/build.sh regular
+		check
+	    elif [ -x $topdir/build.sh ] ; then
+		action $"Rebuilding Boot Manager for deployment $deployment"
+		$topdir/build.sh $deployment
+		check
+	    elif [ "$deployment" == "source" ] ; then
+		action $"Ignoring obsolete dir, please cleanup" "$topdir"
+	    else
+		action $"WARNING: missing build.sh script in" "$topdir"
+	    fi
+	done
+
+	result "$MESSAGE"
+	;;
+esac
+
+exit $ERRORS

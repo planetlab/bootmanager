@@ -1,5 +1,8 @@
-#!/usr/bin/python2 -u
-
+#!/usr/bin/python
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -14,6 +17,7 @@ import systeminfo
 import BootAPI
 import ModelOptions
 import notify_messages
+import modprobe
 
 def Run( vars, log, filename = "/etc/modprobe.conf"):
     """
@@ -51,27 +55,38 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     if sysmods is None:
         raise BootManagerException, "Unable to get list of system modules."
         
-    eth_count= 0
+    # parse the existing modprobe.conf file, if one exists
+    mfile = "%s/%s" % (SYSIMG_PATH,filename)
+    m = modprobe.Modprobe()
+    if os.path.exists(mfile):
+        m.input(mfile)
+
+    blacklist = modprobe.Modprobe()
+    blacklistfiles = ("blacklist","blacklist-compat","blacklist-firewire")
+    for blf in blacklistfiles:
+        if os.path.exists("/etc/modprobe.d/%s"%blf):
+            blacklist.input("/etc/modprobe.d/%s"%blf)
+        
+    # storage devices
+    m.optionsset("ata_generic","all_generic_ide=1")
     scsi_count= 0
+    for a_mod in sysmods[systeminfo.MODULE_CLASS_SCSI]:
+        if m.blacklistget(a_mod) <> None or \
+               blacklist.blacklistget(a_mod) <> None:
+            continue
+        m.aliasset("scsi_hostadapter%d"%scsi_count,a_mod)
+        scsi_count= scsi_count + 1
 
-    modulesconf_file= file("%s/%s" % (SYSIMG_PATH,filename), "w" )
-    modulesconf_file.write("options ata_generic all_generic_ide=1\n")
-
-    for type in sysmods:
-        if type == systeminfo.MODULE_CLASS_SCSI:
-            for a_mod in sysmods[type]:
-                modulesconf_file.write( "alias scsi_hostadapter%d %s\n" %
-                                        (scsi_count,a_mod) )
-                scsi_count= scsi_count + 1
-
-        elif type == systeminfo.MODULE_CLASS_NETWORK:
-            for a_mod in sysmods[type]:
-                modulesconf_file.write( "alias eth%d %s\n" %
-                                        (eth_count,a_mod) )
-                eth_count= eth_count + 1
-
-    modulesconf_file.close()
-    modulesconf_file= None
+    # network devices
+    eth_count= 0
+    for a_mod in sysmods[systeminfo.MODULE_CLASS_NETWORK]:
+        if m.blacklistget(a_mod) <> None or \
+               blacklist.blacklistget(a_mod) <> None:
+            continue
+        m.aliasset("eth%d"%eth_count,a_mod)
+        eth_count= eth_count + 1
+    m.output(mfile, "BootManager")
+    m.output("%s.bak"%mfile, "BootManager") # write a backup version of this file
 
     # dump the modprobe.conf file to the log (not to screen)
     log.write( "Contents of new modprobe.conf file:\n" )
@@ -88,7 +103,7 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     if eth_count == 0:
         log.write( "\nIt appears we don't have any network drivers. Aborting.\n" )
         
-        vars['BOOT_STATE']= 'failboot'
+        vars['RUN_LEVEL']= 'failboot'
         vars['STATE_CHANGE_NOTIFY']= 1
         vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
              notify_messages.MSG_NO_DETECTED_NETWORK
