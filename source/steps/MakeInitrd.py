@@ -16,16 +16,6 @@ import utils
 import systeminfo
 import shutil
 
-def kernelHasMkinitrd():
-    #  Older bootcds only support LinuxThreads.  This hack is to get mkinitrd
-    #  to run without segfaulting by using /lib/obsolete/linuxthreads
-    kver = os.popen("/bin/uname -r", "r").readlines()[0].rstrip().split(".")
-    if int(kver[1]) > 4:
-        return True
-    elif int(kver[1]) <=4:
-        return False
-
-
 # for centos5.3
 # 14:42:27(UTC) No module dm-mem-cache found for kernel 2.6.22.19-vs2.3.0.34.33.onelab, aborting.
 # http://kbase.redhat.com/faq/docs/DOC-16528;jsessionid=7E984A99DE8DB094D9FB08181C71717C.ab46478d
@@ -77,13 +67,8 @@ def Run( vars, log ):
 
     # hack for CentOS 5.3
     bypassRaidIfNeeded(SYSIMG_PATH)
-    if kernelHasMkinitrd() == True:
-        utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v /boot/initrd-%s.img %s" % \
-                   (kernel_version, kernel_version), log )
-    else:
-        shutil.copy("./mkinitrd.sh","%s/tmp/mkinitrd.sh" % SYSIMG_PATH)
-        os.chmod("%s/tmp/mkinitrd.sh" % SYSIMG_PATH, 755)
-        utils.sysexec_chroot( SYSIMG_PATH, "/tmp/mkinitrd.sh %s" % (kernel_version))
+    utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v /boot/initrd-%s.img %s" % \
+               (kernel_version, kernel_version), log )
 
     utils.sysexec_noerr("umount %s/sys" % SYSIMG_PATH)
     utils.sysexec_noerr("umount %s/dev" % SYSIMG_PATH)
