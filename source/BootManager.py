@@ -227,7 +227,6 @@ class BootManager:
             ret = ValidateNodeInstall.Run( self.VARS, self.LOG )
             if ret == 1:
                 WriteModprobeConfig.Run( self.VARS, self.LOG )
-                MakeInitrd.Run( self.VARS, self.LOG )
                 WriteNetworkConfig.Run( self.VARS, self.LOG )
                 CheckForNewDisks.Run( self.VARS, self.LOG )
                 SendHardwareConfigToPLC.Run( self.VARS, self.LOG )
