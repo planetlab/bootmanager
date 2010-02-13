@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 1
+%define taglevel 2
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,10 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Sat Feb 13 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-2
+- caglar's change to run MkInitrd right before kexec
+- plus clean up old code
+
 * Fri Jan 29 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-1
 - first working version of 5.0:
 - pld.c/, db-config.d/ and nodeconfig/ scripts should now sit in the module they belong to
