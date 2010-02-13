@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -60,7 +63,7 @@ def Run( vars, log ):
     try:
         # backwards compat, though, we should never hit this case post PL 3.2
         os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
-        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+        utils.sysexec_chroot_noerr( SYSIMG_PATH, "umount /rcfs", log )
     except OSError, e:
         pass
 
@@ -70,8 +73,8 @@ def Run( vars, log ):
     utils.sysexec_noerr( "umount %s" % SYSIMG_PATH )
     vars['ROOT_MOUNTED']= 0
 
-    log.write( "Removing any old files, directories\n" )
-    utils.removedir( TEMP_PATH )
+#    log.write( "Removing any old files, directories\n" )
+#    utils.removedir( TEMP_PATH )
     
     log.write( "Cleaning up any existing PlanetLab config files\n" )
     try:

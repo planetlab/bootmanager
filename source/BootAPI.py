@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -27,35 +30,61 @@ def create_auth_structure( vars, call_params ):
     API call. Return None if unable to (typically due to missing
     keys in vars, such as node_id or node_key)
     """
-    
+
     auth= {}
-    auth['AuthMethod']= 'hmac'
 
-    try:
-        auth['node_id'] = vars['NODE_ID']
-        auth['node_ip'] = vars['INTERFACE_SETTINGS']['ip']
-    except KeyError, e:
-        return None
-
-    #params= serialize_params(call_params)
-    #params.sort()
-    #msg= "[" + "".join(params) + "]"
-    #node_hmac= hmac.new(vars['NODE_KEY'], msg.encode('utf-8'), sha).hexdigest()
-    node_hmac= hmac.new(vars['NODE_KEY'], "[]".encode('utf-8'), sha).hexdigest()
-    auth['value']= node_hmac
     try:
         auth_session = {}
+        auth_session['AuthMethod'] = 'session'
+
         if not vars.has_key('NODE_SESSION'):
-            session = vars['API_SERVER_INST'].GetSession(auth)
+            # Try to load /etc/planetlab/session if it exists.
+            sessionfile = open('/etc/planetlab/session', 'r')
+            session = sessionfile.read().strip()
+
             auth_session['session'] = session
+            # Test session.  Faults if it's no good.
+            vars['API_SERVER_INST'].AuthCheck(auth_session)
             vars['NODE_SESSION'] = session
+
+            sessionfile.close()
         else:
             auth_session['session'] = vars['NODE_SESSION']
-        auth_session['AuthMethod'] = 'session'
+
         auth = auth_session
-    except Exception, e:
-        print e
-        pass
+
+    except:
+        auth['AuthMethod']= 'hmac'
+
+        try:
+            auth['node_id'] = vars['NODE_ID']
+            auth['node_ip'] = vars['INTERFACE_SETTINGS']['ip']
+        except KeyError, e:
+            return None
+
+        node_hmac= hmac.new(vars['NODE_KEY'], "[]".encode('utf-8'), sha).hexdigest()
+        auth['value']= node_hmac
+        try:
+            auth_session = {}
+            if not vars.has_key('NODE_SESSION'):
+                session = vars['API_SERVER_INST'].GetSession(auth)
+                auth_session['session'] = session
+                vars['NODE_SESSION'] = session
+                # NOTE: save session value to /etc/planetlab/session for 
+                # RunlevelAgent and future BootManager runs
+                sessionfile = open('/etc/planetlab/session', 'w')
+                sessionfile.write( vars['NODE_SESSION'] )
+                sessionfile.close()
+            else:
+                auth_session['session'] = vars['NODE_SESSION']
+
+            auth_session['AuthMethod'] = 'session'
+            auth = auth_session
+
+        except Exception, e:
+            # NOTE: BM has failed to authenticate utterly.
+            raise BootManagerAuthenticationException, "%s" % e
+
     return auth
 
 

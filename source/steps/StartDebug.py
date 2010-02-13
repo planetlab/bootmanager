@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -69,6 +72,11 @@ def Run( vars, log, last_resort = True):
     ssh_home= "/root/.ssh"
     cancel_boot_flag= "/tmp/CANCEL_BOOT"
     sshd_started_flag= "/tmp/SSHD_RUNNING"
+
+    # pre-sshd
+    pre_sshd_script= os.path.join(ssh_source_files, "pre-sshd")
+    if os.path.exists(pre_sshd_script):
+        utils.sysexec_noerr( pre_sshd_script, log )
     
     # create host keys if needed
     if not os.path.isdir (ssh_dir):

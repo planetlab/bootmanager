@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -277,14 +280,22 @@ def get_system_modules( vars = {}, log = sys.stderr):
     # XXX: this is really similar to what BootCD/conf_files/pl_hwinit does. merge?
     pcidevs = get_devices()
 
-    for slot in sorted(pcidevs.keys()):
+    devlist=pcidevs.keys()
+    devlist.sort()
+    for slot in devlist:
         dev = pcidevs[slot]
         base = (dev[4] & 0xff0000) >> 16
+        modules = pcimap.get(dev)
         if base not in (PCI_BASE_CLASS_STORAGE,
                         PCI_BASE_CLASS_NETWORK):
-            continue
+            # special exception for forcedeth NICs whose base id
+            # claims to be a Bridge, even though it is clearly a
+            # network device
+            if "forcedeth" in modules: 
+                base=PCI_BASE_CLASS_NETWORK
+            else:
+                continue
 
-        modules = pcimap.get(dev)
         if len(modules) > 0:
             if base == PCI_BASE_CLASS_NETWORK:
                 network_mods += modules

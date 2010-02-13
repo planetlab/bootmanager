@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -179,6 +182,17 @@ def update_vserver_network_files( vserver_dir, vars, log ):
 
     if update_files:
         log.write( "Updating network files in %s.\n" % vserver_dir )
+        try:
+            # NOTE: this works around a recurring problem on public pl,
+            # suspected to be due to mismatch between 2.6.12 bootcd and
+            # 2.6.22/f8 root environment.  files randomly show up with the
+            # immutible attribute set.  this clears it before trying to write
+            # the files below.
+            utils.sysexec( "chattr -i %s/etc/hosts" % vserver_dir )
+            utils.sysexec( "chattr -i %s/etc/resolv.conf" % vserver_dir )
+        except:
+            pass
+
         
         file_path= "%s/etc/hosts" % vserver_dir
         hosts_file= file(file_path, "w" )

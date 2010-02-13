@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -36,46 +39,29 @@ class BootServerRequest:
     # /mnt/cdrom is typically after the machine has come up,
     # and /usr is when the boot cd is running
     CDROM_MOUNT_PATH = ("/mnt/cdrom/","/usr/")
+    BOOTSERVER_CERTS= {}
+    MONITORSERVER_CERTS= {}
+    BOOTCD_VERSION=""
+    HTTP_SUCCESS=200
+    HAS_BOOTCD=0
+    USE_PROXY=0
+    PROXY=0
 
-    # this is the server to contact if we don't have a bootcd
-    DEFAULT_BOOT_SERVER = "boot.planet-lab.org"
-
-    BOOTCD_VERSION_FILE = "bootme/ID"
-    BOOTCD_SERVER_FILE = "bootme/BOOTSERVER"
-    BOOTCD_SERVER_CERT_DIR = "bootme/cacert"
-    CACERT_NAME = "cacert.pem"
-    
-    # location of file containing http/https proxy info, if needed
-    PROXY_FILE = '/etc/planetlab/http_proxy'
-
+    # in seconds, how maximum time allowed for connect
+    DEFAULT_CURL_CONNECT_TIMEOUT=30
+    # in seconds, maximum time allowed for any transfer
+    DEFAULT_CURL_MAX_TRANSFER_TIME=3600
     # location of curl executable, if pycurl isn't available
     # and the DownloadFile method is called (backup, only
     # really need for the boot cd environment where pycurl
     # doesn't exist
     CURL_CMD = 'curl'
+    CURL_SSL_VERSION=3
 
-    # in seconds, how maximum time allowed for connect
-    DEFAULT_CURL_CONNECT_TIMEOUT = 30
-
-    # in seconds, maximum time allowed for any transfer
-    DEFAULT_CURL_MAX_TRANSFER_TIME = 3600
-
-    CURL_SSL_VERSION = 3
-
-    HTTP_SUCCESS = 200
-
-    # proxy variables
-    USE_PROXY = 0
-    PROXY = 0
-
-    # bootcd variables
-    HAS_BOOTCD = 0
-    BOOTCD_VERSION = ""
-    BOOTSERVER_CERTS= {}
-
-    def __init__(self, verbose=0):
+    def __init__(self, vars, verbose=0):
 
         self.VERBOSE= verbose
+        self.VARS=vars
             
         # see if we have a boot cd mounted by checking for the version file
         # if HAS_BOOTCD == 0 then either the machine doesn't have
@@ -87,7 +73,7 @@ class BootServerRequest:
 
             os.system("/bin/mount %s > /dev/null 2>&1" % path )
                 
-            version_file= path + self.BOOTCD_VERSION_FILE
+            version_file= self.VARS['BOOTCD_VERSION_FILE'] % {'path' : path}
             self.Message( "Looking for version file %s" % version_file )
 
             if os.access(version_file, os.R_OK) == 0:
@@ -96,7 +82,6 @@ class BootServerRequest:
                 self.Message( "Found boot cd." )
                 self.HAS_BOOTCD=1
                 break
-
 
         if self.HAS_BOOTCD:
 
@@ -116,29 +101,34 @@ class BootServerRequest:
             # right now, all the versions of the bootcd are supported,
             # so no need to check it
             
-            # create a list of the servers we should
-            # attempt to contact, and the certs for each
-            server_list= path + self.BOOTCD_SERVER_FILE
-            self.Message( "Getting list of servers off of cd from %s." %
-                          server_list )
+            self.Message( "Getting server from configuration" )
             
-            bootservers_f= file(server_list,"r")
-            bootservers= bootservers_f.readlines()
-            bootservers_f.close()
-            
+            bootservers= [ self.VARS['BOOT_SERVER'] ]
             for bootserver in bootservers:
                 bootserver = string.strip(bootserver)
-                cacert_path= "%s/%s/%s/%s" % \
-                             (path,self.BOOTCD_SERVER_CERT_DIR,
-                              bootserver,self.CACERT_NAME)
+                cacert_path= "%s/%s/%s" % \
+                             (self.VARS['SERVER_CERT_DIR'] % {'path' : path},
+                              bootserver,self.VARS['CACERT_NAME'])
                 if os.access(cacert_path, os.R_OK):
                     self.BOOTSERVER_CERTS[bootserver]= cacert_path
 
+            monitorservers= [ self.VARS['MONITOR_SERVER'] ]
+            for monitorserver in monitorservers:
+                monitorserver = string.strip(monitorserver)
+                cacert_path= "%s/%s/%s" % \
+                             (self.VARS['SERVER_CERT_DIR'] % {'path' : path},
+                              monitorserver,self.VARS['CACERT_NAME'])
+                if os.access(cacert_path, os.R_OK):
+                    self.MONITORSERVER_CERTS[monitorserver]= cacert_path
+
             self.Message( "Set of servers to contact: %s" %
                           str(self.BOOTSERVER_CERTS) )
+            self.Message( "Set of servers to upload to: %s" %
+                          str(self.MONITORSERVER_CERTS) )
         else:
             self.Message( "Using default boot server address." )
-            self.BOOTSERVER_CERTS[self.DEFAULT_BOOT_SERVER]= ""
+            self.BOOTSERVER_CERTS[self.VARS['DEFAULT_BOOT_SERVER']]= ""
+            self.MONITORSERVER_CERTS[self.VARS['DEFAULT_BOOT_SERVER']]= ""
 
 
     def CheckProxy( self ):
@@ -146,11 +136,11 @@ class BootServerRequest:
         self.USE_PROXY= 0
         self.Message( "Checking existance of proxy config file..." )
         
-        if os.access(self.PROXY_FILE, os.R_OK) and \
-               os.path.isfile(self.PROXY_FILE):
-            self.PROXY= string.strip(file(self.PROXY_FILE,'r').readline())
+        if os.access(self.VARS['PROXY_FILE'], os.R_OK) and \
+               os.path.isfile(self.VARS['PROXY_FILE']):
+            self.PROXY= string.strip(file(self.VARS['PROXY_FILE'],'r').readline())
             self.USE_PROXY= 1
-            self.Message( "Using proxy %s." % self.PROXY )
+            self.Message( "Using proxy %s." % self.PROXY)
         else:
             self.Message( "Not using any proxy." )
 
@@ -246,11 +236,15 @@ class BootServerRequest:
 
         # now, attempt to make the request, starting at the first
         # server in the list
+        if FormData:
+            cert_list = self.MONITORSERVER_CERTS
+        else:
+            cert_list = self.BOOTSERVER_CERTS
         
-        for server in self.BOOTSERVER_CERTS:
+        for server in cert_list:
             self.Message( "Contacting server %s." % server )
                         
-            certpath = self.BOOTSERVER_CERTS[server]
+            certpath = cert_list[server]
 
             
             # output what we are going to be doing
@@ -335,7 +329,6 @@ class BootServerRequest:
 
                 if DoSSL:
                     cmdline = cmdline + "--sslv%d " % self.CURL_SSL_VERSION
-
                     if DoCertCheck:
                         cmdline = cmdline + "--cacert %s " % certpath
                  

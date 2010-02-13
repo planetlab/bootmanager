@@ -1,1 +1,0 @@
-The BuildSupport directory is used to build tarballs of files necessary during the install, including files to bootstrap RPM, handle booting off of lvm volumes, and partitioning disks.

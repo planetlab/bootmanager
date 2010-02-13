@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -14,6 +17,7 @@ import systeminfo
 import BootAPI
 import ModelOptions
 import notify_messages
+import modprobe
 
 def Run( vars, log, filename = "/etc/modprobe.conf"):
     """
@@ -51,32 +55,38 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     if sysmods is None:
         raise BootManagerException, "Unable to get list of system modules."
         
-    modulesconf_file= file("%s/%s" % (SYSIMG_PATH,filename), "w" )
-    modulesconf_file.write("options ata_generic all_generic_ide=1\n")
+    # parse the existing modprobe.conf file, if one exists
+    mfile = "%s/%s" % (SYSIMG_PATH,filename)
+    m = modprobe.Modprobe()
+    if os.path.exists(mfile):
+        m.input(mfile)
 
-    # MEF: I am not sure this is the proper thing to do if there are
-    # two completely different scsi_hostadapter.  I think its ok, but
-    # it seems rather arbitrary.
-    count=0
+    blacklist = modprobe.Modprobe()
+    blacklistfiles = ("blacklist","blacklist-compat","blacklist-firewire")
+    for blf in blacklistfiles:
+        if os.path.exists("/etc/modprobe.d/%s"%blf):
+            blacklist.input("/etc/modprobe.d/%s"%blf)
+        
+    # storage devices
+    m.optionsset("ata_generic","all_generic_ide=1")
+    scsi_count= 0
     for a_mod in sysmods[systeminfo.MODULE_CLASS_SCSI]:
-        line="alias scsi_hostadapter%d %s\n" % (count,a_mod) 
-        modulesconf_file.write(line)
-        count=count+1
+        if m.blacklistget(a_mod) <> None or \
+               blacklist.blacklistget(a_mod) <> None:
+            continue
+        m.aliasset("scsi_hostadapter%d"%scsi_count,a_mod)
+        scsi_count= scsi_count + 1
 
-    # This should involve looking at the NodeNetworks associated with
-    # this node and matching on their ethernet address.  Barring that
-    # information order the remaining ethX numbering according to PCI
-    # enumeration order. This should be integrated with
-    # WriteNetworkConfig and integrate.  For now lets just comment out
-    # the 'alias ethX a_mod' lines in modprobe.conf
-    count=0
+    # network devices
+    eth_count= 0
     for a_mod in sysmods[systeminfo.MODULE_CLASS_NETWORK]:
-        line="alias eth%d %s # Want to comment this out in the future.\n" % (count,a_mod) 
-        modulesconf_file.write(line)
-        count=count+1
-
-    modulesconf_file.close()
-    modulesconf_file= None
+        if m.blacklistget(a_mod) <> None or \
+               blacklist.blacklistget(a_mod) <> None:
+            continue
+        m.aliasset("eth%d"%eth_count,a_mod)
+        eth_count= eth_count + 1
+    m.output(mfile, "BootManager")
+    m.output("%s.bak"%mfile, "BootManager") # write a backup version of this file
 
     # dump the modprobe.conf file to the log (not to screen)
     log.write( "Contents of new modprobe.conf file:\n" )
@@ -90,12 +100,10 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
     # before we do the real kexec, check to see if we had any
     # network drivers written to modprobe.conf. if not, return -1,
     # which will cause this node to be switched to a debug state.
-    scsi_count=len(sysmods[systeminfo.MODULE_CLASS_SCSI])
-    eth_count=len(sysmods[systeminfo.MODULE_CLASS_NETWORK])
     if eth_count == 0:
         log.write( "\nIt appears we don't have any network drivers. Aborting.\n" )
         
-        vars['BOOT_STATE']= 'failboot'
+        vars['RUN_LEVEL']= 'failboot'
         vars['STATE_CHANGE_NOTIFY']= 1
         vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
              notify_messages.MSG_NO_DETECTED_NETWORK

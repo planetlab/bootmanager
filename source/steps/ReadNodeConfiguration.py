@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -17,7 +20,7 @@ from Exceptions import *
 import BootServerRequest
 import BootAPI
 import notify_messages
-import UpdateBootStateWithPLC
+import UpdateRunLevelWithPLC
 
 
 # two possible names of the configuration files
@@ -50,8 +53,6 @@ def Run( vars, log ):
     and read, return 1.
 
     Expect the following variables from the store:
-    SUPPORT_FILE_DIR         directory on the boot servers containing
-                             scripts and support files
     
     Sets the following variables from the configuration file:
     WAS_NODE_ID_IN_CONF         Set to 1 if the node id was in the conf file
@@ -83,16 +84,6 @@ def Run( vars, log ):
 
 
     # make sure we have the variables we need
-    try:
-        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-        if SUPPORT_FILE_DIR == None:
-            raise ValueError, "SUPPORT_FILE_DIR"
-
-    except KeyError, var:
-        raise BootManagerException, "Missing variable in vars: %s\n" % var
-    except ValueError, var:
-        raise BootManagerException, "Variable in vars, shouldn't be: %s\n" % var
-
 
     INTERFACE_SETTINGS= {}
     INTERFACE_SETTINGS['method']= "dhcp"
@@ -348,7 +339,6 @@ def __parse_configuration_file( vars, log, file_contents ):
     of the configuration file is completed.
     """
 
-    SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
     INTERFACE_SETTINGS= vars["INTERFACE_SETTINGS"]
     
     if file_contents is None:
@@ -473,11 +463,10 @@ def __parse_configuration_file( vars, log, file_contents ):
         log.write( "Configuration file does not contain the node_id value.\n" )
         log.write( "Querying PLC for node_id.\n" )
 
-        bs_request= BootServerRequest.BootServerRequest()
+        bs_request= BootServerRequest.BootServerRequest(vars)
         
         postVars= {"mac_addr" : INTERFACE_SETTINGS["mac"]}
-        result= bs_request.DownloadFile( "%s/getnodeid.php" %
-                                         SUPPORT_FILE_DIR,
+        result= bs_request.DownloadFile( "/boot/getnodeid.php",
                                          None, postVars, 1, 1,
                                          "/tmp/node_id")
         if result == 0:
@@ -599,18 +588,19 @@ def __parse_configuration_file( vars, log, file_contents ):
         
     vars["INTERFACE_SETTINGS"]= INTERFACE_SETTINGS
 
-    if not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION']:
+    if (not hostname_resolve_ok and not vars['DISCONNECTED_OPERATION'] and
+        'NAT_MODE' not in vars):
         log.write( "Hostname does not resolve correctly, will not continue.\n" )
 
         if can_make_api_call:
             log.write( "Notifying contacts of problem.\n" )
 
-            vars['BOOT_STATE']= 'failboot'
+            vars['RUN_LEVEL']= 'failboot'
             vars['STATE_CHANGE_NOTIFY']= 1
             vars['STATE_CHANGE_NOTIFY_MESSAGE']= \
                                      notify_messages.MSG_HOSTNAME_NOT_RESOLVE
             
-            UpdateBootStateWithPLC.Run( vars, log )
+            UpdateRunLevelWithPLC.Run( vars, log )
                     
         log.write( "\n\n" )
         log.write( "The hostname and/or ip in the network configuration\n" )

@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -20,15 +23,12 @@ import BootAPI
 
 def Run( vars, log ):
     """
-    Download enough files to run rpm and yum from a chroot in
-    the system image directory
+    Download core + extensions bootstrapfs tarballs and install on the hard drive
     
     Expect the following variables from the store:
     SYSIMG_PATH          the path where the system image will be mounted
     PARTITIONS           dictionary of generic part. types (root/swap)
                          and their associated devices.
-    SUPPORT_FILE_DIR     directory on the boot servers containing
-                         scripts and support files
     NODE_ID              the id of this machine
     
     Sets the following variables:
@@ -50,10 +50,6 @@ def Run( vars, log ):
         if PARTITIONS == None:
             raise ValueError, "PARTITIONS"
 
-        SUPPORT_FILE_DIR= vars["SUPPORT_FILE_DIR"]
-        if SUPPORT_FILE_DIR == None:
-            raise ValueError, "SUPPORT_FILE_DIR"
-
         NODE_ID= vars["NODE_ID"]
         if NODE_ID == "":
             raise ValueError, "NODE_ID"
@@ -73,7 +69,7 @@ def Run( vars, log ):
         log.write( "Missing partition in PARTITIONS: %s\n" % part )
         return 0   
 
-    bs_request= BootServerRequest.BootServerRequest()
+    bs_request= BootServerRequest.BootServerRequest(vars)
     
     log.write( "turning on swap space\n" )
     utils.sysexec( "swapon %s" % PARTITIONS["swap"], log )
@@ -91,66 +87,36 @@ def Run( vars, log ):
 
     vars['ROOT_MOUNTED']= 1
 
-    # which extensions are we part of ?
-    utils.breakpoint("Getting the extension tag on node")
-    extensions = []
+    # call getNodeFlavour
     try:
-        extension_tag = BootAPI.call_api_function(vars, "GetNodeExtensions", (NODE_ID,) )
-        if extension_tag:
-            extensions = extension_tag.split()
-
+        node_flavour = BootAPI.call_api_function(vars, "GetNodeFlavour", (NODE_ID,) )
+        nodefamily = node_flavour['nodefamily']
+        extensions = node_flavour['extensions']
+        plain = node_flavour['plain']
     except:
-        log.write("WARNING : Failed to query tag 'extensions'")
-        log.write(traceback.format_exc())
-
-    if not extensions:
-        log.write("installing only core software\n")
+        raise BootManagerException ("Could not call GetNodeFlavour - need PLCAPI-5.0")
     
-    # check if the plain-bootstrapfs tag is set
-    download_suffix=".tar.bz2"
-    untar_option="-j"
-    try:
-        if BootAPI.call_api_function (vars, "GetNodePlainBootstrapfs", (NODE_ID,) ):
-            download_suffix=".tar"
-            untar_option=""
-    except:
-        log.write("WARNING : Failed to query tag 'plain-bootstrapfs'")
-        log.write(traceback.format_exc())
+    # the 'plain' option is for tests mostly
+    if plain:
+        download_suffix=".tar"
+        uncompress_option=""
+        log.write("Using plain bootstrapfs images\n")
+    else:
+        download_suffix=".tar.bz2"
+        uncompress_option="-j"
+        log.write("Using compressed bootstrapfs images\n")
 
-    if not untar_option:
-        log.write("Using uncompressed bootstrapfs images\n")
+    log.write ("Using nodefamily=%s\n"%(nodefamily))
+    if not extensions:
+        log.write("Installing only core software\n")
+    else:
+        log.write("Requested extensions %r",extensions)
+    
+    bootstrapfs_names = [ nodefamily ] + extensions
 
-    # see also GetBootMedium in PLCAPI that does similar things
-    # figuring the default node family:
-    # (1) look at /etc/planetlab/nodefamily on the bootcd
-    # (2) if that fails, set to planetlab-i386
-    try:
-        (pldistro,arch) = file("/etc/planetlab/nodefamily").read().strip().split("-")
-    except:
-        # what arch should be used for this node
-        utils.breakpoint("Getting the arch tag on node")
-        pldistro="planetlab"
-        default_arch="i386"
-        try:
-            arch = BootAPI.call_api_function(vars, "GetNodeArch", (NODE_ID,) )
-        except:
-            log.write("WARNING : Failed to query tag 'arch'")
-            log.write(traceback.format_exc())
-            arch = default_arch
-
-    log.write ("Using arch=%s\n"%arch)
-
-    bootstrapfs_names = [ pldistro ] + extensions
-
-    # download and extract support tarball for this step, which has
-    # everything we need to successfully run
-
-    # we first try to find a tarball, if it is not found we use yum instead
-    yum_extensions = []
-    # download and extract support tarball for this step, 
-    for bootstrapfs_name in bootstrapfs_names:
-        tarball = "bootstrapfs-%s-%s%s"%(bootstrapfs_name,arch,download_suffix)
-        source_file= "%s/%s" % (SUPPORT_FILE_DIR,tarball)
+    for name in bootstrapfs_names:
+        tarball = "bootstrapfs-%s%s"%(name,download_suffix)
+        source_file= "/boot/%s" % (tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
         # 30 is the connect timeout, 14400 is the max transfer time in
@@ -161,17 +127,17 @@ def Run( vars, log ):
                                          30, 14400)
         if result:
             log.write( "extracting %s in %s\n" % (dest_file,SYSIMG_PATH) )
-            result= utils.sysexec( "tar -C %s -xpf %s %s" % (SYSIMG_PATH,dest_file,untar_option), log )
+            result= utils.sysexec( "tar -C %s -xpf %s %s" % (SYSIMG_PATH,dest_file,uncompress_option), log )
             log.write( "Done\n")
             utils.removefile( dest_file )
         else:
             # the main tarball is required
-            if bootstrapfs_name == pldistro:
-                raise BootManagerException, "Unable to download main tarball %s from server." % \
+            if name == nodefamily:
+                raise BootManagerException, "FATAL: Unable to download main tarball %s from server." % \
                     source_file
+            # for extensions, just print a warning
             else:
-                log.write("tarball for %s-%s not found, scheduling a yum attempt\n"%(bootstrapfs_name,arch))
-                yum_extensions.append(bootstrapfs_name)
+                log.write("WARNING: tarball for extension %s not found\n"%(name))
 
     # copy resolv.conf from the base system into our temp dir
     # so DNS lookups work correctly while we are chrooted
@@ -203,13 +169,6 @@ def Run( vars, log ):
     utils.sysexec("gpg --homedir=/root --export --armor" \
                   " --no-default-keyring --keyring %s/usr/boot/pubring.gpg" \
                   " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH))
-    utils.sysexec("chroot %s rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % \
-                  SYSIMG_PATH)
-
-    # the yum config has changed entirely; 
-    # in addition yum installs have more or less never worked - let's forget about this
-    # maybe NodeManager could profitably do the job instead
-    if yum_extensions:
-        log.write('WARNING : yum installs for node extensions are not supported anymore')
+    utils.sysexec_chroot(SYSIMG_PATH, "rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab")
 
     return 1

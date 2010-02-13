@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -39,6 +42,10 @@ def Run( vars, log ):
 
     log.write( "\n\nStep: Initializing the BootManager.\n" )
 
+    # Default model option.  Required in case we go into debug mode
+    # before we successfully called GetAndUpdateNodeDetails().
+    vars["NODE_MODEL_OPTIONS"] = vars.get("NODE_MODEL_OPTIONS",0)
+
     # define the basic partition paths
     PARTITIONS= {}
     PARTITIONS["root"]= "/dev/planetlab/root"
@@ -68,6 +75,12 @@ def Run( vars, log ):
 
     BOOT_CD_VERSION= vars['BOOT_CD_VERSION']
     
+    # In case we are booted with a kernel that does not have the
+    # device mapper code compiled into the kernel.
+    if not os.path.exists("/dev/mapper"):
+        log.write( "Loading support for LVM\n" )
+        utils.sysexec_noerr( "modprobe dm_mod", log )
+
     # for anything that needs to know we are running under the boot cd and
     # not the runtime os
     os.environ['PL_BOOTCD']= "1"

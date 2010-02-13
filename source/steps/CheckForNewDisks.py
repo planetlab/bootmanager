@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -136,7 +139,7 @@ def Run( vars, log ):
         try:
             # backwards compat, though, we should never hit this case post PL 3.2
             os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
-            utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+            utils.sysexec_chroot_noerr( SYSIMG_PATH, "umount /rcfs", log )
         except OSError, e:
             pass
 
@@ -169,7 +172,7 @@ def Run( vars, log ):
                 res = 1
                 break
 
-            log.write( "making the ext3 filesystem match new logical volume size.\n" )
+            log.write( "making the ext filesystem match new logical volume size.\n" )
 
             vars['ROOT_MOUNTED']= 1
             cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)

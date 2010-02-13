@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -11,8 +14,8 @@ import string
 import re
 import os
 
-import UpdateBootStateWithPLC
 import UpdateNodeConfiguration
+import MakeInitrd
 from Exceptions import *
 import utils
 import systeminfo
@@ -86,9 +89,9 @@ def Run( vars, log ):
 
         cmd = "mount %s %s" % (PARTITIONS["root"],SYSIMG_PATH)
         utils.sysexec( cmd, log )
-        cmd = "mount %s %s/vservers" % (PARTITIONS["vservers"],SYSIMG_PATH)
-        utils.sysexec( cmd, log )
         cmd = "mount -t proc none %s/proc" % SYSIMG_PATH
+        utils.sysexec( cmd, log )
+        cmd = "mount %s %s/vservers" % (PARTITIONS["vservers"],SYSIMG_PATH)
         utils.sysexec( cmd, log )
 
         ROOT_MOUNTED= 1
@@ -110,18 +113,21 @@ def Run( vars, log ):
     log.write( "Updating configuration files.\n" )
     try:
         cmd = "/etc/init.d/conf_files start --noscripts"
-        utils.sysexec( "chroot %s %s" % (SYSIMG_PATH, cmd), log )
+        utils.sysexec_chroot( SYSIMG_PATH, cmd, log )
     except IOError, e:
         log.write("conf_files failed with \n %s" % e)
 
     # update node packages
     log.write( "Running node update.\n" )
     if os.path.exists( SYSIMG_PATH + "/usr/bin/NodeUpdate.py" ):
-        cmd = "chroot %s /usr/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
+        cmd = "/usr/bin/NodeUpdate.py start noreboot"
     else:
         # for backwards compatibility
-        cmd = "chroot %s /usr/local/planetlab/bin/NodeUpdate.py start noreboot" % SYSIMG_PATH
-    utils.sysexec( cmd, log )
+        cmd = "/usr/local/planetlab/bin/NodeUpdate.py start noreboot"
+    utils.sysexec_chroot( SYSIMG_PATH, cmd, log )
+
+    # Re-generate initrd right before kexec call
+    MakeInitrd.Run( vars, log )
 
     # the following step should be done by NM
     UpdateNodeConfiguration.Run( vars, log )
@@ -152,17 +158,10 @@ def Run( vars, log ):
     BootAPI.save(vars)
 
     log.write( "Unmounting disks.\n" )
-    try:
-        # backwards compat, though, we should never hit this case post PL 3.2
-        os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
-        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
-    except OSError, e:
-        pass
-
-    utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "umount -r %s/vservers" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "umount -r %s" % SYSIMG_PATH, log )
-    utils.sysexec_noerr( "vgchange -an", log )
+    utils.sysexec( "umount %s/vservers" % SYSIMG_PATH, log )
+    utils.sysexec( "umount %s/proc" % SYSIMG_PATH, log )
+    utils.sysexec( "umount %s" % SYSIMG_PATH, log )
+    utils.sysexec( "vgchange -an", log )
 
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
@@ -191,7 +190,7 @@ def Run( vars, log ):
     
     # modules that should not get unloaded
     # unloading cpqphp causes a kernel panic
-    blacklist = [ "floppy", "cpqphp", "i82875p_edac" ]
+    blacklist = [ "floppy", "cpqphp", "i82875p_edac", "mptspi"]
     try:
         modules= file("/tmp/loadedmodules","r")
         
@@ -266,6 +265,7 @@ def Run( vars, log ):
         # kargs, which is ramdisk_size=8192
         pass 
 
+    utils.sysexec_noerr( 'hwclock --systohc --utc ' )
     utils.breakpoint ("Before kexec");
     try:
         utils.sysexec( 'kexec --force --initrd=/tmp/initrd ' \

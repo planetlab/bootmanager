@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+#
+# $Id$
+# $URL$
+#
 # Copyright (c) 2003 Intel Corporation
 # All rights reserved.
 #
@@ -66,7 +69,7 @@ def Run( vars, log ):
     try:
         # backwards compat, though, we should never hit this case post PL 3.2
         os.stat("%s/rcfs/taskclass"%SYSIMG_PATH)
-        utils.sysexec_noerr( "chroot %s umount /rcfs" % SYSIMG_PATH, log )
+        utils.sysexec_chroot_noerr( SYSIMG_PATH, "umount /rcfs", log )
     except OSError, e:
         pass
             

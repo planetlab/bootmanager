@@ -2,30 +2,46 @@
 # $Id: Makefile 682 2007-07-19 09:00:25Z thierry $
 #
 
-########## make sync PLCHOST=hostname
-########## make sync PLCHOST=hostname
+########## sync
+# 2 forms are supported
+# (*) if your plc root context has direct ssh access:
+# make sync PLC=private.one-lab.org
+# (*) otherwise, entering through the root context
+# make sync PLCHOST=testbox1.inria.fr GUEST=vplc03.inria.fr
+
+ifdef GUEST
 ifdef PLCHOST
-ifdef VSERVER
-PLCSSH:=root@$(PLCHOST):/vservers/$(VSERVER)
+SSHURL:=root@$(PLCHOST):/vservers/$(GUEST)
+SSHCOMMAND:=ssh root@$(PLCHOST) vserver $(GUEST)
 endif
+endif
+ifdef PLC
+SSHURL:=root@$(PLC):/
+SSHCOMMAND:=ssh root@$(PLC)
 endif
 
-LOCAL_RSYNC_EXCLUDES	:= --exclude '*.pyc' --exclude debug_root_ssh_key
+LOCAL_RSYNC_EXCLUDES	:= --exclude '*.pyc' 
 RSYNC_EXCLUDES		:= --exclude .svn --exclude CVS --exclude '*~' --exclude TAGS $(LOCAL_RSYNC_EXCLUDES)
 RSYNC_COND_DRY_RUN	:= $(if $(findstring n,$(MAKEFLAGS)),--dry-run,)
 RSYNC			:= rsync -a -v $(RSYNC_COND_DRY_RUN) $(RSYNC_EXCLUDES)
 
+DEPLOYMENT ?= regular
+
 sync:
-ifeq (,$(PLCSSH))
-	echo "sync: You must define PLCHOST and VSERVER on the command line"
-	echo " e.g. make sync PLCHOST=private.one-lab.org VSERVER=myplc01" ; exit 1
+ifeq (,$(SSHURL))
+	@echo "sync: You must define, either PLC, or PLCHOST & GUEST, on the command line"
+	@echo " you can optionnally define DEPLOYMENT too, it defaults to 'regular'"
+	@echo "  e.g. make sync PLC=boot.onelab.eu DEPLOYMENT=alpha"
+	@echo "  or   make sync PLCHOST=testbox1.inria.fr GUEST=vplc03.inria.fr"
+	@exit 1
 else
-	+$(RSYNC) source $(PLCSSH)/usr/share/bootmanager/
-	ssh root@$(PLCHOST) vserver $(VSERVER) exec service plc start bootmanager
+	$(SSHCOMMAND) mkdir -p /usr/share/bootmanager/$(DEPLOYMENT)
+	+$(RSYNC) build.sh source $(SSHURL)/usr/share/bootmanager/$(DEPLOYMENT)
+	$(SSHCOMMAND) service plc start bootmanager
 endif
 
 ##########
 tags:
-	find . '(' -name '*.py' -o -name '*.spec' ')' | xargs etags
+	find . -type f | egrep -v '/\.svn/|~$$' | xargs etags
 
 .PHONY: tags
