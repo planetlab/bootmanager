@@ -17,6 +17,7 @@ import string
 import sha
 import cPickle
 import utils
+import os
 
 from Exceptions import *
 
@@ -72,6 +73,8 @@ def create_auth_structure( vars, call_params ):
                 vars['NODE_SESSION'] = session
                 # NOTE: save session value to /etc/planetlab/session for 
                 # RunlevelAgent and future BootManager runs
+                if not os.path.exists("/etc/planetlab"):
+                    os.makedirs("/etc/planetlab")
                 sessionfile = open('/etc/planetlab/session', 'w')
                 sessionfile.write( vars['NODE_SESSION'] )
                 sessionfile.close()
