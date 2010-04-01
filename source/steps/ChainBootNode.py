@@ -143,7 +143,7 @@ def Run( vars, log ):
         pass
 
     update_vals= {}
-    update_vals['ssh_host_key']= ssh_host_key
+    update_vals['ssh_rsa_key']= ssh_host_key
     BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
 
     # get the kernel version
