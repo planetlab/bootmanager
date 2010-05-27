@@ -110,7 +110,7 @@ def Run( vars, log ):
     if not extensions:
         log.write("Installing only core software\n")
     else:
-        log.write("Requested extensions %r",extensions)
+        log.write("Requested extensions %r" % extensions)
     
     bootstrapfs_names = [ nodefamily ] + extensions
 
