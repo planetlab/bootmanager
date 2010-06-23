@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 3
+%define taglevel 4
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,10 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Wed Jun 23 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-4
+- nicer initscript now uses 'action' from /etc/init.d/functions
+- bugfix for nodes with extensions
+
 * Fri Apr 02 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-3
 - create /etc/planetlab if missing
 - uses key 'ssh_rsa_key' in BootUpdateNode (requires PLCAPI-5.0.5)
