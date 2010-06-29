@@ -94,7 +94,13 @@ def Run( vars, log ):
             except BootManagerException, e:
                 log.write( "BootManagerException during fsck of %s (%s) filesystem : %s\n" %
                            (filesystem, PARTITIONS[filesystem], str(e)) )
-                return -1
+                try:
+                    log.write( "Trying to recover filesystem errors on %s\n" % filesystem )
+                    utils.sysexec("e2fsck -v -y %s" % (PARTITIONS[filesystem]),log)
+                except BootManagerException, e:
+                    log.write( "BootManagerException during trying to recover filesystem errors on %s (%s) filesystem : %s\n" %
+                           (filesystem, PARTITIONS[filesystem], str(e)) )
+                    return -1
 
         try:
             # then attempt to mount them
