@@ -119,15 +119,27 @@ def Run( vars, log ):
         source_file= "/boot/%s" % (tarball)
         dest_file= "%s/%s" % (SYSIMG_PATH, tarball)
 
+        source_hash_file= "/boot/%s.sha1sum" % (tarball)
+        dest_hash_file= "%s/%s.sha1sum" % (SYSIMG_PATH, tarball)
+
         # 30 is the connect timeout, 14400 is the max transfer time in
         # seconds (4 hours)
         log.write( "downloading %s\n" % source_file )
-        result= bs_request.DownloadFile( source_file, None, None,
+        result = bs_request.DownloadFile( source_file, None, None,
                                          1, 1, dest_file,
                                          30, 14400)
+
         if result:
+            # Download SHA1 checksum file
+            result = bs_request.DownloadFile( source_hash_file, None, None,
+                                         1, 1, dest_hashfile,
+                                         30, 14400)
+ 
+            if not utils.check_file_hash(dest_file, dest_hash_file):
+                raise BootManagerException, "FATAL: SHA1 checksum does not match between %s and %s" % (source_file, source_hash_file)
+                
             log.write( "extracting %s in %s\n" % (dest_file,SYSIMG_PATH) )
-            result= utils.sysexec( "tar -C %s -xpf %s %s" % (SYSIMG_PATH,dest_file,uncompress_option), log )
+            result = utils.sysexec( "tar -C %s -xpf %s %s" % (SYSIMG_PATH,dest_file,uncompress_option), log )
             log.write( "Done\n")
             utils.removefile( dest_file )
         else:

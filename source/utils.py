@@ -16,6 +16,7 @@ import socket
 import fcntl
 import string
 import exceptions
+import hashlib
 
 from Exceptions import *
 
@@ -247,3 +248,28 @@ def get_mac_from_interface(ifname):
         
     return ret
 
+def check_file_hash(filename, hash_filename):
+    """Check the file's integrity with a given hash."""
+    return sha1_file(filename) == open(hash_filename).read().split()[0].strip()
+
+def sha1_file(filename):
+    """Calculate sha1 hash of file."""
+    try:
+        m = hashlib.sha1()
+        f = file(filename, 'rb')
+        while True:
+            # 256 KB seems ideal for speed/memory tradeoff
+            # It wont get much faster with bigger blocks, but
+            # heap peak grows
+            block = f.read(256 * 1024)
+            if len(block) == 0:
+                # end of file
+                break
+            m.update(block)
+            # Simple trick to keep total heap even lower
+            # Delete the previous block, so while next one is read
+            # we wont have two allocated blocks with same size
+            del block
+        return m.hexdigest()
+    except IOError:
+        raise BootManagerException, "Cannot calculate SHA1 hash of %s" % filename
