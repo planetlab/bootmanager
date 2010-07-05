@@ -132,7 +132,7 @@ def Run( vars, log ):
         if result:
             # Download SHA1 checksum file
             result = bs_request.DownloadFile( source_hash_file, None, None,
-                                         1, 1, dest_hashfile,
+                                         1, 1, dest_hash_file,
                                          30, 14400)
  
             if not utils.check_file_hash(dest_file, dest_hash_file):
