@@ -16,7 +16,6 @@ import socket
 import fcntl
 import string
 import exceptions
-import hashlib
 
 from Exceptions import *
 
@@ -255,7 +254,12 @@ def check_file_hash(filename, hash_filename):
 def sha1_file(filename):
     """Calculate sha1 hash of file."""
     try:
-        m = hashlib.sha1()
+        try:
+            import hashlib
+            m = hashlib.sha1()
+        except:
+            import sha
+            m=sha.new()
         f = file(filename, 'rb')
         while True:
             # 256 KB seems ideal for speed/memory tradeoff
