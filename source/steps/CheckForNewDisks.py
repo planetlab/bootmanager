@@ -86,7 +86,7 @@ def Run( vars, log ):
         cmd = "pvdisplay %s | grep -q 'planetlab'" % lvm_partition
         already_added= utils.sysexec_noerr(cmd, log)
 
-        if already_added:
+        if already_added == 0:
             log.write( "It appears %s is part of the volume group, continuing.\n" %
                        device )
             continue
