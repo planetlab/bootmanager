@@ -142,7 +142,20 @@ def sysexec( cmd, log= None ):
             raise BootManagerException, "Interrupted by user"
 
     returncode= prog.wait()
-    if returncode != 0 and returncode != 256:
+    # revert http://git.planet-lab.org/?p=bootmanager.git;a=commitdiff;h=cca3a2cd2096c0235dddb5982b1f05c8d4c7f916
+    # as 256 returned by Python
+    #
+    ## cat test.py 
+    #import popen2
+    #
+    #cmd = "false"
+    #prog = popen2.Popen4( cmd, 0 )
+    #returncode = prog.wait()
+    #print returncode
+    #
+    ## python test.py 
+    # 256
+    if returncode != 0:
         raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
 
     prog= None
