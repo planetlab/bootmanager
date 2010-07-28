@@ -101,6 +101,9 @@ def Run( vars, log ):
                     log.write( "BootManagerException during trying to recover filesystem errors on %s (%s) filesystem : %s\n" %
                            (filesystem, PARTITIONS[filesystem], str(e)) )
                     return -1
+            else:
+                # disable time/count based filesystems checks
+                utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" PARTITIONS[filesystem], log)
 
         try:
             # then attempt to mount them

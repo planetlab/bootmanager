@@ -163,6 +163,10 @@ def Run( vars, log ):
         log.write("formatting %s partition (%s)%s.\n" % (fs,devname,txt))
         utils.sysexec( "mkfs.ext2 -q %s -m %d -j %s" % (option,rbp,devname), log )
 
+    # disable time/count based filesystems checks
+    for filesystem in ("root","vservers"):
+        utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" PARTITIONS[filesystem], log)
+
     # save the list of block devices in the log
     log.write( "Block devices used (in lvm): %s\n" % repr(used_devices))
 
