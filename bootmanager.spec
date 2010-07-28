@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 6
+%define taglevel 7
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,9 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Tue Jul 27 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-7
+- Fix new disk additions to LVM array
+
 * Wed Jul 07 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-6
 - bugfix for centos5/python2.4 missing hashlib
 
