@@ -177,7 +177,7 @@ def Run( vars, log ):
             cmd = "mount %s %s/vservers" % \
                 (PARTITIONS["vservers"],SYSIMG_PATH)
             utils.sysexec_noerr( cmd, log )
-            cmd = "ext2online %s/vservers" % SYSIMG_PATH
+            cmd = "resize2fs %s" % PARTITIONS["vservers"]
             resize = utils.sysexec_noerr(cmd,log)
             utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH, log )
             utils.sysexec_noerr( "umount %s" % SYSIMG_PATH, log )
