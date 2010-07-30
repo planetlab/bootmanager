@@ -103,7 +103,7 @@ def Run( vars, log ):
                     return -1
             else:
                 # disable time/count based filesystems checks
-                utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" PARTITIONS[filesystem], log)
+                utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" % PARTITIONS[filesystem], log)
 
         try:
             # then attempt to mount them
