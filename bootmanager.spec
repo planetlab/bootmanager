@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 8
+%define taglevel 9
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,9 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Fri Jul 30 2010 Baris Metin <Talip-Baris.Metin@sophia.inria.fr> - bootmanager-5.0-9
+- fix typo
+
 * Wed Jul 28 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-8
 - disable time/count based filesystem checks
 
