@@ -162,7 +162,7 @@ def Run( vars, log ):
 
     # disable time/count based filesystems checks
     for filesystem in ("root","vservers"):
-        utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" PARTITIONS[filesystem], log)
+        utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" % PARTITIONS[filesystem], log)
 
     # save the list of block devices in the log
     log.write( "Block devices used (in lvm): %s\n" % repr(used_devices))
