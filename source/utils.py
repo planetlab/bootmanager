@@ -139,8 +139,11 @@ def sysexec( cmd, log= None ):
         raise BootManagerException, \
               "Unable to create instance of subprocess.Popen " \
               "for command: %s" % cmd
+    try:
+        (stdoutdata, stderrdata) = prog.communicate()
+    except KeyboardInterrupt:
+        raise BootManagerException, "Interrupted by user"
 
-    (stdoutdata, stderrdata) = prog.communicate()
     if log is not None:
         log.write(stdoutdata)
 
