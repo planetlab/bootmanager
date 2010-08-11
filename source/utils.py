@@ -121,7 +121,7 @@ def removedir( path ):
 
 
 
-def sysexec( cmd, log= None ):
+def sysexec( cmd, log= None, fsck = False ):
     """
     execute a system command, output the results to the logger
     if log <> None
@@ -148,8 +148,22 @@ def sysexec( cmd, log= None ):
         log.write(stdoutdata)
 
     returncode = prog.wait()
-    if returncode != 0:
-        raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
+
+    if fsck:
+       # The exit code returned by fsck is the sum of the following conditions:
+       #      0    - No errors
+       #      1    - File system errors corrected
+       #      2    - System should be rebooted
+       #      4    - File system errors left uncorrected
+       #      8    - Operational error
+       #      16   - Usage or syntax error
+       #      32   - Fsck canceled by user request
+       #      128  - Shared library error
+       if returncode != 0 or returncode != 1:
+            raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
+    else:
+        if returncode != 0:
+            raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
 
     prog = None
     return 1
