@@ -159,7 +159,7 @@ def sysexec( cmd, log= None, fsck = False ):
        #      16   - Usage or syntax error
        #      32   - Fsck canceled by user request
        #      128  - Shared library error
-       if returncode != 0 or returncode != 1:
+       if returncode != 0 and returncode != 1:
             raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
     else:
         if returncode != 0:
