@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 11
+%define taglevel 12
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,9 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Thu Aug 26 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-12
+- Revert "replace deprecated popen2 with subprocess"
+
 * Wed Aug 11 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-11
 - replace deprecated popen2 with subprocess and handle fsck return codes in a different code path
 
