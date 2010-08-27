@@ -11,7 +11,8 @@
 # expected /proc/partitions format
 
 import os, sys, shutil
-import popen2
+import subprocess
+import shlex
 import socket
 import fcntl
 import string
@@ -132,18 +133,19 @@ def sysexec( cmd, log= None, fsck = False ):
     if VERBOSE_MODE:
         print ("sysexec >>> %s" % cmd)
 
-    prog = popen2.Popen4( cmd, 0 )
-    if prog is None:
+    try:
+        prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
         raise BootManagerException, \
-              "Unable to create instance of popen2.Popen4 " \
+              "Unable to create instance of subprocess.Popen " \
               "for command: %s" % cmd
+    try:
+        (stdoutdata, stderrdata) = prog.communicate()
+    except KeyboardInterrupt:
+        raise BootManagerException, "Interrupted by user"
 
     if log is not None:
-        try:
-            for line in prog.fromchild:
-                log.write( line )
-        except KeyboardInterrupt:
-            raise BootManagerException, "Interrupted by user"
+        log.write(stdoutdata)
 
     returncode = prog.wait()
 
@@ -162,6 +164,7 @@ def sysexec( cmd, log= None, fsck = False ):
     else:
         if returncode != 0:
             raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
+
     prog = None
     return 1
 
