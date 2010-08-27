@@ -134,7 +134,10 @@ def sysexec( cmd, log= None, fsck = False ):
         print ("sysexec >>> %s" % cmd)
 
     try:
-        prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if cmd.__contains__(">"):
+            prog = subprocess.Popen(shlex.split(cmd), shell=True)
+        else:
+            prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError:
         raise BootManagerException, \
               "Unable to create instance of subprocess.Popen " \
