@@ -90,7 +90,7 @@ for f in bash-prompt-default bash-prompt-xterm ; do
 done
 
 # NOTE: allow command run directly over ssh to be logged also.
-echo 'source /etc/profile ; source /root/.bash_profile' > /root/.bashrc
+echo "source /etc/profile ; source $BASH_PROFILE" > /root/.bashrc
 
 # NOTE 1: crond is not installed on the boot image, so this maintains a
 #         persistent process to upload logs on legacy nodes.
@@ -99,7 +99,6 @@ echo 'source /etc/profile ; source /root/.bash_profile' > /root/.bashrc
 # NOTE 3: The initial delay is randomized in case many nodes reboot at the
 #         same time.
 initial_delay=$(( $RANDOM * 3 )) 
-
 
 cat <<EOF > $PERIODIC_SCRIPT
 #!/bin/bash
