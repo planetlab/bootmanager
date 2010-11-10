@@ -148,7 +148,8 @@ class log:
         if extra_file is not None:
             # NOTE: for code-reuse, evoke the bash function 'upload_logs'; 
             # by adding --login, bash reads .bash_profile before execution.
-            utils.sysexec( """bash --login -c "upload_logs %s" """ % extra_file, self)
+            # Also, never fail, since this is an optional feature.
+            utils.sysexec( """bash --login -c "upload_logs %s || /bin/true" """ % extra_file, self)
 
 
 ##############################
