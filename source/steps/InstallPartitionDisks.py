@@ -57,7 +57,7 @@ def Run( vars, log ):
 
         if NODE_MODEL_OPTIONS & ModelOptions.RAWDISK:
             VSERVERS_SIZE= "-1"
-            if "VSERVER_SIZE" in vars:
+            if "VSERVERS_SIZE" in vars:
                 VSERVERS_SIZE= vars["VSERVERS_SIZE"]
                 if VSERVERS_SIZE == "" or VSERVERS_SIZE == 0:
                     raise ValueError, "VSERVERS_SIZE"
