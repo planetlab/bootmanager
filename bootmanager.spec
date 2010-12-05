@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 6
+%define taglevel 12
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,24 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Thu Aug 26 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-12
+- Revert "replace deprecated popen2 with subprocess"
+
+* Wed Aug 11 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-11
+- replace deprecated popen2 with subprocess and handle fsck return codes in a different code path
+
+* Fri Jul 30 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-10
+- Fix typo
+
+* Fri Jul 30 2010 Baris Metin <Talip-Baris.Metin@sophia.inria.fr> - bootmanager-5.0-9
+- fix typo
+
+* Wed Jul 28 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-8
+- disable time/count based filesystem checks
+
+* Tue Jul 27 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-7
+- Fix new disk additions to LVM array
+
 * Wed Jul 07 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - BootManager-5.0-6
 - bugfix for centos5/python2.4 missing hashlib
 

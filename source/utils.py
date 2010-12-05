@@ -11,7 +11,8 @@
 # expected /proc/partitions format
 
 import os, sys, shutil
-import popen2
+import subprocess
+import shlex
 import socket
 import fcntl
 import string
@@ -120,7 +121,7 @@ def removedir( path ):
 
 
 
-def sysexec( cmd, log= None ):
+def sysexec( cmd, log= None, fsck = False ):
     """
     execute a system command, output the results to the logger
     if log <> None
@@ -131,24 +132,43 @@ def sysexec( cmd, log= None ):
     """
     if VERBOSE_MODE:
         print ("sysexec >>> %s" % cmd)
-    prog= popen2.Popen4( cmd, 0 )
-    if prog is None:
+
+    try:
+        if cmd.__contains__(">"):
+            prog = subprocess.Popen(shlex.split(cmd), shell=True)
+        else:
+            prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
         raise BootManagerException, \
-              "Unable to create instance of popen2.Popen4 " \
+              "Unable to create instance of subprocess.Popen " \
               "for command: %s" % cmd
+    try:
+        (stdoutdata, stderrdata) = prog.communicate()
+    except KeyboardInterrupt:
+        raise BootManagerException, "Interrupted by user"
 
     if log is not None:
-        try:
-            for line in prog.fromchild:
-                log.write( line )
-        except KeyboardInterrupt:
-            raise BootManagerException, "Interrupted by user"
+        log.write(stdoutdata)
 
-    returncode= prog.wait()
-    if returncode != 0 and returncode != 256:
-        raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
+    returncode = prog.wait()
 
-    prog= None
+    if fsck:
+       # The exit code returned by fsck is the sum of the following conditions:
+       #      0    - No errors
+       #      1    - File system errors corrected
+       #      2    - System should be rebooted
+       #      4    - File system errors left uncorrected
+       #      8    - Operational error
+       #      16   - Usage or syntax error
+       #      32   - Fsck canceled by user request
+       #      128  - Shared library error
+       if returncode != 0 and returncode != 1:
+            raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
+    else:
+        if returncode != 0:
+            raise BootManagerException, "Running %s failed (rc=%d)" % (cmd,returncode)
+
+    prog = None
     return 1
 
 

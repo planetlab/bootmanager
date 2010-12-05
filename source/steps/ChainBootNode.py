@@ -169,7 +169,7 @@ def Run( vars, log ):
     log.write( "Unloading modules and chain booting to new kernel.\n" )
 
     # further use of log after Upload will only output to screen
-    log.Upload()
+    log.Upload("/root/.bash_eternal_history")
 
     # regardless of whether kexec works or not, we need to stop trying to
     # run anything

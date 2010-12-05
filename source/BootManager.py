@@ -18,6 +18,7 @@ from steps import *
 from Exceptions import *
 import notify_messages
 import BootServerRequest
+import utils
 
 # all output is written to this file
 BM_NODE_LOG= "/tmp/bm.log"
@@ -112,7 +113,7 @@ class log:
         self.LogEntry( str, 0, 1 )
     
     # bm log uploading is available back again, as of nodeconfig-5.0-2
-    def Upload( self ):
+    def Upload( self, extra_file=None ):
         """
         upload the contents of the log to the server
         """
@@ -144,6 +145,11 @@ class log:
                                        FormData = [('log',(pycurl.FORM_FILE, self.OutputFilePath)),
                                                    ("hostname",hostname),
                                                    ("type","bm.log")])
+        if extra_file is not None:
+            # NOTE: for code-reuse, evoke the bash function 'upload_logs'; 
+            # by adding --login, bash reads .bash_profile before execution.
+            # Also, never fail, since this is an optional feature.
+            utils.sysexec( """bash --login -c "upload_logs %s || /bin/true" """ % extra_file, self)
 
 
 ##############################
@@ -361,6 +367,9 @@ def main(argv):
     # all output goes through this class so we can save it and post
     # the data back to PlanetLab central
     LOG= log( BM_NODE_LOG )
+
+    # NOTE: assume CWD is BM's source directory, but never fail
+    utils.sysexec("./setup_bash_history_scripts.sh || /bin/true", LOG)
 
     LOG.LogEntry( "BootManager started at: %s" % \
                   time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
