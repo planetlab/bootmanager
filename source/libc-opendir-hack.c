@@ -9,6 +9,7 @@
 #include <glob.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #define INIT(x)	real_ ## x = dlsym(RTLD_NEXT, #x); \
 		if (!real_ ## x) { \
