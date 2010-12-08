@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 12
+%define taglevel 13
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,12 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Wed Dec 08 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-13
+- Add support for uploading bash_history to a central server for failboot nodes.
+- Start to use subprocess instead of deprecated popen2 module
+- Fix typo for VSERVERS_SIZE
+- Add --allow-missing parameter to support different kernel configs with mkinitrd
+
 * Thu Aug 26 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-12
 - Revert "replace deprecated popen2 with subprocess"
 
