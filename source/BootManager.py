@@ -149,7 +149,7 @@ class log:
             # NOTE: for code-reuse, evoke the bash function 'upload_logs'; 
             # by adding --login, bash reads .bash_profile before execution.
             # Also, never fail, since this is an optional feature.
-            utils.sysexec( """bash --login -c "upload_logs %s || /bin/true" """ % extra_file, self)
+            utils.sysexec_noerr( """bash --login -c "upload_logs %s" """ % extra_file, self)
 
 
 ##############################
@@ -369,7 +369,7 @@ def main(argv):
     LOG= log( BM_NODE_LOG )
 
     # NOTE: assume CWD is BM's source directory, but never fail
-    utils.sysexec("./setup_bash_history_scripts.sh || /bin/true", LOG)
+    utils.sysexec_noerr("./setup_bash_history_scripts.sh", LOG)
 
     LOG.LogEntry( "BootManager started at: %s" % \
                   time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) )
