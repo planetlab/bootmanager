@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 5.0
-%define taglevel 13
+%define taglevel 14
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -90,6 +90,9 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Thu Dec 09 2010 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-14
+- tag 5.0-13 is broken
+
 * Wed Dec 08 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-13
 - Add support for uploading bash_history to a central server for failboot nodes.
 - Start to use subprocess instead of deprecated popen2 module
