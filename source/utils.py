@@ -148,7 +148,8 @@ def sysexec( cmd, log= None, fsck = False ):
         raise BootManagerException, "Interrupted by user"
 
     if log is not None:
-        log.write(stdoutdata)
+        if stdoutdata is not None:
+            log.write(stdoutdata)
 
     returncode = prog.wait()
 
