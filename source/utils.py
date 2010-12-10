@@ -135,7 +135,7 @@ def sysexec( cmd, log= None, fsck = False ):
 
     try:
         if cmd.__contains__(">"):
-            prog = subprocess.Popen(shlex.split(cmd), shell=True)
+            prog = subprocess.Popen(cmd, shell=True)
         else:
             prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError:
