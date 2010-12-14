@@ -14,7 +14,6 @@ import sys, os, traceback
 import string
 import socket
 import re
-import time
 
 import utils
 from Exceptions import *
@@ -564,12 +563,7 @@ def __parse_configuration_file( vars, log, file_contents ):
     try:
         resolved_node_ip= socket.gethostbyname(hostname)
     except socket.gaierror, e:
-        # sleep 5 minutes and try again
-        time.sleep(60*5)
-        try:
-            resolved_node_ip= socket.gethostbyname(hostname)
-        except socket.gaierror, e:
-            hostname_resolve_ok= 0
+        hostname_resolve_ok= 0
         
 
     if INTERFACE_SETTINGS['method'] == "dhcp":

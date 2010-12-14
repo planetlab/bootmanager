@@ -67,7 +67,7 @@ def Run( vars, log ):
 
     # hack for CentOS 5.3
     bypassRaidIfNeeded(SYSIMG_PATH)
-    utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v /boot/initrd-%s.img %s" % \
+    utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v --allow-missing /boot/initrd-%s.img %s" % \
                (kernel_version, kernel_version), log )
 
     utils.sysexec_noerr("umount %s/sys" % SYSIMG_PATH)
