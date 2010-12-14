@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 17
+%define taglevel 18
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,11 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri Nov 19 2010 Daniel Hokka Zakrisson <dhokka@cs.princeton.edu> - bootmanager-4.3-18
+- Use resize2fs for resizing.
+- Fix typo for VSERVERS_SIZE.
+- Disable time/count-based fsck.
+
 * Fri Feb 19 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - BootManager-4.3-17
 - merge initrd changes from trunk
 
