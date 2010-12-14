@@ -83,7 +83,7 @@ def Run( vars, log ):
     utils.sysexec_noerr( "lvremove -f %s" % PARTITIONS["swap"], log )
     utils.sysexec_noerr( "lvremove -f %s" % PARTITIONS["vservers"], log )
     utils.sysexec_noerr( "vgchange -an", log )
-    utils.sysexec_noerr( "vgremove planetlab", log )
+    utils.sysexec_noerr( "vgremove -f planetlab", log )
 
     log.write( "Running vgscan for devices\n" )
     utils.sysexec_noerr( "vgscan", log )
