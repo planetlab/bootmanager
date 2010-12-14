@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 18
+%define taglevel 19
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,9 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Tue Dec 14 2010 Daniel Hokka Zakrisson <dhokka@cs.princeton.edu> - bootmanager-4.3-19
+- Force removal of VG for automation.
+
 * Fri Nov 19 2010 Daniel Hokka Zakrisson <dhokka@cs.princeton.edu> - bootmanager-4.3-18
 - Use resize2fs for resizing.
 - Fix typo for VSERVERS_SIZE.
