@@ -1,8 +1,5 @@
 <?php
 
-// $Id$
-// $URL$
-
 // Thierry Parmentelat -- INRIA
 // first draft for a revival of former (3.x?) alpina-logs in 5.0
 

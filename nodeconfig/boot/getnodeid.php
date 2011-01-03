@@ -1,15 +1,10 @@
 <?php
 
-// $Id$
-// $URL$
-
 //
 // Returns node ID of requestor
 //
 // Mark Huang <mlhuang@cs.princeton.edu>
 // Copyright (C) 2006 The Trustees of Princeton University
-//
-// $Id$ $
 //
 
 // Get admin API handle

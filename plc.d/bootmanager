@@ -7,9 +7,6 @@
 # Mark Huang <mlhuang@cs.princeton.edu>
 # Copyright (C) 2006 The Trustees of Princeton University
 #
-# $Id$
-# $URL$
-#
 
 # Source function library and configuration
 . /etc/plc.d/functions

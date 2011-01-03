@@ -10,9 +10,6 @@
 # Marc E. Fiuczynski <mef@cs.princeton.edu>
 # Copyright (C) 2004-2007 The Trustees of Princeton University
 #
-# $Id: build.sh,v 1.5 2006/04/03 19:40:55 mlhuang Exp $
-# $URL$
-#
 
 # Source PLC configuration
 . /etc/planetlab/plc_config
