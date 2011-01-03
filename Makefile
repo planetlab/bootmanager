@@ -42,6 +42,6 @@ endif
 
 ##########
 tags:
-	find . -type f | egrep -v '/\.svn/|~$$' | xargs etags
+	find . -type f | egrep -v '/\.svn/|\.git/|~$$' | xargs etags
 
 .PHONY: tags
