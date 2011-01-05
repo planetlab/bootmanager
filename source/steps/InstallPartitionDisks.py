@@ -183,13 +183,20 @@ def single_partition_device( device, vars, log ):
     """
 
     # two forms, depending on which version of pyparted we have
+    # v1 does not have a 'version' method
+    # v2 and above does, but to make it worse, 
+    # parted-3.4 on f14 has parted.version broken and raises SystemError
     try:
-        version=parted.version()
+        parted.version()
+        return single_partition_device_2_x (device, vars, log)
+    except AttributeError:
+        # old parted does not have version at all
+        return single_partition_device_1_x (device, vars, log)
+    except SystemError:
+        # let's assume this is >=2
         return single_partition_device_2_x (device, vars, log)
     except:
-        return single_partition_device_1_x (device, vars, log)
-
-        
+        raise
 
 def single_partition_device_1_x ( device, vars, log):
     
