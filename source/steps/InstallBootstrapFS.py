@@ -128,10 +128,12 @@ def Run( vars, log ):
 
         if result:
             # Download SHA1 checksum file
+            log.write( "downloading sha1sum for %s\n"%source_file)
             result = bs_request.DownloadFile( source_hash_file, None, None,
                                          1, 1, dest_hash_file,
                                          30, 14400)
  
+            log.write( "verifying sha1sum for %s\n"%source_file)
             if not utils.check_file_hash(dest_file, dest_hash_file):
                 raise BootManagerException, "FATAL: SHA1 checksum does not match between %s and %s" % (source_file, source_hash_file)
                 
