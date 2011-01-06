@@ -6,12 +6,11 @@
 # Copyright (c) 2004-2006 The Trustees of Princeton University
 # All rights reserved.
 
-import os, string
+import os, os.path
 
 from Exceptions import *
 import utils
 import systeminfo
-import shutil
 
 # for centos5.3
 # 14:42:27(UTC) No module dm-mem-cache found for kernel 2.6.22.19-vs2.3.0.34.33.onelab, aborting.
@@ -53,7 +52,9 @@ def Run( vars, log ):
 
     # mkinitrd needs /dev and /proc to do the right thing.
     # /proc is already mounted, so bind-mount /dev here
-    utils.sysexec("mount -o bind /dev %s/dev" % SYSIMG_PATH)
+    # looks like this dir somehow already exists under f14
+    if not os.path.isdir ("%s/dev" % SYSIMG_PATH):
+        utils.sysexec("mount -o bind /dev %s/dev" % SYSIMG_PATH)
     utils.sysexec("mount -t sysfs none %s/sys" % SYSIMG_PATH)
 
     initrd, kernel_version= systeminfo.getKernelVersion(vars,log)
