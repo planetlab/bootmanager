@@ -203,7 +203,7 @@ def single_partition_device_1_x ( device, vars, log):
     lvm_flag= parted.partition_flag_get_by_name('lvm')
     
     try:
-        print >>log, "Using pyparted 1.x"
+        log.write("Using pyparted 1.x\n")
         # wipe the old partition table
         utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % device, log )
 
@@ -246,7 +246,7 @@ def single_partition_device_1_x ( device, vars, log):
 
 def single_partition_device_2_x ( device, vars, log):
     try:
-        print >>log, "Using pyparted 2.x"
+        log.write("Using pyparted 2.x\n")
         # wipe the old partition table
         utils.sysexec( "dd if=/dev/zero of=%s bs=512 count=1" % device, log )
         # get the device
