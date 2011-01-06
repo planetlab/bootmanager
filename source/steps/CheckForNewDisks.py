@@ -81,7 +81,7 @@ def Run( vars, log ):
         # this is the lvm partition, if it exists on that device
         lvm_partition= InstallPartitionDisks.get_partition_path_from_device( device, vars, log )
         cmd = "pvdisplay %s | grep -q 'planetlab'" % lvm_partition
-        already_added= utils.sysexec_noerr(cmd, log)
+        already_added = utils.sysexec_noerr(cmd, log, shell=True)
 
         if already_added:
             log.write( "It appears %s is part of the volume group, continuing.\n" %

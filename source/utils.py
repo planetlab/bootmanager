@@ -117,8 +117,7 @@ def removedir( path ):
     return 1
 
 
-
-def sysexec( cmd, log= None, fsck = False ):
+def sysexec( cmd, log=None, fsck=False, shell=False ):
     """
     execute a system command, output the results to the logger
     if log <> None
@@ -127,14 +126,19 @@ def sysexec( cmd, log= None, fsck = False ):
     0 if failed. A BootManagerException is raised if the command
     was unable to execute or was interrupted by the user with Ctrl+C
     """
-    if VERBOSE_MODE:
-        print ("sysexec >>> %s" % cmd)
-
     try:
-        if cmd.__contains__(">"):
+        # Thierry - Jan. 6 2011
+        # would probably make sense to look for | here as well
+        # however this is fragile and hard to test thoroughly
+        # let the caller set 'shell' when that is desirable
+        if shell or cmd.__contains__(">"):
             prog = subprocess.Popen(cmd, shell=True)
+            if VERBOSE_MODE:
+                print ("sysexec (shell mode) >>> %s" % cmd)
         else:
             prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if VERBOSE_MODE:
+                print ("sysexec >>> %s" % cmd)
     except OSError:
         raise BootManagerException, \
               "Unable to create instance of subprocess.Popen " \
@@ -170,7 +174,7 @@ def sysexec( cmd, log= None, fsck = False ):
     return 1
 
 
-def sysexec_chroot( path, cmd, log= None ):
+def sysexec_chroot( path, cmd, log=None, shell=False):
     """
     same as sysexec, but inside a chroot
     """
@@ -182,29 +186,29 @@ def sysexec_chroot( path, cmd, log= None ):
         if not os.path.exists(library):
             shutil.copy("./libc-opendir-hack.so", library)
         preload = "/bin/env LD_PRELOAD=/lib/libc-opendir-hack.so"
-    sysexec("chroot %s %s %s" % (path, preload, cmd), log)
+    sysexec("chroot %s %s %s" % (path, preload, cmd), log, shell=shell)
 
 
-def sysexec_chroot_noerr( path, cmd, log= None ):
+def sysexec_chroot_noerr( path, cmd, log=None, shell=False ):
     """
     same as sysexec_chroot, but capture boot manager exceptions
     """
     try:
         rc= 0
-        rc= syexec_chroot( cmd, log )
+        rc= sysexec_chroot( cmd, log, shell=shell )
     except BootManagerException, e:
         pass
 
     return rc
 
 
-def sysexec_noerr( cmd, log= None ):
+def sysexec_noerr( cmd, log=None, shell=False ):
     """
     same as sysexec, but capture boot manager exceptions
     """
     try:
         rc= 0
-        rc= sysexec( cmd, log )
+        rc= sysexec( cmd, log, shell=shell )
     except BootManagerException, e:
         pass
 
