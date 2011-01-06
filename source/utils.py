@@ -17,20 +17,26 @@ import exceptions
 
 from Exceptions import *
 
+####################
+# the simplest way to debug is to let the node take off, 
+# ssh into it as root using the debug ssh key in /etc/planetlab
+# then go to /tmp/source 
+# edit this file locally to turn on breakpoints if needed, then run
+# ./BootManager.py
+####################
 
 ### handling breakpoints in the startup process
 import select, sys, string
 
-### global debug settings
-# NOTE. when BREAKPOINT_MODE turns out enabled,
-# you have to attend the boot phase, that would hang otherwise 
+### global debugging settings
 
 # enabling this will cause the node to ask for breakpoint-mode at startup
 # production code should read False/False
 PROMPT_MODE=False
 # default for when prompt is turned off, or it's on but the timeout triggers
 BREAKPOINT_MODE=False
-VERBOSE_MODE=False
+
+# verbose mode is just fine
 VERBOSE_MODE=True
 # in seconds : if no input, proceed
 PROMPT_TIMEOUT=5
