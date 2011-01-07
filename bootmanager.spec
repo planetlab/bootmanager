@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 19
+%define taglevel 20
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,9 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri Jan 07 2011 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-4.3-20
+- add --allow-missing parameter to support different kernel configs
+
 * Tue Dec 14 2010 Daniel Hokka Zakrisson <dhokka@cs.princeton.edu> - bootmanager-4.3-19
 - Force removal of VG for automation.
 
