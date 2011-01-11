@@ -52,8 +52,8 @@ fi
 sed -i -e "s@^MONITOR_SERVER.*@MONITOR_SERVER=$MONITOR_SERVER@" source/configuration
 
 install -D -m 644 $PLC_BOOT_CA_SSL_CRT source/cacert/$PLC_BOOT_HOST/cacert.pem
-if [ -f $PLC_MONITOR_CA_SSL_CRT ] ; then 
-	install -D -m 644 $PLC_MONITOR_CA_SSL_CRT source/cacert/$PLC_MONITOR_HOST/cacert.pem
+if [ -f "$PLC_MONITOR_CA_SSL_CRT" ] ; then 
+	install -D -m 644 "$PLC_MONITOR_CA_SSL_CRT" source/cacert/$PLC_MONITOR_HOST/cacert.pem
 fi
 
 # Replace the default debug SSH key
