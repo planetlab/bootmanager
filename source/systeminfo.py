@@ -117,7 +117,8 @@ def get_block_device_list(vars = {}, log = sys.stderr):
     # table with valid scsi/sata/ide/raid block device names
     valid_blk_names = {}
     # add in valid sd and hd block device names
-    for blk_prefix in ('sd','hd'):
+    # also check for vd (virtio devices used with kvm)
+    for blk_prefix in ('sd','hd','vd'):
         for blk_num in map ( \
             lambda x: chr(x), range(ord('a'),ord('z')+1)):
             devicename="%s%c" % (blk_prefix, blk_num)
