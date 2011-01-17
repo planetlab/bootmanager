@@ -64,8 +64,9 @@ def Run( vars, log ):
     # /proc is already mounted, so bind-mount /dev here
     # xxx tmp - trying to work around the f14 case:
     # check that /dev/ is mounted with devtmpfs
-    if utils.sysexec_noerr ("grep devtmpfs /proc/mounts") != 0:
-        utils.sysexec("mount -t devtmpfs none /dev")
+    # tmp - sysexec_noerr not returning what one would expect
+    # if utils.sysexec_noerr ("grep devtmpfs /proc/mounts") != 0:
+    utils.sysexec_noerr("mount -t devtmpfs none /dev")
     utils.sysexec("mount -o bind /dev %s/dev" % SYSIMG_PATH)
     utils.sysexec("mount -t sysfs none %s/sys" % SYSIMG_PATH)
 
