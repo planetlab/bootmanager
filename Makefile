@@ -7,11 +7,11 @@
 # (*) otherwise, entering through the root context
 # make sync PLCHOST=testbox1.inria.fr GUEST=vplc03.inria.fr
 
+PLCHOST ?= testplc.onelab.eu
+
 ifdef GUEST
-ifdef PLCHOST
 SSHURL:=root@$(PLCHOST):/vservers/$(GUEST)
-SSHCOMMAND:=ssh root@$(PLCHOST) vserver $(GUEST)
-endif
+SSHCOMMAND:=ssh root@$(PLCHOST) vserver $(GUEST) exec
 endif
 ifdef PLC
 SSHURL:=root@$(PLC):/
@@ -19,7 +19,7 @@ SSHCOMMAND:=ssh root@$(PLC)
 endif
 
 LOCAL_RSYNC_EXCLUDES	:= --exclude '*.pyc' 
-RSYNC_EXCLUDES		:= --exclude .svn --exclude CVS --exclude '*~' --exclude TAGS $(LOCAL_RSYNC_EXCLUDES)
+RSYNC_EXCLUDES		:= --exclude .svn --exclude .git --exclude '*~' --exclude TAGS $(LOCAL_RSYNC_EXCLUDES)
 RSYNC_COND_DRY_RUN	:= $(if $(findstring n,$(MAKEFLAGS)),--dry-run,)
 RSYNC			:= rsync -a -v $(RSYNC_COND_DRY_RUN) $(RSYNC_EXCLUDES)
 
@@ -28,9 +28,8 @@ DEPLOYMENT ?= regular
 sync:
 ifeq (,$(SSHURL))
 	@echo "sync: You must define, either PLC, or PLCHOST & GUEST, on the command line"
-	@echo " you can optionnally define DEPLOYMENT too, it defaults to 'regular'"
-	@echo "  e.g. make sync PLC=boot.onelab.eu DEPLOYMENT=alpha"
-	@echo "  or   make sync PLCHOST=testbox1.inria.fr GUEST=vplc03.inria.fr"
+	@echo "  e.g. make sync PLC=boot.planetlab.eu"
+	@echo "  or   make sync PLCHOST=testplc.onelab.eu GUEST=vplc03.inria.fr"
 	@exit 1
 else
 	$(SSHCOMMAND) mkdir -p /usr/share/bootmanager/$(DEPLOYMENT)
@@ -40,6 +39,6 @@ endif
 
 ##########
 tags:
-	find . -type f | egrep -v '/\.svn/|\.git/|~$$' | xargs etags
+	find . -type f | egrep -v 'TAGS|/\.svn/|\.git/|~$$' | xargs etags
 
 .PHONY: tags
