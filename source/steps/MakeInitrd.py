@@ -52,8 +52,11 @@ def Run( vars, log ):
 
     # mkinitrd needs /dev and /proc to do the right thing.
     # /proc is already mounted, so bind-mount /dev here
-    # looks like this dir somehow already exists under f14
-    utils.sysexec_noerr("mount -o bind /dev %s/dev" % SYSIMG_PATH)
+    # xxx tmp - trying to work around the f14 case:
+    # check that /dev/ is mounted with devtmpfs
+    if utils.sysexec_noerr ("grep devtmpfs /proc/mounts") != 0:
+        utils.sysexec("mount -t devtmpfs none /dev")
+    utils.sysexec("mount -o bind /dev %s/dev" % SYSIMG_PATH)
     utils.sysexec("mount -t sysfs none %s/sys" % SYSIMG_PATH)
 
     initrd, kernel_version= systeminfo.getKernelVersion(vars,log)
