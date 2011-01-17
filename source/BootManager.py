@@ -356,7 +356,7 @@ def main(argv):
     import utils
     utils.prompt_for_breakpoint_mode()
 
-    utils.breakpoint ("Entering BootManager::main")
+#    utils.breakpoint ("Entering BootManager::main")
     
     # set to 1 if error occurred
     error= 0
