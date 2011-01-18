@@ -179,7 +179,7 @@ def Run( vars, log ):
     utils.makedirs(SYSIMG_PATH + "/etc/pki/rpm-gpg")
     utils.sysexec("gpg --homedir=/root --export --armor" \
                   " --no-default-keyring --keyring %s/usr/boot/pubring.gpg" \
-                  " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH))
-    utils.sysexec_chroot(SYSIMG_PATH, "rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab")
+                  " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH), log)
+    utils.sysexec_chroot(SYSIMG_PATH, "rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab", log)
 
     return 1

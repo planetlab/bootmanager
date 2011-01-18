@@ -262,11 +262,10 @@ def Run( vars, log ):
         # kargs, which is ramdisk_size=8192
         pass 
 
-    utils.sysexec_noerr( 'hwclock --systohc --utc ' )
+    utils.sysexec_noerr( 'hwclock --systohc --utc ', log )
     utils.breakpoint ("Before kexec");
     try:
-        utils.sysexec( 'kexec --force --initrd=/tmp/initrd ' \
-                       '--append="%s" /tmp/kernel' % kargs)
+        utils.sysexec( 'kexec --force --initrd=/tmp/initrd --append="%s" /tmp/kernel' % kargs, log)
     except BootManagerException, e:
         # if kexec fails, we've shut the machine down to a point where nothing
         # can run usefully anymore (network down, all modules unloaded, file

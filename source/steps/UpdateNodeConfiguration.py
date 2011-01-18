@@ -185,8 +185,8 @@ def update_vserver_network_files( vserver_dir, vars, log ):
             # 2.6.22/f8 root environment.  files randomly show up with the
             # immutible attribute set.  this clears it before trying to write
             # the files below.
-            utils.sysexec( "chattr -i %s/etc/hosts" % vserver_dir )
-            utils.sysexec( "chattr -i %s/etc/resolv.conf" % vserver_dir )
+            utils.sysexec( "chattr -i %s/etc/hosts" % vserver_dir , log )
+            utils.sysexec( "chattr -i %s/etc/resolv.conf" % vserver_dir , log )
         except:
             pass
 

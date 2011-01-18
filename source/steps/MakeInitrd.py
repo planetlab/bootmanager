@@ -15,14 +15,14 @@ import systeminfo
 # for centos5.3
 # 14:42:27(UTC) No module dm-mem-cache found for kernel 2.6.22.19-vs2.3.0.34.33.onelab, aborting.
 # http://kbase.redhat.com/faq/docs/DOC-16528;jsessionid=7E984A99DE8DB094D9FB08181C71717C.ab46478d
-def bypassRaidIfNeeded(sysimg_path):
+def bypassRaidIfNeeded(sysimg_path, log):
     try:
         [ a,b,c,d]=file('%s/etc/redhat-release'%sysimg_path).readlines()[0].strip().split()
         if a !='CentOS': return
         [major,minor]=[int(x) for x in c.split('.')]
         if minor >= 3:
-            utils.sysexec_noerr('echo "DMRAID=no" >> %s/etc/sysconfig/mkinitrd/noraid' % sysimg_path)
-            utils.sysexec_noerr('chmod 755 %s/etc/sysconfig/mkinitrd/noraid' % sysimg_path)
+            utils.sysexec_noerr('echo "DMRAID=no" >> %s/etc/sysconfig/mkinitrd/noraid' % sysimg_path , log )
+            utils.sysexec_noerr('chmod 755 %s/etc/sysconfig/mkinitrd/noraid' % sysimg_path, log )
     except:
         pass
             
@@ -67,10 +67,10 @@ def Run( vars, log ):
         print "%s/boot/%s is already removed" % (SYSIMG_PATH, initrd)
 
     # hack for CentOS 5.3
-    bypassRaidIfNeeded(SYSIMG_PATH)
+    bypassRaidIfNeeded(SYSIMG_PATH , log )
     utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v --allow-missing /boot/initrd-%s.img %s" % \
                (kernel_version, kernel_version), log )
 
-    utils.sysexec_noerr("umount %s/sys" % SYSIMG_PATH)
-    utils.sysexec_noerr("umount %s/dev" % SYSIMG_PATH)
+    utils.sysexec_noerr("umount %s/sys" % SYSIMG_PATH , log )
+    utils.sysexec_noerr("umount %s/dev" % SYSIMG_PATH , log)
 

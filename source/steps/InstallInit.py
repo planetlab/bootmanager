@@ -64,10 +64,10 @@ def Run( vars, log ):
     except OSError, e:
         pass
 
-    utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH )
-    utils.sysexec_noerr( "umount %s/mnt/cdrom" % SYSIMG_PATH )
-    utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH )
-    utils.sysexec_noerr( "umount %s" % SYSIMG_PATH )
+    utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH , log )
+    utils.sysexec_noerr( "umount %s/mnt/cdrom" % SYSIMG_PATH , log )
+    utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH , log )
+    utils.sysexec_noerr( "umount %s" % SYSIMG_PATH , log )
     vars['ROOT_MOUNTED']= 0
 
 #    log.write( "Removing any old files, directories\n" )
