@@ -79,7 +79,8 @@ def Run( vars, log ):
     # hack for CentOS 5.3
     bypassRaidIfNeeded(SYSIMG_PATH)
     if kernelHasMkinitrd() == True:
-        utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v --allow-missing /boot/initrd-%s.img %s" % \
+    # specify ext3 for fedora14 and above as their default fs is ext4
+        utils.sysexec_chroot( SYSIMG_PATH, "mkinitrd -v --with=ext3 --allow-missing /boot/initrd-%s.img %s" % \
                    (kernel_version, kernel_version), log )
     else:
         shutil.copy("./mkinitrd.sh","%s/tmp/mkinitrd.sh" % SYSIMG_PATH)
