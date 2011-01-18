@@ -139,12 +139,16 @@ def sysexec( cmd, log=None, fsck=False, shell=False ):
         # let the caller set 'shell' when that is desirable
         if shell or cmd.__contains__(">"):
             prog = subprocess.Popen(cmd, shell=True)
+            if log is not None:
+                log.write("sysexec (shell mode) >>> %s" % cmd)
             if VERBOSE_MODE:
-                print ("sysexec (shell mode) >>> %s" % cmd)
+                print "sysexec (shell mode) >>> %s" % cmd
         else:
             prog = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if log is not None:
+                log.write("sysexec >>> %s\n" % cmd)
             if VERBOSE_MODE:
-                print ("sysexec >>> %s" % cmd)
+                print "sysexec >>> %s" % cmd
     except OSError:
         raise BootManagerException, \
               "Unable to create instance of subprocess.Popen " \
@@ -154,9 +158,12 @@ def sysexec( cmd, log=None, fsck=False, shell=False ):
     except KeyboardInterrupt:
         raise BootManagerException, "Interrupted by user"
 
+    # log stdout & stderr
     if log is not None:
-        if stdoutdata is not None:
-            log.write(stdoutdata)
+        if stdoutdata:
+            log.write("==========stdout\n"+stdoutdata)
+        if stderrdata:
+            log.write("==========stderr\n"+stderrdata)
 
     returncode = prog.wait()
 
