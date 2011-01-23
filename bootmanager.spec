@@ -1,7 +1,7 @@
 #
 %define name bootmanager
 %define version 5.0
-%define taglevel 15
+%define taglevel 16
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -86,6 +86,14 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Sun Jan 23 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-16
+- for f14 : try to mount /dev as devtmpfs before bind-mounting to on the hdd's /dev
+- fix for chosing version of parted - for f14
+- added support for virtio deveices in /dev/vd
+- fixed scanning of new disks
+- slightly reviewed logs - default mode is verbose
+- removed deprecated mkinitrd.sh
+
 * Fri Dec 10 2010 S.Çağlar Onur <caglar@cs.princeton.edu> - bootmanager-5.0-15
 - Fix problems caused by shell redirection
 
