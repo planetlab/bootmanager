@@ -11,6 +11,7 @@ import os, sys, string
 import popen2
 import shutil
 import traceback 
+import time
 
 from Exceptions import *
 import utils
@@ -50,6 +51,8 @@ def Run( vars, log ):
         NODE_ID= vars["NODE_ID"]
         if NODE_ID == "":
             raise ValueError, "NODE_ID"
+
+        VERSION=vars['VERSION'] or 'unknown'
 
     except KeyError, var:
         raise BootManagerException, "Missing variable in vars: %s\n" % var
@@ -185,7 +188,8 @@ def Run( vars, log ):
     // keep a log on the installed hdd
     stamp=file(SYSIMG_PATH + "/bm-install.txt",'w')
     now=time.strftime("%Y-%b-%d @ %H:%M %Z", time.gmtime())
-    stamp.write("BootManager finished reinstall from bootstrapfs on %s\n"%now)
+    stamp.write("Hard drive installed by BootManager %s\n"%VERSION)
+    stamp.write("Finished extraction of bootstrapfs on %s\n"%now)
     stamp.write("Using nodefamily %s\n"%nodefamily)
     stamp.close()
 
