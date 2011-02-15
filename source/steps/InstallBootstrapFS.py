@@ -185,7 +185,7 @@ def Run( vars, log ):
                   " >%s/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab" % (SYSIMG_PATH, SYSIMG_PATH), log)
     utils.sysexec_chroot(SYSIMG_PATH, "rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab", log)
 
-    // keep a log on the installed hdd
+    # keep a log on the installed hdd
     stamp=file(SYSIMG_PATH + "/bm-install.txt",'w')
     now=time.strftime("%Y-%b-%d @ %H:%M %Z", time.gmtime())
     stamp.write("Hard drive installed by BootManager %s\n"%VERSION)
