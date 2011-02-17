@@ -1,7 +1,7 @@
 #
 %define name bootmanager
 %define version 5.0
-%define taglevel 16
+%define taglevel 17
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -86,6 +86,9 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Thu Feb 17 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-17
+- on install of boostrapfs, keep track in /bm-install.log with date & flavour
+
 * Sun Jan 23 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-16
 - for f14 : try to mount /dev as devtmpfs before bind-mounting to on the hdd's /dev
 - fix for chosing version of parted - for f14
