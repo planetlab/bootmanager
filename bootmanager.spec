@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 23
+%define taglevel 24
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,9 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Tue Mar 15 2011 S.Çağlar Onur <caglar@verivue.com> - bootmanager-4.3-24
+- Remove hardcoded file list
+
 * Tue Mar 15 2011 S.Çağlar Onur <caglar@verivue.com> - bootmanager-4.3-23
 - cherry-pick changesets from master to support SL6
 
