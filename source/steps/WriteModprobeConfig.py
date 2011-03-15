@@ -59,7 +59,7 @@ def Run( vars, log, filename = "/etc/modprobe.conf"):
         m.input(mfile)
 
     blacklist = modprobe.Modprobe()
-    blacklistfiles = ("blacklist","blacklist-compat","blacklist-firewire")
+    blacklistfiles = os.listdir("/etc/modprobe.d")
     for blf in blacklistfiles:
         if os.path.exists("/etc/modprobe.d/%s"%blf):
             blacklist.input("/etc/modprobe.d/%s"%blf)
