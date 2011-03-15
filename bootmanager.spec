@@ -5,7 +5,7 @@
 
 %define name bootmanager
 %define version 4.3
-%define taglevel 21
+%define taglevel 22
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -85,6 +85,9 @@ chkconfig --del monitor-runlevelagent
 /var/www/html/boot/uudecode.gz
 
 %changelog
+* Fri Mar 11 2011 S.Çağlar Onur <caglar@verivue.com> - bootmanager-4.3-22
+- Add missing include
+
 * Wed Mar 09 2011 S.Çağlar Onur <caglar@verivue.com> - bootmanager-4.3-21
 - Support virtio block devices
 
