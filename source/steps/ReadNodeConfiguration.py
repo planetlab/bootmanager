@@ -558,25 +558,25 @@ def __parse_configuration_file( vars, log, file_contents ):
 
     # try a regular dns lookup first
     try:
-        resolved_node_ip= socket.gethostbyname(hostname)
+        resolved_node_ip_list = socket.gethostbyname_ex(hostname)[2]
     except socket.gaierror, e:
-        hostname_resolve_ok= 0
+        hostname_resolve_ok = 0
         
 
     if INTERFACE_SETTINGS['method'] == "dhcp":
         if hostname_resolve_ok:
-            INTERFACE_SETTINGS['ip']= resolved_node_ip
-            node_ip= resolved_node_ip
+            INTERFACE_SETTINGS['ip']= resolved_node_ip_list[0]
+            node_ip = resolved_node_ip_list[0]
         else:
             can_make_api_call= 0
     else:
-        node_ip= INTERFACE_SETTINGS['ip']
+        node_ip = INTERFACE_SETTINGS['ip']
 
     # make sure the dns lookup matches what the configuration file says
     if hostname_resolve_ok:
-        if node_ip != resolved_node_ip:
+        if node_ip not in resolved_node_ip_list:
             log.write( "Hostname %s does not resolve to %s, but %s:\n" % \
-                       (hostname,node_ip,resolved_node_ip) )
+                       (hostname,node_ip,resolved_node_ip_list) )
             hostname_resolve_ok= 0
         else:
             log.write( "Hostname %s correctly resolves to %s:\n" %
