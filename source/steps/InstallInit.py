@@ -64,9 +64,13 @@ def Run( vars, log ):
     except OSError, e:
         pass
 
+    # NOTE: added /sys and /dev b/c some nodes fail due to this when disk is
+    # nearly full.
     utils.sysexec_noerr( "umount %s/proc" % SYSIMG_PATH , log )
     utils.sysexec_noerr( "umount %s/mnt/cdrom" % SYSIMG_PATH , log )
     utils.sysexec_noerr( "umount %s/vservers" % SYSIMG_PATH , log )
+    utils.sysexec_noerr( "umount %s/sys" % SYSIMG_PATH , log )
+    utils.sysexec_noerr( "umount %s/dev" % SYSIMG_PATH , log )
     utils.sysexec_noerr( "umount %s" % SYSIMG_PATH , log )
     vars['ROOT_MOUNTED']= 0
 

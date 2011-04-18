@@ -157,6 +157,8 @@ def Run( vars, log ):
     log.write( "Unmounting disks.\n" )
     utils.sysexec( "umount %s/vservers" % SYSIMG_PATH, log )
     utils.sysexec( "umount %s/proc" % SYSIMG_PATH, log )
+    utils.sysexec( "umount %s/dev" % SYSIMG_PATH, log )
+    utils.sysexec( "umount %s/sys" % SYSIMG_PATH, log )
     utils.sysexec( "umount %s" % SYSIMG_PATH, log )
     utils.sysexec( "vgchange -an", log )
 
