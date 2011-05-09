@@ -139,7 +139,7 @@ def Run( vars, log ):
     #utils.sysexec( TEMP_PATH + "vgchange -ay planetlab", log )
 
     # make swap
-    utils.sysexec( "mkswap %s" % PARTITIONS["swap"], log )
+    utils.sysexec( "mkswap -f %s" % PARTITIONS["swap"], log )
 
     # check if badhd option has been set
     option = ''
