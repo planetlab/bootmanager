@@ -13,6 +13,7 @@ import os
 
 import UpdateNodeConfiguration
 import MakeInitrd
+import StopRunlevelAgent
 from Exceptions import *
 import utils
 import systeminfo
@@ -167,7 +168,7 @@ def Run( vars, log ):
     vars['ROOT_MOUNTED']= 0
 
     # Change runlevel to 'boot' prior to kexec.
-    StopRunLevelAgent.Run( vars, log )
+    StopRunlevelAgent.Run( vars, log )
 
     log.write( "Unloading modules and chain booting to new kernel.\n" )
 
