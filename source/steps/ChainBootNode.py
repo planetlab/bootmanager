@@ -143,6 +143,7 @@ def Run( vars, log ):
     update_vals['ssh_rsa_key']= ssh_host_key
     BootAPI.call_api_function( vars, "BootUpdateNode", (update_vals,) )
 
+
     # get the kernel version
     option = ''
     if NODE_MODEL_OPTIONS & ModelOptions.SMP:
@@ -164,6 +165,9 @@ def Run( vars, log ):
 
     ROOT_MOUNTED= 0
     vars['ROOT_MOUNTED']= 0
+
+    # Change runlevel to 'boot' prior to kexec.
+    StopRunLevelAgent.Run( vars, log )
 
     log.write( "Unloading modules and chain booting to new kernel.\n" )
 

@@ -26,7 +26,7 @@ Requires: httpd
 
 Requires: PLCAPI >= 5.0
 # the python code packaged in these are shipped on the node as well
-Requires: pypcilib pyplnet monitor-runlevelagent
+Requires: pypcilib pyplnet
 
 ### avoid having yum complain about updates, as stuff is moving around
 # plc.d/bootmanager
@@ -71,11 +71,6 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p /var/log/bm
 chown apache:apache /var/log/bm
 chmod 700 /var/log/bm
-
-# NOTE: do not run this agent when installed on a myplc.
-# xxx - a bit hacky maybe
-chkconfig monitor-runlevelagent off
-chkconfig --del monitor-runlevelagent
 
 %files
 %defattr(-,root,root,-)

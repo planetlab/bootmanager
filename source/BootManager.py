@@ -283,13 +283,11 @@ class BootManager:
             if not ConfirmInstallWithUser.Run( self.VARS, self.LOG ):
                 return 0
             self.VARS['BOOT_STATE']= 'reinstall'
-            UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
             _reinstallRun()
 
         def _debugRun(state='failboot'):
             # implements debug logic, which starts the sshd and just waits around
             self.VARS['RUN_LEVEL']=state
-            UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
             StartDebug.Run( self.VARS, self.LOG )
             # fsck/mount fs if present, and ignore return value if it's not.
             ValidateNodeInstall.Run( self.VARS, self.LOG )
@@ -310,6 +308,7 @@ class BootManager:
             InitializeBootManager.Run( self.VARS, self.LOG )
             ReadNodeConfiguration.Run( self.VARS, self.LOG )
             AuthenticateWithPLC.Run( self.VARS, self.LOG )
+            UpdateLastBootOnce.Run( self.VARS, self.LOG )
             StartRunlevelAgent.Run( self.VARS, self.LOG )
             GetAndUpdateNodeDetails.Run( self.VARS, self.LOG )
 
@@ -317,7 +316,6 @@ class BootManager:
             if self.forceState is not None:
                 self.VARS['BOOT_STATE']= self.forceState
                 UpdateBootStateWithPLC.Run( self.VARS, self.LOG )
-                UpdateRunLevelWithPLC.Run( self.VARS, self.LOG )
 
             stateRun = BootManager.NodeRunStates.get(self.VARS['BOOT_STATE'],_badstateRun)
             stateRun()
