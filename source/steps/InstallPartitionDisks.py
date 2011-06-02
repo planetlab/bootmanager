@@ -10,12 +10,12 @@
 import os, sys
 import string
 import popen2
-
+import time
 
 from Exceptions import *
 import utils
 import BootServerRequest
-
+import BootAPI
 import ModelOptions
 
 def Run( vars, log ):
@@ -104,15 +104,22 @@ def Run( vars, log ):
     # list of devices to be used with vgcreate
     vg_device_list= ""
 
-    # initialize the physical volumes
+    # get partitions
+    partitions = []
     for device in used_devices:
-
         part_path= get_partition_path_from_device( device, vars, log )
-        
+        partitions.append(part_path)
+   
+    # create raid partition
+    raid_partition = create_raid_partition(partitions, vars, log)
+    if raid_partition != None:
+        partitions = [raid_partition]      
+    log.write("PARTITIONS %s\n" %  str(partitions)) 
+    # initialize the physical volumes
+    for part_path in partitions:
         if not create_lvm_physical_volume( part_path, vars, log ):
             raise BootManagerException, "Could not create lvm physical volume " \
                   "on partition %s" % part_path
-        
         vg_device_list = vg_device_list + " " + part_path
 
     # create an lvm volume group
@@ -298,6 +305,53 @@ def create_lvm_physical_volume( part_path, vars, log ):
 
     return 1
 
+
+def create_raid_partition(partitions, vars, log):
+    """
+    create raid array using specified partitions.  
+    """ 
+    raid_part = None
+    raid_enabled = False
+    node_tags = BootAPI.call_api_function( vars, "GetNodeTags",
+                                        ({'node_id': vars['NODE_ID']},))
+    for node_tag in node_tags:
+        if node_tag['tagname'] == 'raid_enabled' and \
+           node_tag['value'] == '1':
+            raid_enabled = True
+            break
+    if not raid_enabled:
+        return raid_part
+
+    try:
+        log.write( "Software raid enabled.\n" )
+        # wipe everything
+        utils.sysexec_noerr("mdadm --stop /dev/md0", log)
+        time.sleep(1)
+        for part_path in partitions:
+            utils.sysexec_noerr("mdadm --zero-superblock %s " % part_path, log)
+
+        # assume each partiton is on a separate disk
+        num_parts = len(partitions)
+        if num_parts < 2:
+            log.write( "Not enough disks for raid. Found: %s\n" % partitions )
+            raise BootManagerException("Not enough disks for raid. Found: %s\n" % partitions)  
+        if num_parts == 2:
+            lvl = 1
+        else:
+            lvl = 5   
+        
+        # make the array
+        part_list = " ".join(partitions)
+        raid_part = "/dev/md0"
+        cmd = "mdadm --create %(raid_part)s --chunk=128 --level=raid%(lvl)s " % locals() + \
+              "--raid-devices=%(num_parts)s %(part_list)s" % locals()
+        utils.sysexec(cmd, log)        
+
+    except BootManagerException, e:
+        log.write("create_raid_partition failed.\n")
+        raid_part = None
+
+    return raid_part  
 
 
 def get_partition_path_from_device( device, vars, log ):
