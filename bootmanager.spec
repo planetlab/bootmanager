@@ -1,7 +1,7 @@
 #
 %define name bootmanager
 %define version 5.0
-%define taglevel 17
+%define taglevel 18
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -81,6 +81,15 @@ chmod 700 /var/log/bm
 /etc/plc.d/bootmanager
 
 %changelog
+* Wed Jun 08 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-18
+- {Start,Stop,}RunLevelAgent now ship with bootmanager
+- new UpdateLastBootOnce
+- root_size bumped to 14Gb which is more in line with modern h/w
+- more safely tries to umount /dev/ and /sys
+- support for raid partitions
+- mkswap -f
+- blacklist files from /etc/modprobe.conf/* instead
+
 * Thu Feb 17 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-17
 - on install of boostrapfs, keep track in /bm-install.log with date & flavour
 
