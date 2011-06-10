@@ -1,7 +1,7 @@
 #
 %define name bootmanager
 %define version 5.0
-%define taglevel 17
+%define taglevel 18
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -26,7 +26,7 @@ Requires: httpd
 
 Requires: PLCAPI >= 5.0
 # the python code packaged in these are shipped on the node as well
-Requires: pypcilib pyplnet monitor-runlevelagent
+Requires: pypcilib pyplnet
 
 ### avoid having yum complain about updates, as stuff is moving around
 # plc.d/bootmanager
@@ -72,11 +72,6 @@ mkdir -p /var/log/bm
 chown apache:apache /var/log/bm
 chmod 700 /var/log/bm
 
-# NOTE: do not run this agent when installed on a myplc.
-# xxx - a bit hacky maybe
-chkconfig monitor-runlevelagent off
-chkconfig --del monitor-runlevelagent
-
 %files
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
@@ -86,6 +81,15 @@ chkconfig --del monitor-runlevelagent
 /etc/plc.d/bootmanager
 
 %changelog
+* Wed Jun 08 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-18
+- {Start,Stop,}RunLevelAgent now ship with bootmanager
+- new UpdateLastBootOnce
+- root_size bumped to 14Gb which is more in line with modern h/w
+- more safely tries to umount /dev/ and /sys
+- support for raid partitions
+- mkswap -f
+- blacklist files from /etc/modprobe.conf/* instead
+
 * Thu Feb 17 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-17
 - on install of boostrapfs, keep track in /bm-install.log with date & flavour
 

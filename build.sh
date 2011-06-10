@@ -63,7 +63,7 @@ fi
 
 # Add python code from the following packages
 # make sure they are in the 'Requires' header of the specfile
-required_rpms="pypcilib pyplnet monitor-runlevelagent"
+required_rpms="pypcilib pyplnet"
 extra_libs=`mktemp -d "/tmp/.bootmanager.XXXXXX"`
 mkdir $extra_libs/source
 cp -p $(rpm -ql $required_rpms | grep -v '\.py[co]$') $extra_libs/source
