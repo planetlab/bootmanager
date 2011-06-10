@@ -1,7 +1,7 @@
 #
 %define name bootmanager
 %define version 5.0
-%define taglevel 18
+%define taglevel 19
 
 %define release %{taglevel}%{?pldistro:.%{pldistro}}%{?date:.%{date}}
 
@@ -81,6 +81,9 @@ chmod 700 /var/log/bm
 /etc/plc.d/bootmanager
 
 %changelog
+* Fri Jun 10 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-19
+- nicer log - was intended for previous tag
+
 * Wed Jun 08 2011 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - bootmanager-5.0-18
 - {Start,Stop,}RunLevelAgent now ship with bootmanager
 - new UpdateLastBootOnce
