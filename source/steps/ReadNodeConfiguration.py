@@ -122,7 +122,7 @@ def Run( vars, log ):
 
     conf_file_path= "%s/%s" % (mount_point,NEW_CONF_FILE_NAME)
     
-    log.write( "Checking for existence of %s\n" % conf_file_path )
+#    log.write( "Checking for existence of %s\n" % conf_file_path )
     if os.access( conf_file_path, os.R_OK ):
         try:
             conf_file= file(conf_file_path,"r")
@@ -135,6 +135,7 @@ def Run( vars, log ):
 
         utils.sysexec_noerr( "umount %s" % mount_point, log )
         if __parse_configuration_file( vars, log, conf_file_contents):
+            log.write("ReadNodeConfiguration: [1] using %s from floppy /dev/fd0\n"%NEW_CONF_FILE_NAME)
             return 1
         else:
             raise BootManagerException( "Found configuration file plnode.txt " \
@@ -146,7 +147,8 @@ def Run( vars, log ):
     # try to parse it later...
     conf_file_path= "%s/%s" % (mount_point,OLD_CONF_FILE_NAME)
 
-    log.write( "Checking for existence of %s (used later)\n" % conf_file_path )
+# this message really does not convey any useful information
+#    log.write( "Checking for existence of %s (used later)\n" % conf_file_path )
     if os.access( conf_file_path, os.R_OK ):
         try:
             old_conf_file= file(conf_file_path,"r")
@@ -224,8 +226,7 @@ def Run( vars, log ):
                     log.write( "Read in contents of file %s\n" % \
                                conf_file_path )
 
-                    if __parse_configuration_file( vars, log, \
-                                                   conf_file_contents):
+                    if __parse_configuration_file( vars, log, conf_file_contents):
                         parsed_file= 1
                 except IOError, e:
                     log.write( "Unable to read file %s\n" % conf_file_path )
@@ -233,20 +234,21 @@ def Run( vars, log ):
             utils.sysexec_noerr( "umount %s" % mount_point, log )
             if found_file:
                 if parsed_file:
+                    log.write("ReadNodeConfiguration: [2] using %s from partition %s\n"%\
+                                  (NEW_CONF_FILE_NAME,full_device))
                     return 1
                 else:
                     raise BootManagerException( \
-                        "Found configuration file plnode.txt " \
-                        "on floppy, but was unable to parse it.")
+                        "Found configuration file on %s, but was unable to parse it."%full_device)
 
 
             
     # 3. check standard floppy disk for old file name planet.cnf
-    log.write( "Checking standard floppy disk for planet.cnf file " \
-               "(for legacy nodes).\n" )
+    log.write( "Checking standard floppy disk for planet.cnf file (for legacy nodes).\n" )
 
     if old_conf_file_contents:
         if __parse_configuration_file( vars, log, old_conf_file_contents):
+            log.write("ReadNodeConfiguration: [3] using %s from floppy /dev/fd0\n"%OLD_CONF_FILE_NAME)
             return 1
         else:
             raise BootManagerException( "Found configuration file planet.cnf " \
@@ -270,6 +272,7 @@ def Run( vars, log ):
             pass
     
         if __parse_configuration_file( vars, log, conf_file_contents):            
+            log.write("ReadNodeConfiguration: [4] using %s from ramdisk\n"%NEW_CONF_FILE_NAME)
             return 1
         else:
             raise BootManagerException( "Found configuration file plnode.txt " \
@@ -293,6 +296,7 @@ def Run( vars, log ):
             pass
     
         if __parse_configuration_file( vars, log, conf_file_contents):            
+            log.write("ReadNodeConfiguration: [5] using %s from CD in /usr/boot\n"%NEW_CONF_FILE_NAME)
             return 1
         else:
             raise BootManagerException( "Found configuration file plnode.txt " \
@@ -317,6 +321,7 @@ def Run( vars, log ):
             pass    
     
         if __parse_configuration_file( vars, log, conf_file_contents):            
+            log.write("ReadNodeConfiguration: [6] using %s from /usr\n"%NEW_CONF_FILE_NAME)
             return 1
         else:
             raise BootManagerException( "Found configuration file plnode.txt " \
@@ -611,4 +616,9 @@ def __parse_configuration_file( vars, log, file_contents ):
         raise BootManagerException, \
               "Configured node hostname does not resolve."
     
+    try:
+        log.write("Using NODE_ID %d\n"%vars['NODE_ID'])
+    except:
+        log.write("Unknown NODE_ID")
+
     return 1
