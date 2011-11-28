@@ -86,11 +86,12 @@ def Run( vars, log ):
                  PARTITIONS["mapper-swap"] )
     fstab.write( "%s           /           ext3      defaults  1 1\n" % \
                  PARTITIONS["mapper-root"] )
-    fstab.write( "%s           /vservers   ext3      tagxid,defaults  1 2\n" % \
+    fstab.write( "%s           /vservers   btrfs     defaults  1 2\n" % \
                  PARTITIONS["mapper-vservers"] )
     fstab.write( "none         /proc       proc      defaults  0 0\n" )
     fstab.write( "none         /dev/shm    tmpfs     defaults  0 0\n" )
     fstab.write( "none         /dev/pts    devpts    defaults  0 0\n" )
+    fstab.write( "none         /cgroup     cgroup    defaults  0 0\n" )
     fstab.close()
 
     log.write( "Writing system /etc/issue\n" )

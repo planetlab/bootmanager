@@ -158,17 +158,23 @@ def Run( vars, log ):
     # filesystems partitions names and their corresponding
     # reserved-blocks-percentages
     filesystems = {"root":5,"vservers":0}
+    
+    # ROOT filesystem with ext2
+    fs = 'root'
+    rbp = filesystems[fs]
+    devname = PARTITIONS[fs]
+    log.write("formatting %s partition (%s)%s.\n" % (fs,devname,txt))
+    utils.sysexec( "mkfs.ext2 -q %s -m %d -j %s" % (option,rbp,devname), log )
 
-    # make the file systems
-    for fs in filesystems.keys():
-        # get the reserved blocks percentage
-        rbp = filesystems[fs]
-        devname = PARTITIONS[fs]
-        log.write("formatting %s partition (%s)%s.\n" % (fs,devname,txt))
-        utils.sysexec( "mkfs.ext2 -q %s -m %d -j %s" % (option,rbp,devname), log )
+    # VSERVER filesystem with btrfs to support snapshoting and stuff
+    fs = 'vservers'
+    rbp = filesystems[fs]
+    devname = PARTITIONS[fs]
+    log.write("formatting %s partition (%s)%s.\n" % (fs,devname,txt))
+    utils.sysexec( "mkfs.btrfs %s" % (devname), log )
 
     # disable time/count based filesystems checks
-    for filesystem in ("root","vservers"):
+    for filesystem in ("root"):
         utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" % PARTITIONS[filesystem], log)
 
     # save the list of block devices in the log

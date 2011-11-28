@@ -172,7 +172,11 @@ def Run( vars, log ):
                     SYSIMG_PATH + "/usr/boot/cacert.pem")
         file(SYSIMG_PATH + "/usr/boot/boot_server", "w").write(boot_server)
         shutil.copy("/usr/bootme/pubring.gpg", SYSIMG_PATH + "/usr/boot/pubring.gpg")
-        
+    
+    # Creating /cgroup directory
+    if not os.path.exists(SYSIMG_PATH + "/cgroup")
+        utils.makedirs(SYSIMG_PATH + "/cgroup")
+
     # For backward compatibility
     if os.path.exists("/usr/bootme"):
         utils.makedirs(SYSIMG_PATH + "/mnt/cdrom")

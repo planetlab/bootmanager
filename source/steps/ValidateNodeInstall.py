@@ -83,7 +83,7 @@ def Run( vars, log ):
             
         utils.makedirs( SYSIMG_PATH )
 
-        for filesystem in ("root","vservers"):
+        for filesystem in ("root"):
             try:
                 # first run fsck to prevent fs corruption from hanging mount...
                 log.write( "fsck %s file system\n" % filesystem )
@@ -101,6 +101,8 @@ def Run( vars, log ):
             else:
                 # disable time/count based filesystems checks
                 utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" % PARTITIONS[filesystem], log)
+        
+        # TODO: add fschk for btrfs vserver volume!! 
 
         try:
             # then attempt to mount them
@@ -123,7 +125,7 @@ def Run( vars, log ):
             VSERVERS_PATH = "%s/vservers" % SYSIMG_PATH
             utils.makedirs(VSERVERS_PATH)
             log.write( "mounting vserver partition in root file system\n" )
-            utils.sysexec("mount -t ext3 %s %s" % (PARTITIONS["vservers"], VSERVERS_PATH), log)
+            utils.sysexec("mount -t btrfs %s %s" % (PARTITIONS["vservers"], VSERVERS_PATH), log)
         except BootManagerException, e:
             log.write( "BootManagerException during mount of /vservers: %s\n" % str(e) )
             return -2
