@@ -174,7 +174,7 @@ def Run( vars, log ):
         shutil.copy("/usr/bootme/pubring.gpg", SYSIMG_PATH + "/usr/boot/pubring.gpg")
     
     # Creating /cgroup directory
-    if not os.path.exists(SYSIMG_PATH + "/cgroup")
+    if not os.path.exists(SYSIMG_PATH + "/cgroup"):
         utils.makedirs(SYSIMG_PATH + "/cgroup")
 
     # For backward compatibility

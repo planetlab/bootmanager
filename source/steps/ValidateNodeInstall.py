@@ -83,7 +83,7 @@ def Run( vars, log ):
             
         utils.makedirs( SYSIMG_PATH )
 
-        for filesystem in ("root"):
+        for filesystem in ["root"]:
             try:
                 # first run fsck to prevent fs corruption from hanging mount...
                 log.write( "fsck %s file system\n" % filesystem )
