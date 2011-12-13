@@ -174,7 +174,7 @@ def Run( vars, log ):
     utils.sysexec( "mkfs.btrfs %s" % (devname), log )
 
     # disable time/count based filesystems checks
-    for filesystem in ("root"):
+    for filesystem in ["root"]:
         utils.sysexec_noerr( "tune2fs -c -1 -i 0 %s" % PARTITIONS[filesystem], log)
 
     # save the list of block devices in the log

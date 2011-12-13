@@ -189,7 +189,7 @@ def Run( vars, log ):
 
     utils.sysexec_noerr( "killall dhclient", log )
         
-    utils.sysexec_noerr( "umount -a -r -t ext2,ext3", log )
+    utils.sysexec_noerr( "umount -a -r -t ext2,ext3,btrfs", log )
     utils.sysexec_noerr( "modprobe -r lvm-mod", log )
     
     # modules that should not get unloaded

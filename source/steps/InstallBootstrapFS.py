@@ -82,7 +82,7 @@ def Run( vars, log ):
 
     log.write( "mounting vserver partition in root file system\n" )
     utils.makedirs( SYSIMG_PATH + "/vservers" )
-    utils.sysexec( "mount -t ext3 %s %s/vservers" % (PARTITIONS["vservers"],
+    utils.sysexec( "mount -t btrfs %s %s/vservers" % (PARTITIONS["vservers"],
                                                      SYSIMG_PATH), log )
 
     vars['ROOT_MOUNTED']= 1
