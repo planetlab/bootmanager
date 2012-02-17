@@ -137,7 +137,8 @@ def Run( vars, log ):
     # these 2 links are created by our kernel's post-install scriplet
     log.write("Checking for a custom kernel\n")
     try:
-        os.stat("%s/boot/kernel-boot" % SYSIMG_PATH)
+        kversion = os.popen('rpm -r /tmp/mnt/sysimg -qa kernel | tail -1 | cut -c 8-').read().rstrip()
+        os.stat("%s/boot/vmlinuz-%s" % (SYSIMG_PATH,kversion))
     except OSError, e:            
         log.write( "Couldn't locate base kernel (you might be using the stock kernel).\n")
         return -3

@@ -151,8 +151,10 @@ def Run( vars, log ):
         option = 'smp'
 
     log.write( "Copying kernel and initrd for booting.\n" )
-    utils.sysexec( "cp %s/boot/kernel-boot%s /tmp/kernel" % (SYSIMG_PATH,option), log )
-    utils.sysexec( "cp %s/boot/initrd-boot%s /tmp/initrd" % (SYSIMG_PATH,option), log )
+    kversion = os.popen('rpm -r /tmp/mnt/sysimg -qa kernel | tail -1 | cut -c 8-').read().rstrip()
+
+    utils.sysexec( "cp %s/boot/vmlinuz-%s /tmp/kernel" % (SYSIMG_PATH,kversion), log )
+    utils.sysexec( "cp %s/boot/initramfs-%s.img /tmp/initrd" % (SYSIMG_PATH,kversion), log )
 
     BootAPI.save(vars)
 
