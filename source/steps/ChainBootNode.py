@@ -125,7 +125,7 @@ def Run( vars, log ):
     utils.sysexec_chroot( SYSIMG_PATH, cmd, log )
 
     # Re-generate initrd right before kexec call
-    MakeInitrd.Run( vars, log )
+    #MakeInitrd.Run( vars, log )
 
     # the following step should be done by NM
     UpdateNodeConfiguration.Run( vars, log )
