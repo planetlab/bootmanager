@@ -72,8 +72,8 @@ def Run( vars, log ):
     utils.sysexec_chroot( SYSIMG_PATH,
         "ln -sf /usr/share/zoneinfo/UTC /etc/localtime", log )
 
-    log.write( "Enabling ntp at boot\n" )
-    utils.sysexec_chroot( SYSIMG_PATH, "chkconfig ntpd on", log )
+    #log.write( "Enabling ntp at boot\n" )
+    #utils.sysexec_chroot( SYSIMG_PATH, "chkconfig ntpd on", log )
 
     log.write( "Creating system directory %s\n" % PLCONF_DIR )
     if not utils.makedirs( "%s/%s" % (SYSIMG_PATH,PLCONF_DIR) ):
