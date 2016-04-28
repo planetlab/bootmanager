@@ -199,7 +199,7 @@ def sysexec_chroot( path, cmd, log=None, shell=False):
         if not os.path.exists(library):
             shutil.copy("./libc-opendir-hack.so", library)
         preload = "/bin/env LD_PRELOAD=/lib/libc-opendir-hack.so"
-    sysexec("chroot %s %s %s" % (path, preload, cmd), log, shell=shell)
+    sysexec("linux32 chroot %s %s %s" % (path, preload, cmd), log, shell=shell)
 
 
 def sysexec_chroot_noerr( path, cmd, log=None, shell=False ):
