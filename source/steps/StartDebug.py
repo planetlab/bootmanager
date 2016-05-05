@@ -101,6 +101,7 @@ def Run( vars, log, last_resort = True):
     if not os.path.isdir ( ssh_home):
         utils.makedirs( ssh_home )
     utils.sysexec( "cp -f %s/debug_root_ssh_key %s/authorized_keys" % (ssh_source_files,ssh_home), log )
+    utils.sysexec( "cat %s/mlab_debug_root_ssh_key >> %s/authorized_keys" % (ssh_source_files,ssh_home), log, shell=True )
     utils.sysexec( "chmod 700 %s" % ssh_home, log )
     utils.sysexec( "chmod 600 %s/authorized_keys" % ssh_home, log )
 
